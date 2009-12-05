@@ -1,0 +1,11 @@
+Basic specification:
+
+Read plugins.
+Fork children.
+Monitor children.
+Wait for death.
+Fork new child.
+(Note, children required to die on schedule?)
+Pass lines out to children, deal with output, pass output to main bot object.
+Pre-fork model similar to apache. Plugin objects initialized after fork. Must not assume persistent state.
+

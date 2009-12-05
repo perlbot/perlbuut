@@ -1,0 +1,100 @@
+Plugins come in two forms. The first form is a simple subroutine ref. The second is a complex object.
+In the first case, simply define an annonymous subroutine reference in a file in the appropriate directory (typically the one named 'plugins') with the file name being the name of the command you want. You can do other things other than define an annonymous sub, but make sure that the subref is the last value to be returned. This subroutine ref is encapsulated as part of a larger object and then executed whenever the bot sees a string that matches the name of the file, which is also the command name. The subroutine is passed two arguments, the first is $said, which is documented in docs/said, and the second is the $plugin_manager object, which isn't really documented. 
+
+As mentioned, $said contains all of the necessary information for you to respond to the user who triggered your plugin. The most relevant fields of $said are as follows:
+body: This is the text sent to the bot. Note that if it was addressed to the bot, by prefixing the sentence with the bot's current name, this is stripped. The command name, which caused this particular plugin to be triggered, is also stripped. That is, if the bot was named 'bb3' and the example command was named 'echo', then the string "bb3: echo: hello world" would generate a body field of "hello world".
+raw_body: The exact text sent to the bot, includes bot name, command name, and so on.
+recommended_args: This is an array ref of whitespace split text that is supposed to be a decent guess as to how you should interpret the text sent to you. "echo foo bar" would generate a recommended args of ['foo','bar'].
+See docs/said for more complete documentation of the $said 'object'.
+
+Simple plugins can use print to communicate back to the caller. They should also be able to return a value from the end of the subroutine that will be displayed to the user.
+
+Plugins also use the __DATA__ handle to store documentation for themselves.
+
+Example, echo.pm:
+sub {
+	my( $said, $pm ) = @_;
+
+	print $said->{body};
+}
+__DATA__
+Example echo plugin. Outputs whatever it sees.
+
+--- END OF EXAMPLE ---
+
+There are a couple of key points. The first is the file name, in this case, 'echo.pm'. This filename determines the command name the plugin will by activated against. The .pm suffix is also important since the bot will ignore files that don't end in .pm. 
+The second is the arguments passed to the sub. All simple plugins take two arguments, $said and $pm. $said is the object mentioned above. $pm is the Bot::BB3::PluginManager object, which is the internal object that handles loading and dispatching to the various plugins. It's mostly useful for accessing configuration information about the bot or for getting references to other plugins. 99% of plugins will never need to use this object. For a moderately simple example of using this object to access other plugins, see plugins/help.pm.
+The next point is the 'print' and the and $said->{body}. The routine that activates this plugin used a tied STDOUT to allow 'print' to be used for outputting text, so you can't get too clever. $said->{body} is, as mentioned frequently, the remainder of the text that caused the bot to activate this plugin, minus the bot name and the command name.
+The last bit, the __DATA__ section, is of course the documentation for the plugin and is read by plugins/help.pm and possibly other areas in order to provide helpful information to the user.
+
+
+
+Complicated plugins, or at least, not simple plugins, allow for much more flexibility in how you define and interact with events from the bot. They're also the only way to respond to every line the bot reads without having to be activated by a specific command string.
+These types of plugins need to declare a module/package and return a string that contains the name of the package that the PluginManager will invoke new on to get a plugin object.
+The only two required methods for a 'complex' plugin are 'new' and 'command'. new is invoked by the PluginManager as it loads all of the plugins it finds in the plugins/ directory and should return an object. For a variety of mostly silly reasons, at the moment the object has to be of the type 'blessed hash' and contain the following key/value pairs in the hash. If you don't like this, send a patch.
+The blessed hash should contain a 'name' field, containing the name that the plugin should be activated by, as well as the 'opts' key, which points to a hashref containing option=>value pairs. There are four supported options that may be present in the 'opts' hash. They are, handler, command, preprocess and postprocess. One or more of these has to be set or the plugin will never be activated. The exact meanings are as follows:
+
+command => 1
+	This causes the bot to activate your plugin as a simple command, which is incidentally how the above documented 'simple plugins' are implemented. In short it looks for the name of your plugin at the beginning of the string followed by some optional delimiter characters (such as : or ,) and then calls your plugin's ->command method.
+handler => 1
+	This causes the bot to activate your plugin on every line that the bot sees. It calls the method ->handle.
+preprocess => 1
+	This causes your plugin to be invoked on every line the bot sees, before any other plugin is activated. Note that you are simply passed a $said object, but this is the same object that every other plugin will see, so you can modify it at will.
+postprocess => 1
+	Much the same as preprocess, this causes your plugin to be invoked after every other plugin has finished. You are passed $said and a reference to the output of all of the previous plugins that you may modify as you wish.
+
+The command method. This is the method that actually does all the work for your plugin and is invoked by the PluginManager depending on the criteria defined above in the opts hash. It is passed: $self, $said, $pm. $self and $said are your object and the said object obviously and $pm is the PluginManager object as mentioned above. Note that 'handle' options invoke the 'handle' method instead.
+This method is expected to return a list of two items. Note that this is a list and not an array reference. This first item should be a string, either 'handled' or an empty string ''. The second item is another string containing the text you wish to output to the user. 
+Digression: Plugin Chains. When a line is seen by the bot, it creates a plugin chain, that is, a list of all the plugins the bot thinks might be activated for that line, such as commands that match or handlers that always activate and so on. However, in an attempt to ensure that only a single plugin is actually activated per line, each plugin can return either 'handled' or '' as the first item it returns. If the string is 'handled' then the plugin chain is aborted at that point and the output as of that point is the final output from the bot for that line. Note that you can return an empty string as the first item, thus saying you haven't actually handled the line, but still output text by returning it as the second item. This text will be prepended to whatever else is output by other plugins down the line of the chain. Note that all 'simple plugins' always return 'handled' when they're called.  Note that 'handler' plugins can't return handled, their output is always concatenated onwards.
+
+Example, FlibbleEcho.pm:
+
+package Bot::BB3::Plugin::FlibbleEcho;
+
+sub new { 
+	my( $class ) = @_;
+	my $self = bless {}, $class;
+	$self->{name} = "echo";
+	$self->{opts} = { command => 1 };
+
+	return $self;
+}
+
+sub postload {
+	my( $self, $pm ) = @_;
+	
+	Create_Database();
+}
+
+sub initialize {
+	my( $self, $pm, $cache ) = @_;
+	
+	$self->{cache} = $cache;
+	# Create database handle maybe
+}
+
+sub command {
+	my( $self, $said, $pm ) = @_;
+
+	return( 'handled', "Flibble! $said->{body}" );
+}
+
+"Bot::BB3::Plugin::FlibbleEcho";
+__DATA__
+The flibble echo. Prepends flibble to whatever string it sees and returns the string! Responds to echo.
+
+-------- End of Example ----------
+
+Again, there are some interesting points. The first is the package declaration, this is necessary for us to create our perl object later. Note we stick it inside the Bot::BB3::Plugin namespace, this isn't a requirement, but it at least makes a pretense at organization.
+The next is the new method where we create the object. The two interesting sub points are the 'name' key which specifies our name and the 'opts' hash which specifies that we should be treated as a 'command', which if you will recall, causes our plugin to be activated when our 'name' is detected at the beginning of a string. Note that despite the fact that the file name is 'FlibbleEcho' we declare our name to be 'echo' and are activated based on that declared name. That is to say, in the case of 'complex plugins', the file name is irrelevant.
+At the end obviously we return our self as a standard object creation method.
+
+The postload method is called directly after the plugin is instantiated by the pluginmanager and before the pluginmanager forks off its children. It is useful for performing any 'setup' operations you need done before the plugin is in actual use by the bot.
+
+The initialize method is called on every plugin loaded directly after the pluginmanager forks its children, so it will be called on each plugin for ever child spawned. It varies from the rest of the methods by being passed a $cache object which conforms to the Cache interface. Note that every plugin gets the same cache object, even across forks. This is useful for IPC and storing temporary values. For example, the 'more' plugin is implemented by saving the data in this cache.
+
+The command subroutine is very simple in this example, we simply assign our arguments to local variables and then return. We return a string of 'handled' to denote the fact that we've successfully responded to this command and then the text we want to output, which in this case is the string Flibble! prepended to whatever text the user has written.
+
+At the end of the plugin we return a string, which should be the name of the package we declared at the beginning. This is the package name that the PluginManager will call new on to create this object for this plugin. Note that you could actually simply 'use' another package and then return the name of that package, instead of actually implementing the entire plugin in side this file.
+
+Again at the very end is the __DATA__ section which contains our help text.

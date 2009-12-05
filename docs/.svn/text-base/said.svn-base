@@ -1,0 +1,37 @@
+The said object is the heart of the bb3 communication system. Specifically it's the only argument passed to plugins of various types. It contains all of the knowledge necessary to respond to a single IRC line (or other forms of communication). The values are as follows:
+$said = {
+	body_raw         => The exact text that it was sent
+	body             => The potentially parsed results of the body. Note that several things modify
+	                    it at the moment. For example, the name of the bot is removed if it is
+	                    found at the start. In some cases, if the leading text matches the name
+	                    of a command, it is also removed.
+	recommended_args => An array ref of words in the text.
+	                    Note that this only exists for 'command' type plugins.
+											It's just a guess to save some time, it's split on whitespace
+											or similar.
+	channel          => The channel that it was seen in. In the case of IRC this is of the form
+	                    #channel, but other roles use channel names starting with *, for example,
+											*irc_msg or *dcc_send or even *web for the web based interface.
+	addressed        => Whether or not the bot detected its name at the beginning
+	sender_raw       => The raw description of the person who sent the text`
+	name             => The irc nick of the person who sent the line
+	ircname          => The irc username of the sender.
+	host             => The host of the person who sent the text
+	server           => The server it was seen on
+	pci_id           => The POE::Component::IRC ID, obviously internal use only.
+	my_name          => The current name of the bot who saw it.
+	special_commands => This is an arrayref of arrayrefs, elements that are used as 
+	                    arguments to $poe_component_irc->yield, if they start with pci_ 
+											that is: special_commands => [ [ 'pci_join', '#foo', '#bar' ] ]; causes:
+											$pci->yield( 'join', => '#foo', '#bar' );
+											If the command starts with pm_ it calls the specified method on the
+											$plugin_manager object that executed this plugin. If it starts with
+											bb3_ it calls the method on the parent bb3 object that spawned the
+											plugin_manager in the first place.
+	parent_session   => This is added by the plugin_manager to record which session sent
+	                    us the $said event in the first place. Mostly internal use.
+	by_root          => Set to 1 if the line was "spoken" by someone who matches the root_mask
+	by_chan_op       => Set to 1 if the line was "spoken" by someone who currently has 
+	                    operator status in the channel he spoke the line in.
+};
+

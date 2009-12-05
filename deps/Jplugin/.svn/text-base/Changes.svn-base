@@ -1,0 +1,6 @@
+Revision history for Perl extension Jplugin.
+
+0.01  Thu Apr 26 22:01:02 2007
+	- original version; created by h2xs 1.23 with options
+		-A -n Jplugin
+

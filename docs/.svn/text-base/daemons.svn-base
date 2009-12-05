@@ -1,0 +1,4 @@
+Long running commands spawned by the bot.
+Register for inputs to receieve?
+-- Is this necessary? I mean, plugins are pretty sexy now. The primary factoid case has been handled by the new fork/plugin model. 
+We may only need daemons for sending output on timers or outside events, eg, commits or rss feeds.

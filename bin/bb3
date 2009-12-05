@@ -1,0 +1,62 @@
+#!/usr/bin/perl
+use POSIX qw/setsid/;
+use Getopt::Std;
+
+my %OPTS;
+# Localize the @ARGV so we preserve it
+# since getopts destructively modifies it
+# we need it to be intact so we can restart
+# ourselves later.
+BEGIN { local @ARGV=@ARGV; getopts("dm:M:c:p:", \%OPTS) };
+# d daemon
+# m only this role(s)
+# M Every role but this Not Implemented
+# c conf file
+# p plugin conf file
+
+# Guess we're being activated inside bin/, so go up a directory.
+BEGIN { 
+	if( not -e 'lib' and not -e 'etc' and -e 'bb3' ) { 
+		chdir ".."; 
+	} 
+	elsif( my @par_dirs = grep /tmp.*par.*cache-/, @INC ) {
+		# We're running under PAR!
+		chdir( ( grep /inc$/, @par_dirs ) [0] ); #Find the one that ends in inc/
+		mkdir "var"; # We need one of these..
+	}
+	elsif( $0 =~ '/' and $0 ne 'bin/bb3' ) {
+		my $path = $0;
+		$path =~ s{bin/bb3$}{};
+		chdir $path;
+	}
+}
+
+use lib 'lib';
+use Bot::BB3;
+
+use Data::Dumper;
+
+Bot::BB3->new( {
+	main_conf_file => $OPTS{c} || 'etc/bb3.conf',
+	plugin_conf_file => $OPTS{p} || 'etc/plugins.conf',
+	only_roles => $OPTS{m},
+} );
+
+# Only daemonize if we're asked to.
+if( $OPTS{d} ) {
+	setsid();
+	fork and exit;
+
+	open STDOUT, ">var/bb3.stdout" or die "Tried to reopen STDOUT to bb3.stdout: $!";
+	open STDERR, ">var/bb3.stderr" or die "Tried to reopen STDERR to bb3.stdout: $!";
+	close STDIN;
+
+	open my $fh, ">var/bb3.pid" or die "Failed to open pid file: $!";
+	print $fh $$;
+	close $fh;
+}
+
+POE::Kernel->run;
+
+
+exit;

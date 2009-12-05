@@ -1,0 +1,83 @@
+<be>
+	# change this to point to the actual directory where you store quotes
+	quotes_dir /home/buu/p/bb2/trunk/quotes
+</be>
+
+http_plugin_port 1092
+
+<Roles>
+	<socketmessageirc>
+		enabled no
+		port 10091
+	</socketmessageirc>
+
+	<console>
+		enabled no
+		port 10092
+	</console>
+
+	<web>
+		enabled no
+	</web>
+
+	<pastebot>
+		enabled no
+		hostname erxz.com:10081
+		alias_url = http://erxz.com/bb3pb
+	</pastebot>
+</Roles>
+
+# Change this to be bot specific?
+<plugin_manager>
+	default_plugin factoids
+</plugin_manager>
+
+<bot perlbot>
+	channel \#buubot
+	channel \#\#turtles
+	channel \#perlcafe
+        channel \#webgui
+        channel \#citadel
+        channel \#modperl
+        channel \#perl
+        channel \#ipv6
+        channel \#perlbot
+        channel \#mrtg
+        channel \#ipv6-fr
+        channel \#freebsd-fr
+        channel \#botpark
+        channel \#css
+        channel \#modus
+
+	ignore buubot
+	ignore avarbot
+	ignore jeval
+	ignore gumbybrain
+	ignore perlbot
+	ignore buubot3
+	ignore loudbot
+	ignore serfbot
+	ignore farnsworth
+	ignore frogbot
+	ignore EvanCarroll
+	ignore EvanCarrol
+	ignore EvanCaroll
+	ignore EvanCarol
+	ignore EC
+
+	server localhost
+	username perlbuutfreenode
+	password perlbuut
+	port 6668
+	root_mask n=simcop23@p3m/member/simcop2387
+</bot>
+
+<bot perlbot>
+	channel \#freenode-perl-cabal
+	
+	server localhost
+	username perlbuutmagnet
+	password perlbuut
+	port 6668
+	root_mask ~simcop238@erxz.com
+</bot>

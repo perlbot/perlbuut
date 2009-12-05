@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+use strict;
+use Term::ReadLine;
+use IO::Socket::INET;
+
+use Getopt::Std;
+
+my %OPTS;
+getopts( 'p:', \%OPTS );
+
+my $connect_port = $OPTS{p} || 14401;
+
+my $socket = IO::Socket::INET->new( 
+	PeerHost => '127.0.0.1', 
+	PeerPort => $connect_port,
+	ReuseAddr => 1,
+	Proto => 'tcp',
+	Type => SOCK_STREAM,
+) or die "Failed to connect to localhost on $connect_port, try specifying a port with -p";
+
+my $term = Term::ReadLine->new( "BB3 Console" );
+my $prompt = "bb3> ";
+
+while( defined( $_ = $term->readline($prompt) ) ) {
+
+	print $socket "$_\n";
+
+	my $output;
+	sysread $socket, $output, 4096;
+
+	$output =~ s/^CC: //;
+
+
+	print $output, "\n";
+}

@@ -1,0 +1,13 @@
+server "*" {
+	channel "*" {
+		plugin "*" { addressed: true }
+		plugin "join" { access: root; addressed: true }
+		plugin "part" { access: op }
+		plugin "reload_plugins" { access: root }
+		plugin "restart" { access: root }
+		plugin "conf_dump" { access: root; }
+		plugin "save_config" { access: root; }
+		plugin "conf" { access: root; }
+		plugin "karma_modify" { addressed: false; }
+	 }
+} 

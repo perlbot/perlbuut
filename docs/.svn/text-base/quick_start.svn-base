@@ -1,0 +1,68 @@
+The Quick Start Guide.
+
+From a user's perspective, there are three main directories you should be interested in. These are etc/, bin/ and plugins/. More detailed explanations follow:
+
+etc/ is the directory that contains all of the files necessary to configure the bot. At the moment it should only contain two files, bb3.conf and plugins.conf.
+
+plugins.conf use a simple configuration language to control which plugins will respond in what channel and to what 'authorization' level. At the moment the syntax for the configuration language looks something like: 
+	server "*" {
+		channel "#test" {
+			plugin "join" { access: op; addressed: true }
+		}
+	}
+
+Essentially it's a series of nested filters that apply to the final set of conditions. The first filter is the "server" command, which attempts to match against the server name of whatever irc network generated the message the bot is attempting to reply to. The second filter is "channel" which obviously attempts to match against the channel the message was received on. Finally the "plugin" filter, again, matches against the specific plugin that it's trying to activate.
+
+Note that you can use the '*' wildcard anywhere you could specify a specific string to cause that filter to always match. Also note you can have multiples of any section of the above example, that is, you can have multiple server blocks in the file, you can have multiple channel blocks inside a server block and so on. The configuration options are generally merged in an additive file, so if you have multiple blocks that have different conditions for the same plugin on the same channel on the same server, all of these conditions will have to be matched before it executes.
+
+The final section of the above example is the actual "plugin" section, which again, tries to match against a specific plugin name and then applies the options listed inside the curly braces. In this case the two options being applied are 'access' and 'addressed'. The 'addressed' option controls whether or not the bot needs to have been addressed for this plugin to activate, in this case a value of true means it has to have been addressed, in the form of 'buubot: echo foo'. You can also specify 'false' to do the opposite, this is also useful for using a general filter to cause every plugin to be addressed and then setting specific ones to 'false' to let them respond without being addressed
+
+The other option in the example is 'access' which simply controls what level of "authorization" might be required to activate the plugin. As of now there are only three levels of access, the default one which is what happens when you don't specify an access option, means anyone can use it. The second is 'op' which means you must currently be 'opped' in the channel where you're attempting to use the command. The last acceptable value is 'root' which means your hostmask much match the root_mask value in the etc/bb3.conf.
+
+
+The second file in the etc/ directory is the bb3.conf file. Note that the bin/bb3 launching command automatically looks for a file named etc/bb3.conf to configure itself.
+
+Obviously, this file contains directives used to configure which networks the bot connects to and under what name, along with root user, people to ignore, and various other plugin or role specific configuration directives. Technically this file uses syntax from the perl module Config::General, but you can think of it as the same language that Apache uses in its conf file, which can be summarized as <Foo bar> option_value 42 </Foo> where <Foo> starts a section named 'bar' and option_value 42 sets the option_value to 42, whatever thay may do.
+
+The main configuration directive is named 'bot' and looks something like:
+
+<bot buubot>
+	channel \#buubot
+	channel \#bottest
+
+	ignore avarbot
+	ignore otherbot
+
+	server irc.freenode.org
+	root_mask user@host.org
+</bot>
+
+
+The first section is the <bot buubot> part, which starts a new 'bot' section, which is ended by the corresponding </bot> tag, and specifies that the nickname of this bot, when it connects to the irc server, should be 'buubot'. Because that's an awesome name.
+
+The second section is the 'channel' directive which specifies a list of channels to join as soon as the bot has connected. Each channel directive specifies a single channel, simply repeat it to join multiple. You can specify as many as the irc network will let you connect to. Note that you have to escape the # (\#) signs in the channel name, since this configuration language uses # to begin a comment. 
+
+The next section is the 'ignores', these simply take the name of an irc user for the bot to ignore, note that the bot will drop ALL input from any user whose nick matches the name specified. Again, you can specify multiple people to ignore simply by specifying the directive multiple times.
+
+The next directive is really the only required one, and that is the 'server' command, which takes a single argument, the name of an irc server to attempt to connect to. In this case, irc.freenode.org, because I like freenode. Note that unlike the rest of the directives, you can only specify one 'server' directive. If you want to connect to multiple servers at the same time, simply create multiple <bot foo></bot> blocks, each one containing a different server directive.
+
+The last directive is 'root_mask', which determines which users are able to use plugins with an 'access' set to 'root'. It matches fairly directly against your IRC hostmask, to set it to something similar.
+
+There are a number of other configuration directives in the file, which mostly aren't that interesting, with the possible exception of the following:
+
+<plugin_manager>
+	default_plugin factoids
+</plugin_manager>
+
+This block controls which plugin responds when the bot is addressed and it can't find a plugin that matches what the user said.
+
+An example, if our bot was currently named 'buubot' and a user spoke to it as such: "buubot: echo foo bar", assuming you left the default plugin named 'echo' in the directory, buubot would match the 'echo' at the start of the string and then pass the rest of the arguments to the echo plugin. However, if a user spoke to the bot like "buubot: flibble", and assuming you didn't have a plugin named 'flibble' in your plugin directory, then it would activate the plugin specified as the 'default_plugin' in the above configuration section and pass that string to it. In this case, the default_plugin is configured to be 'factoids' which is the plugin that handles learning random strings based on user input, try 'help factoids' once the bot is running for more information.
+
+You could set this default plugin to be any of the plugin in the plugins/directive, for example you might prefer to set it to the 'eval' plugin or anything else, if you prefer the bot to default to that.
+
+
+Anyway, once you've configured the above files to your liking, you can actually launch the bot with the command bin/bb3. This launches the bot and attempts to get it connected to the irc networks you specified. Note that you can pass the flag '-d' to bin/bb3 to have it attempt to 'daemonize' itself and stop spewing output to your console. Also note that it really expects to be run from the base directory you checked out or downloaded, that is, you should have a folder named something containing bin, etc, plugins, lib and so forth, and you really should run this command from inside that directory with the command 'bin/bb3'. 
+
+The second interesting command in the bin directory is the 'evalserver' command which attempts to launch the evalserver. As a quick summary, the evalserver runs as a standalone tcp-socket based server which receives commands to evaluate, evaluates them and returns the output. By default it only listens to localhost connections on the port 14400, unfortunately this port can't be configured at the moment, if you want to change it just edit lib/EvalServer.pm and search for it.
+
+Note that this server must be run as root, so it can perform the necessary security based actions of invoking 'chroot' and dropping its user and group id to the user 'nobody'. You're welcome to think this is moderately unsafe, but the code involved is relatively simple and easy to audit. The two files involved are lib/EvalServer.pm and lib/eval.pl, which performs the actual security based sections. In any case, unless you either find an actual hole or can come up with an alternate way to perform this, please refrain from commenting. I'll note that I've been running this server, as root, for over a year now on highly populated IRC channels, and have received no ill-effects.

@@ -1,0 +1,57 @@
+A plugin is implemented as a single file in the plugin directory. This is of course named 'plugins' unless otherwise specified in the bot's config file. Each file is executed and the return value (of the file!) is examined. If the return value is a subroutine, then it is taken as a basic plugin that executes in the 'main' phase of plugin handling and has no special configuration. If, on the other hand, the plugin returns a string, this is taken as the name of a package to call the method 'new' on to get an object. This object is then initialized and so forth then called with input in the normal course of plugin handling. Note that objects are still subject to the configuration specified in the plugin.conf file, but however, can do more configuration of how the main bot object interacts with the plugin, specifically when in the plugin loop they're activated and perhaps even a chance to preprocess or postprocess the output of other plugins. This is of course the 'advanced' method. Someday I'll actually document what the interface for all of this actually is.
+
+File: echo.pm
+
+#----------------START--------------
+sub {
+	my( $said ) = @_;
+	
+	print "You said: $said->{body}";
+}
+#-----------------EOF---------------
+
+File: morecomplicated.pm
+
+#----------------START--------------
+package Bot::BB3::Plugin::Complicated;
+
+sub new {
+	my( $class ) = @_;
+	
+	return bless {}, $class;
+}
+
+sub initialize {
+	my( $self ) = @_;
+
+	#stuff
+}
+
+ #Class name to execute
+"Bot::BB3::Plugin::Complicated";
+#-----------------EOF---------------
+
+In particular note is the string returned, this is the name of the package to invoke. Note that you could use this as a dummy file to invoke modules installed elsewhere on the system, for example:
+
+File: dummymodule.pm
+
+#----------------START--------------
+use MyModule::Somewhere;
+
+"MyModule::Somewhere";
+#-----------------EOF---------------
+
+This simply calls 'use' to load the module and then returns the name.
+
+Note that plugins who return a coderef are 'wrapped' by invoking Bot::BB3::PluginWrapper->new( $name, $coderef );
+This provides the basic example for implementing a plugin object.
+
+More Notes:
+Plugins can check if the line has been handled before them.
+Plugins activate only if configured to do so.
+Plugins handle parsing..
+Plugins need constants to return in certain situations.
+Plugins have options to not handle the line, thus needing a NOT_HANDLED; constant?
+Handled is the default I think?
+Every plugin would have to return a constant.. maybe.
+

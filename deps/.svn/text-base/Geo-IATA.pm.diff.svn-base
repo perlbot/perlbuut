@@ -1,0 +1,16 @@
+--- IATA.pm	2009-06-27 16:45:16.000000000 +0300
++++ /usr/local/share/perl/5.10.0/Geo/IATA.pm	2009-10-03 13:40:48.000000000 +0300
+@@ -23,7 +23,13 @@
+        $db =~s{$}{.pm}xms;
+        ($path = $INC{$db}) =~ s{.pm$}{}xms;
+        $path="iata_sqlite.db";
++       
++       my $sqlite_path =  __FILE__;
++       chop $sqlite_path for 1..3;
++       $sqlite_path .= "/$path";
++       $path = $sqlite_path;
+ 
++       confess "SQLite IATA database not where supposed to be " unless(-f $path);
+     }
+     my $dbh = DBI->connect("dbi:SQLite:dbname=$path","","", {RaiseError => 1, unicode=> 1});
+ return bless {dbh => $dbh, dbname => $path}, $pkg;

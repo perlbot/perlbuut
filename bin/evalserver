@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+
+# Guess we're being activated inside bin/, so go up a directory.
+BEGIN { if( not -e 'lib' and not -e 'etc' and -e 'bb3' ) { chdir ".."; } }
+
+use lib 'lib';
+use EvalServer;
+use POSIX qw/setsid/;
+
+# Only daemonize if we're asked to.
+if( $ARGV[0] eq '-d' ) {
+	# Crude daemonization
+	setsid();
+	fork and exit;
+
+	open STDOUT, ">var/evalserver.stdout" or die "Tried to reopen STDOUT to bb3.stdout: $!";
+	open STDERR, ">var/evalserver.stderr" or die "Tried to reopen STDERR to bb3.stdout: $!";
+	close STDIN;
+}
+
+EvalServer->start;

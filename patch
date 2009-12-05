@@ -1,0 +1,586 @@
+Index: plugins/factoids.pm
+===================================================================
+--- plugins/factoids.pm	(revision 460)
++++ plugins/factoids.pm	(working copy)
+@@ -5,6 +5,8 @@
+ use Text::Soundex qw/soundex/;
+ use strict;
+ 
++use Data::Dumper;
++
+ my $COPULA = join '|', qw/is are was isn't were being am/, "to be", "will be", "has been", "have been", "shall be", "can has", "wus liek", "iz liek", "used to be";
+ my $COPULA_RE = qr/\b(?:$COPULA)\b/i;
+ 
+@@ -52,7 +54,8 @@
+ 		author VARCHAR(100),
+ 		modified_time INTEGER,
+ 		soundex VARCHAR(4),
+-		compose_macro CHAR(1) DEFAULT '0'
++		compose_macro CHAR(1) DEFAULT '0',
++		protected BOOLEAN DEFAULT '0'
+ 	)"; # Stupid lack of timestamp fields
+ 
+ 	$pm->create_table( $self->dbh, "factoid", $sql );
+@@ -71,7 +74,7 @@
+ # Need to add "what is foo?" support...
+ sub command {
+ 	my( $self, $said, $pm ) = @_;
+-
++	
+ 	return unless $said->{body} =~ /\S/; #Try to prevent "false positives"
+ 	
+ 	my $call_only = $said->{command_match} eq "call";
+@@ -79,22 +82,22 @@
+ 	my $subject = $said->{body};
+ 	
+ 	if( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
+-		my @ret = $self->store_factoid( $said->{name}, $said->{body} ); 
++		my @ret = $self->store_factoid( $said ); 
+ 
+ 		return( 'handled', "Failed to store $said->{body}" )
+-			unless @ret;
++		unless @ret;
+ 
+ 		return( 'handled', "Stored @ret" );
+ 	}
+ 	else {
+-		my $commands_re = join '|', qw/search relearn learn forget revisions literal revert/;
++		my $commands_re = join '|', qw/search relearn learn forget revisions literal revert protect unprotect/;
+ 			$commands_re = qr/$commands_re/;
+ 
+ 		my $fact_string;
+ 
+ 		if( !$call_only && $subject =~ s/^\s*($commands_re)\s+// ) {
+ 			my( $cmd_name ) = "get_fact_$1";
+-			$fact_string = $self->$cmd_name($subject, $said->{name});
++			$fact_string = $self->$cmd_name($subject, $said->{name}, $said);
+ 		}
+ 		else {
+ 			$fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
+@@ -114,7 +117,7 @@
+ 	$subject =~ s/^\s+//;
+ 	$subject =~ s/\s+$//;
+ 	$subject =~ s/\s+/ /g;
+-	$subject =~ s/[^\w\s]//g;
++#	$subject =~ s/[^\w\s]//g; #comment out to fix punct in factoids
+ 	$subject = lc $subject;
+ 
+ 	return $subject;
+@@ -140,13 +143,15 @@
+ }
+ 
+ sub store_factoid {
+-	my( $self, $author, $body ) = @_;
++	my( $self, $said) =@_;
++	my ($author, $body ) = ($said->{name}, $said->{body});
+ 
+-
+ 	return unless $body =~ /^(?:\S+[:,])?\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
+ 	my( $subject, $copula, $predicate ) = ($1,$2,$3);
+ 	my $compose_macro = 0;
+ 
++	return "Insufficient permissions for changing protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
++
+ 	if( $subject =~ s/^\s*\@?macro\b\s*// ) { $compose_macro = 1; }
+ 	elsif( $subject =~ s/^\s*\@?func\b\s*// ) { $compose_macro = 2; }
+ 	elsif( $predicate =~ s/^\s*also\s+// ) {
+@@ -156,13 +161,13 @@
+ 	}
+ 	
+ 	return unless
+-		$self->_insert_factoid( $author, $subject, $copula, $predicate, $compose_macro );
++		$self->_insert_factoid( $author, $subject, $copula, $predicate, $compose_macro, $self->_db_get_protect($subject) );
+ 
+ 	return( $subject, $copula, $predicate );
+ }
+ 
+ sub _insert_factoid {
+-	my( $self, $author, $subject, $copula, $predicate, $compose_macro ) = @_;
++	my( $self, $author, $subject, $copula, $predicate, $compose_macro, $protected ) = @_;
+ 	my $dbh = $self->dbh;
+ 
+ 	warn "Attempting to insert factoid: type $compose_macro";
+@@ -181,8 +186,8 @@
+ 	return unless $key =~ /\S/;
+ 
+ 	$dbh->do( "INSERT INTO factoid 
+-		(original_subject,subject,copula,predicate,author,modified_time,soundex,compose_macro)
+-		VALUES (?,?,?,?,?,?,?,?)",
++		(original_subject,subject,copula,predicate,author,modified_time,soundex,compose_macro,protected)
++		VALUES (?,?,?,?,?,?,?,?,?)",
+ 		undef,
+ 		$key,
+ 		$subject,
+@@ -192,24 +197,57 @@
+ 		time,
+ 		soundex($key),
+ 		$compose_macro || 0,
++		$protected || 0,
+ 	);
+ 
+ 	return 1;
+ }
+ 
++sub get_fact_protect {
++	my( $self, $subject, $name, $said ) = @_;
++
++	warn "===TRYING TO PROTECT [$subject] [$name]\n";
++
++	#XXX check permissions here
++	return "Insufficient permissions for protecting factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
++
++	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
++	$self->_insert_factoid( $name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 1 );
++
++	return "Protected $subject";
++}
++
++sub get_fact_unprotect {
++	my( $self, $subject, $name, $said ) = @_;
++
++	warn "===TRYING TO PROTECT [$subject] [$name]\n";
++
++	#XXX check permissions here
++	return "Insufficient permissions for protecting factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
++
++	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
++	$self->_insert_factoid( $name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 0 );
++
++	return "Unprotected $subject";
++}
++
+ sub get_fact_forget {
+-	my( $self, $subject, $name ) = @_;
++	my( $self, $subject, $name, $said ) = @_;
+ 
+ 	warn "===TRYING TO FORGET [$subject] [$name]\n";
+ 
+-	$self->_insert_factoid( $name, $subject, "is", " ", 0 );
++	#XXX check permissions here
++	return "Insufficient permissions for forgetting protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
+ 
++	$self->_insert_factoid( $name, $subject, "is", " ", 0, $self->_db_get_protect($subject) );
++
+ 	return "Forgot $subject";
+ }
+ 
+ sub _fact_literal_format {
+ 	my($r) = @_;
+-	("","macro ","func ")[$r->{compose_macro}] . 
++	($r->{protected}?"P:" : "" ).
++                ("","macro ","func ")[$r->{compose_macro}] . 
+ 		"$r->{subject} $r->{copula} $r->{predicate}";
+ }
+ 
+@@ -218,7 +256,7 @@
+ 	my $dbh = $self->dbh;
+ 
+ 	my $revisions = $dbh->selectall_arrayref(
+-		"SELECT factoid_id, subject, copula, predicate, author, compose_macro 
++		"SELECT factoid_id, subject, copula, predicate, author, compose_macro, protected 
+ 			FROM factoid
+ 			WHERE original_subject = ?
+ 			ORDER BY modified_time DESC
+@@ -243,9 +281,12 @@
+ }
+ 
+ sub get_fact_revert {
+-	my( $self, $subject, $name ) = @_;
++	my( $self, $subject, $name, $said ) = @_;
+ 	my $dbh = $self->dbh;
+ 
++	#XXX check permissions here
++	return "Insufficient permissions for reverting protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
++
+ 	$subject =~ s/^\s*(\d+)\s*$//
+ 		or return "Failed to match revision format";
+ 	my $rev_id = $1;
+@@ -261,22 +302,24 @@
+ 	return "Bad revision id" unless $fact_rev and $fact_rev->{subject}; # Make sure it's valid..
+ 
+ 	#                        subject, copula, predicate
+-	$self->_insert_factoid( $name, @$fact_rev{qw"subject copula predicate compose_macro"});
++	$self->_insert_factoid( $name, @$fact_rev{qw"subject copula predicate compose_macro protected"});
+ 
+ 	return "Reverted $fact_rev->{subject} to revision $rev_id";
+ }
+ 
+ sub get_fact_learn {
+-	my( $self, $body, $name ) = @_;
++	my( $self, $body, $name, $said ) = @_;
+ 
++	$body =~ s/^\s*learn\s+//;
++	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
+ 
+-		$body =~ s/^\s*learn\s+//;
+-		my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
++	#XXX check permissions here
++	return "Insufficient permissions for changing protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
+ 
+-		#my @ret = $self->store_factoid( $name, $said->{body} ); 
+-		$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 );
++	#my @ret = $self->store_factoid( $name, $said->{body} ); 
++	$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 , $self->_db_get_protect($subject));
+ 
+-		return "Stored $subject as $predicate";
++	return "Stored $subject as $predicate";
+ }
+ *get_fact_relearn = \&get_fact_learn; #Alias..
+ 
+@@ -311,12 +354,55 @@
+ 	return $self->basic_get_fact( $pm, $said, $subject, $name, $call_only );
+ }	
+ 
++sub _db_check_perm {
++        my ($self, $subj, $said) = @_;
++	my $isprot = $self->_db_get_protect($subj);
++
++	warn "Checking permissions of [$subj] for [$said->{name}]";
++	warn Dumper($said);
++
++	#always refuse to change factoids if not in one of my channels
++	return 0 if (!$said->{in_my_chan});
++
++	#if its not protected no need to check if they are op or root;
++	return 1 if (!$isprot); 
++
++	if ($isprot && ($said->{by_root} || $said->{by_chan_op}))
++	{
++		return 1;
++	}
++
++	#default case, $isprotect true; op or root isn't
++	return 0;
++}
++
++#get the status of the protection bit
++sub _db_get_protect {
++        my( $self, $subj ) = @_;
++
++	$subj = _clean_subject($subj,1);
++
++        my $dbh = $self->dbh;
++        my $prot = ($dbh->selectrow_array( "
++                        SELECT protected
++                        FROM factoid
++                        WHERE original_subject = ?
++                        ORDER BY factoid_id DESC
++                ",
++                undef,
++                $subj,
++        ))[0];
++
++        return $prot;
++}
++
++
+ sub _db_get_fact {
+ 	my( $self, $subj, $name ) = @_;
+ 	
+ 	my $dbh = $self->dbh;
+ 	my $fact = $dbh->selectrow_hashref( "
+-			SELECT factoid_id, subject, copula, predicate, author, modified_time, compose_macro
++			SELECT factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected
+ 			FROM factoid 
+ 			WHERE original_subject = ?
+ 			ORDER BY factoid_id DESC
+@@ -360,7 +446,7 @@
+ 			return $plugin->command($said,$pm);
+ 		}
+ 		else {
+-			return "$fact->{subject} $fact->{copula} $fact->{predicate}";
++			return "$fact->{predicate}";
+ 		}
+ 	}
+ 	else { 
+Index: lib/Bot/BB3/Roles/IRC.pm
+===================================================================
+--- lib/Bot/BB3/Roles/IRC.pm	(revision 460)
++++ lib/Bot/BB3/Roles/IRC.pm	(working copy)
+@@ -88,6 +88,8 @@
+ 				channel_list
+ 				stop_talking
+ 				start_talking
++
++				comfuckpong
+ 				/
+ 			]
+ 		],
+@@ -107,6 +109,15 @@
+ #------------------------------------------------------------------------------
+ # PUBLIC METHODS
+ #------------------------------------------------------------------------------
++sub comfuckpong
++{
++  my ($sender, $kernel, $heap) = @_[SENDER, KERNEL, HEAP];
++
++  my $d = $heap->{irc}->server_name();
++  $heap->{irc}->yield( quote => "PONG $d\n");
++  $kernel->delay_add(comfuckpong => 50);
++}
++
+ sub get_bot_conf {
+ 	my( $self, $poco_irc ) = @_;
+ 	my $id = ( ref $poco_irc ) ? $poco_irc->session_id : $poco_irc;
+@@ -303,7 +314,8 @@
+ 
+ 	$said->{by_root} = ( $said->{ sender_raw } =~ $root_mask );
+ 	$said->{by_chan_op} = $pci->is_channel_operator( $said->{channel}, $said->{name} );
+-	#--------------------------
++	warn Data::Dumper->Dump([[$pci->nick_channels($said->{name})]], ["NICK_CHANS"]);
++	$said->{in_my_chan} = ($pci->nick_channels($said->{name})) ? 1 : 0;
+ 	
+ 	return $said;
+ }
+@@ -368,6 +380,8 @@
+ 	}
+ 	HACKEND:
+ 	# END HACK
++
++	$kernel->delay_add(comfuck=>50);
+ 	
+ 	# May be an array ref.
+ 	for( ref $channels ? @$channels : $channels ) {
+Index: lib/Bot/BB3/Roles/Web.pm
+===================================================================
+--- lib/Bot/BB3/Roles/Web.pm	(revision 460)
++++ lib/Bot/BB3/Roles/Web.pm	(working copy)
+@@ -28,6 +28,8 @@
+ 	my( $self, $kernel ) = @_[OBJECT,KERNEL];
+ 	my $conf = $self->{conf};
+ 
++	warn '$conf{http}' . $conf->{http_plugin_port};
++
+ 	# Create it here so it acts as a child
+ 	$self->{server} = POE::Component::Server::SimpleHTTP->new(
+ 		PORT => $conf->{http_plugin_port},
+Index: lib/Bot/BB3/Roles/Console.pm
+===================================================================
+--- lib/Bot/BB3/Roles/Console.pm	(revision 460)
++++ lib/Bot/BB3/Roles/Console.pm	(working copy)
+@@ -37,7 +37,7 @@
+ 
+ 	$self->{socket_factory} = POE::Wheel::SocketFactory->new(
+ 		BindAddress => "127.0.0.1",
+-		BindPort => '14401',
++		BindPort => $self->{conf}->{roles}->{console}->{port} || 10041,
+ 		SuccessEvent => 'socket_new',
+ 		FailureEvent => 'factory_fail',
+ 		Reuse => 'on',
+Index: lib/Bot/BB3/PluginManager.pm
+===================================================================
+--- lib/Bot/BB3/PluginManager.pm	(revision 460)
++++ lib/Bot/BB3/PluginManager.pm	(working copy)
+@@ -307,7 +307,7 @@
+ 			warn "Got some output: [$results]\n";
+ 
+ 			if( $results !~ /\S/ and $said->{addressed} ) {
+-				$results = "Couldn't match input.";
++				#$results = "Couldn't match input.";
+ 			}
+ 
+ 			#----
+Index: etc/plugins.conf
+===================================================================
+--- etc/plugins.conf	(revision 460)
++++ etc/plugins.conf	(working copy)
+@@ -16,33 +16,33 @@
+ 
+ server "*" {
+ 	channel "#perl" {
+-		plugin "eval" { addressed: false }
+-		plugin "deparse" { addressed: false }
+-		plugin "really_deparse" { addressed: false }
+-		plugin "pastebin" { addressed: false }
++		plugin "eval" { addressed: true }
++		plugin "deparse" { addressed: true }
++		plugin "really_deparse" { addressed: true }
++		plugin "pastebin" { addressed: true }
+ 	}
+ 	channel "#perl.no" {
+-		plugin "eval" { addressed: false }
+-		plugin "deparse" { addressed: false }
++		plugin "eval" { addressed: true }
++		plugin "deparse" { addressed: true }
+ 	}
+ 	channel "#poe" {
+-		plugin "eval" { addressed: false }
++		plugin "eval" { addressed: true }
+ 	}
+ 	channel "#perlcafe" {
+-		plugin "eval" { addressed: false }
++		plugin "eval" { addressed: true }
+ 	}
+ 	channel "#perlhelp" {
+-		plugin "eval" { addressed: false }
++		plugin "eval" { addressed: true }
+ 	}
+ 	channel "##javascript" {
+-		plugin "eval" { addressed: false }
+-		plugin "pastebin" { addressed: false }
++		plugin "eval" { addressed: true }
++		plugin "pastebin" { addressed: true }
+ 	}
+ 	channel "##cinema" {
+-		plugin "rt" { addressed: false }
++		plugin "rt" { addressed: true }
+ 	}
+ 	channel "#regex" {
+-		plugin "eval" { addressed: false }
++		plugin "eval" { addressed: true }
+ 	}
+ 	channel "#buubot" {
+ 		plugin "*" { addressed: false }
+@@ -52,19 +52,19 @@
+ 		plugin "its" { addressed: true }
+ 	}
+ 	channel "#cgi" {
+-		plugin "eval" { addressed: false; }
++		plugin "eval" { addressed: true; }
+ 	}
+ 	channel "##agu10" {
+-		plugin "jseval" { addressed: false; }
++		plugin "jseval" { addressed: true; }
+ 	}
+ 	channel "##ort" {
+-		plugin "jseval" { addressed: false; }
++		plugin "jseval" { addressed: true; }
+ 	}
+ 	channel "#mandoojs" {
+-		plugin "jseval" { addressed: false; }
++		plugin "jseval" { addressed: true; }
+ 	}
+ 	channel "#mandoojs-br" {
+-		plugin "jseval" { addressed: false; }
++		plugin "jseval" { addressed: true; }
+ 	}
+ 	channel "*" {
+ 		plugin "karma_modify" { addressed: false; }
+Index: etc/bb3.conf
+===================================================================
+--- etc/bb3.conf	(revision 460)
++++ etc/bb3.conf	(working copy)
+@@ -3,13 +3,25 @@
+ 	quotes_dir /home/buu/p/bb2/trunk/quotes
+ </be>
+ 
++http_plugin_port 1092
++
+ <Roles>
+ 	<socketmessageirc>
+-		enabled yes
+-		port 10090
++		enabled no
++		port 10091
+ 	</socketmessageirc>
+ 
++	<console>
++		enabled no
++		port 10092
++	</console>
++
++	<web>
++		enabled no
++	</web>
++
+ 	<pastebot>
++		enabled no
+ 		hostname erxz.com:10081
+ 		alias_url = http://erxz.com/bb3pb
+ 	</pastebot>
+@@ -20,28 +32,11 @@
+ 	default_plugin factoids
+ </plugin_manager>
+ 
+-<bot buubot>
++<bot perlbuut>
+ 	channel \#buubot
+-	channel \#\#cinema
+ 	channel \#\#turtles
+ 	channel \#perlcafe
+-	channel \#lispcafe
+-	channel \#cpan
+-	channel \#perl
+-	channel \#perlbot
+-	channel \#perl6
+-	channel \#cgi
+-	channel \#javascript
+-	channel \#ruby-lang
+-	channel \#perl.br
+-	channel \#regex
+-	channel \#kwiki
+-	channel \#\#agu10
+-	channel \#\#ort
+-	channel \#mandoojs-br
+-	channel \#mandoojs
+-	channel \#perl-cats
+-	channel \#openldap-devel
++	channel 
+ 
+ 	ignore buubot
+ 	ignore avarbot
+@@ -53,54 +48,19 @@
+ 	ignore serfbot
+ 	ignore farnsworth
+ 	ignore frogbot
++	ignore EvanCarroll
++	ignore EvanCarrol
++	ignore EvanCaroll
++	ignore EvanCarol
++	ignore EC
+ 
+ 	server irc.freenode.org
+-	root_mask buu@erxz.com
++	root_mask n=simcop23@p3m/member/simcop2387
+ </bot>
+ 
+-<bot buubot>
+-	channel \#perl 
+-	channel \#buubot 
+-	channel \#poe 
+-	channel \#yapc 
+-	channel \#catalyst 
+-	channel \#perl-help
+-	channel \#perlde
+-	channel \#perl6de
+-	channel \#bots
+-	channel \#corehackers
+-
+-	ignore gumbynet
+-	ignore purl
+-	ignore gumbybrain
+-
++<bot perlbuut>
++	channel \#freenode-perl-cabal
++	
+ 	server irc.perl.org
+-	root_mask buu@buu.mtfnpy
++	root_mask ~simcop238@c-69-180-45-54.hsd1.ga.comcast.net
+ </bot>
+-
+-<bot buubot>
+-	channel \#perl
+-	channel \#buubot
+-	server irc.quakenet.org
+-	root_mask buu@erxz.com
+-</bot>
+-
+-<bot buubot>
+-	channel \#perl
+-	channel \#perlhelp
+-	channel \#buubot
+-	channel \#regex
+-	channel \#irssi
+-	channel \#perl.no
+-
+-	server irc.choopa.net
+-	root_mask buu@erxz.com
+-</bot>
+-
+-<bot buubot>
+-	channel \#perl
+-	channel \#buubot
+-
+-	server irc.oftc.net
+-	root_mask buu@erxz.com
+-</bot>
