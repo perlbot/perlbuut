@@ -10,7 +10,7 @@ while( 1 ) {
 	print "Code: ";
 	my $code = <STDIN>;
 
-	my $socket = IO::Socket::INET->new(  PeerAddr => '127.0.0.1', PeerPort => '14400' );
+	my $socket = IO::Socket::INET->new(  PeerAddr => 'simcop2387.info', PeerPort => '14400' );
 	my $refs = $filter->put( [ { code => "$code" } ] );
 
 	print $socket $refs->[0];
