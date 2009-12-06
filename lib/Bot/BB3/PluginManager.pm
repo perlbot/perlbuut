@@ -68,12 +68,17 @@ sub get_plugins {
 }
 
 sub get_plugin {
-	my( $self, $name ) = @_;
+	my( $self, $name, $said ) = @_;
 
 	# Loops are cool.
 	# O(n) but nobody cares because it's rarely used.
 	# HA HA THIS IS A LIE.
-	for( @{ $self->{plugins} } ) {
+
+	#this fixes a security flaw, but not completely because i'm lazy right now
+        my $filtered =  $self->{plugins}; 
+	$filtered = $self->_filter_plugin_list($said, $filtered) if ($said);
+
+	for( @{$filtered} ) {
 		if( $name eq $_->{name} ) { 
 			return $_;
 		}

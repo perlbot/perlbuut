@@ -456,7 +456,7 @@ sub basic_get_fact {
 
 	if( $fact->{predicate} =~ /\S/ ) {
 		if( $fact->{compose_macro} ) {
-			my $plugin = $pm->get_plugin("compose");
+			my $plugin = $pm->get_plugin("compose", $said);
 			
 			local $said->{macro_arg} = $arg;
 			local $said->{body} = $fact->{predicate};

@@ -89,7 +89,7 @@ sub runplugin {
 		return( 0, "Error, cannot parse call to find command name, probably empty call in compose" );
 	defined($body) or $body = "";
 	
-	my $plugin = $pm->get_plugin( $cmd )
+	my $plugin = $pm->get_plugin( $cmd, $said )
 		or return( 0, "Compose failed to find a plugin named: $cmd" );
 
 	local $said->{body} = $body;

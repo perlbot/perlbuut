@@ -6,7 +6,7 @@ sub {
 	my $plugin_name = $said->{recommended_args}->[0];
 
 	if( length $plugin_name ) {
-		my $plugin = $pm->get_plugin( $plugin_name );
+		my $plugin = $pm->get_plugin( $plugin_name, $said );
 
 		if( $plugin ) {
 			print $plugin->{help_text};
