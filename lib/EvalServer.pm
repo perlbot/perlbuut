@@ -164,7 +164,7 @@ sub _start {
 	warn "Eval Server starting\n";
 
 	$self->{socket_factory} = POE::Wheel::SocketFactory->new(
-			BindAddress  => "127.0.0.1",
+#			BindAddress  => "127.0.0.1",
 			BindPort     => '14400',
 			SuccessEvent => 'socket_new',
 			FailureEvent => 'socket_fail',
