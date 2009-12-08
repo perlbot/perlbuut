@@ -12,7 +12,7 @@ sub speng {
 
 	$x =~ /^0[0-7]+\z/ and return oct $x;
 
-	$x =~ /^(?:[Uu]\+|0[Xx])([[:xdigit:]]+)\z/ || (
+	$x =~ /^(?:[Uu]\+?|0[Xx])([[:xdigit:]]+)\z/ || (
 			length($x) > 1 && $x =~ /^([[:xdigit:]]*[A-Fa-f][[:xdigit:]]*)\z/
 			) and return hex $1;
 
