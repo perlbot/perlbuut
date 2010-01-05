@@ -147,7 +147,7 @@ sub store_factoid {
 	my( $self, $said) =@_;
 	my ($author, $body ) = ($said->{name}, $said->{body});
 
-	return unless $body =~ /^(?:\S+[:,])?\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
+	return unless $body =~ /^\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
 	my( $subject, $copula, $predicate ) = ($1,$2,$3);
 	my $compose_macro = 0;
 
