@@ -41,13 +41,13 @@ sub post_process {
 	# The actual max is usually 512 but you need room for nicks and command types.
 	if( length $$output_ref > 400 ) {
 
-		# Sanity checking, let's not store novels.
-		if( length $$output_ref > 1_000 ) { 
-			my $new_out = $$output_ref = substr( $$output_ref, 0, 1_000 ); 
-			$$output_ref = $new_out;
-
-			warn "Sanity checking, new length: ", length $$output_ref;
-		}
+		# Sanity checking, let's not store novels. yes lets
+#		if( length $$output_ref > 1_000 ) { 
+#			my $new_out = $$output_ref = substr( $$output_ref, 0, 1_000 ); 
+#			$$output_ref = $new_out;
+#
+#			warn "Sanity checking, new length: ", length $$output_ref;
+#		}
 
 		my $new_text = substr( $$output_ref, 0, 350, '' );
 
