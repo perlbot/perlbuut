@@ -361,7 +361,7 @@ sub get_fact_search {
 		my $ret_string;
 		for( @$results ) {
 			#i want a better string here, i'll probably go with just the subject, XXX TODO
-			$ret_string .= "[" . _fact_literal_format($_) . "] " if ($_->{predicate} =~ /^\s*$/);
+			$ret_string .= "[" . _fact_literal_format($_) . "] " if ($_->{predicate} !~ /^\s*$/);
 		}
 
 		return $ret_string;
