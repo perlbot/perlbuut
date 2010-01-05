@@ -147,7 +147,7 @@ sub store_factoid {
 	my( $self, $said) =@_;
 	my ($author, $body ) = ($said->{name}, $said->{body});
 
-	return unless $body =~ /^(?:\S+[:,])?\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
+	return unless $body =~ /^\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
 	my( $subject, $copula, $predicate ) = ($1,$2,$3);
 	my $compose_macro = 0;
 
@@ -345,6 +345,9 @@ sub get_fact_learn {
 sub get_fact_search {
 	my( $self, $body, $name ) = @_;
 
+	$body =~ s/^\s*for\s*//; #remove the for from searches
+
+	#XXX: need to also search contents of factoids TODO
 	my $results = $self->dbh->selectall_arrayref(
 		"SELECT subject,copula,predicate 
 		FROM factoid
@@ -357,6 +360,7 @@ sub get_fact_search {
 	if( $results and @$results ) {
 		my $ret_string;
 		for( @$results ) {
+			#i want a better string here, i'll probably go with just the subject, XXX TODO
 			$ret_string .= "[" . _fact_literal_format($_) . "] ";
 		}
 
@@ -432,7 +436,6 @@ sub _db_get_fact {
 	
 	return $fact;
 }
-
 
 sub basic_get_fact {
 	my( $self, $pm, $said, $subject, $name, $call_only ) = @_;
