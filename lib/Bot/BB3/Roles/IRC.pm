@@ -289,19 +289,10 @@ sub _said {
 	}
 
 	#--------------------------
-        # Check for forwarded message
-        #--------------------------
-	$said->{body} = $said->{body_raw};
-
-        if ($said->{body} =~ s/\s*>\s*\b([^>]+)\s*$//)
-        {
-           #we have a forwarded message
-           $said->{forwarding} = $1;
-        }
-
-	#--------------------------
 	# Check for our own name
 	#--------------------------
+	$said->{body} = $said->{body_raw};
+
 	if( $said->{my_name} ) { #TODO verify that we need this if check.
 		my $body = $said->{body_raw};
 
@@ -320,6 +311,17 @@ sub _said {
                         $said->{addressed_as} = $1;
                 }
 	}
+
+	#--------------------------
+        # Check for forwarded message
+        #--------------------------
+
+        if ($said->{addressed} && $said->{body} =~ s/\s*>\s*\b([^\s>]+)\s*$//)
+        {
+           #we have a forwarded message
+           $said->{forwarding} = $1;
+        }
+
 	#--------------------------
 
 	#--------------------------
@@ -515,6 +517,11 @@ sub channel_list {
 sub plugin_output {
 	my( $self, $said, $text ) = @_[OBJECT,ARG0,ARG1];
 
+	utf8::decode( $text );
+
+	return unless $text =~ /\S/;
+	$text =~ s/\0/\\0/g; # Replace nulls to prevent them truncating strings we attempt to output.
+
         #this forwards messages to priv_msg for users
         if (exists($said->{forwarding}) && defined($said->{forwarding}) && ($said->{forwarding} =~ /\S/))
         {
@@ -529,11 +536,6 @@ sub plugin_output {
 	   $_[KERNEL]->yield(plugin_output => $said, "Told ".$copy->{name}." about ".$text);
            return;
         }
-
-	utf8::decode( $text );
-
-	return unless $text =~ /\S/;
-	$text =~ s/\0/\\0/g; # Replace nulls to prevent them truncating strings we attempt to output.
 
 	my $pci = $self->get_component( $said->{pci_id} );
 
