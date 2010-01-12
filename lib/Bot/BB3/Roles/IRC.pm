@@ -287,11 +287,21 @@ sub _said {
 
 		$said->{$_} = shift @user_info;
 	}
-	
+
+	#--------------------------
+        # Check for forwarded message
+        #--------------------------
+	$said->{body} = $said->{body_raw};
+
+        if ($said->{body} =~ s/\s*>\s*\b([^>]+)\s*$//)
+        {
+           #we have a forwarded message
+           $said->{forwarding} = $1;
+        }
+
 	#--------------------------
 	# Check for our own name
 	#--------------------------
-	$said->{body} = $said->{body_raw};
 	if( $said->{my_name} ) { #TODO verify that we need this if check.
 		my $body = $said->{body_raw};
 
@@ -504,6 +514,21 @@ sub channel_list {
 
 sub plugin_output {
 	my( $self, $said, $text ) = @_[OBJECT,ARG0,ARG1];
+
+        #this forwards messages to priv_msg for users
+        if (exists($said->{forwarding}) && defined($said->{forwarding}) && ($said->{forwarding} =~ /\S/))
+        {
+           my $copy = {%$said}; #make a shallow copy of $said
+           delete $copy->{forwarding};
+           $copy->{channel} = "*irc_msg";
+           $copy->{name} = $said->{forwarding};
+           my $newtext = $said->{name} . " wanted you to know: ". $text;
+           $_[KERNEL]->yield(plugin_output => $copy, $newtext);
+	   $said->{channel} = "*irc_msg";
+           delete $said->{forwarding};
+	   $_[KERNEL]->yield(plugin_output => $said, "Told ".$copy->{name}." about ".$text);
+           return;
+        }
 
 	utf8::decode( $text );
 
