@@ -303,6 +303,12 @@ sub _said {
 			$said->{addressed} = 1;
 			$said->{addressed_as} = $1;
 		}
+		elsif ($body =~ s/\s*\b($name_re)\s*$//)
+                {
+                        $said->{body} = $body;
+                        $said->{addressed} = 1;
+                        $said->{addressed_as} = $1;
+                }
 	}
 	#--------------------------
 
