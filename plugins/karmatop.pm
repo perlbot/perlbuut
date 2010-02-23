@@ -35,7 +35,7 @@ sub {
 
            while (my $row = $sth->fetchrow_arrayref())
            {
-              print $row->[0], ": ", $kars, "  ";
+              print $row->[0], ": ", $row->[1], "  ";
            }
         }
         else
