@@ -18,7 +18,7 @@ sub {
 		{ RaiseError => 1, PrintError => 0 }
 	);
 
-        if ($said->{body} =~ /\s*(\d+)(\s*karma)?/)
+        if ($said->{body} =~ /\s*(-?\d+)(\s*karma)?/)
         {
            my $count = $1;
            my $sth;
@@ -35,7 +35,10 @@ sub {
 
            while (my $row = $sth->fetchrow_arrayref())
            {
-              print $row->[0], ": ", $row->[1], "  ";
+              my $subject=$row->[0];
+              my $karma = $row->[1];
+
+              print "$subject: $karma ";
            }
         }
         else
@@ -45,4 +48,4 @@ sub {
 }
 
 __DATA__
-karmatop <number>; returns the top or bottom karma for a number of things.
+karmatop <number>; returns the top or bottom karma for a number of things.  to get bottom karma use negative numbers.
