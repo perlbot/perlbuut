@@ -24,11 +24,11 @@ sub {
            my $sth;
            if ($count > 0)
            {
-             $sth = $dbh->prepare("SELECT subject, kars FROM (SELECT subject, sum(operation) as kars FROM karma GROUP BY subject) AS karmsub ORDER BY kars ASC LIMIT ?");
+             $sth = $dbh->prepare("SELECT subject, kars FROM (SELECT subject, sum(operation) as kars FROM karma GROUP BY subject) AS karmsub ORDER BY kars DESC LIMIT ?");
            }
            else
            {
-             $sth = $dbh->prepare("SELECT subject, kars FROM (SELECT subject, sum(operation) as kars FROM karma GROUP BY subject) AS karmsub ORDER BY kars DESC LIMIT ?");
+             $sth = $dbh->prepare("SELECT subject, kars FROM (SELECT subject, sum(operation) as kars FROM karma GROUP BY subject) AS karmsub ORDER BY kars ASC LIMIT ?");
            }
 
            $sth->execute(abs $count);
