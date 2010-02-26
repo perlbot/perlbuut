@@ -7,6 +7,18 @@ use strict;
 
 use Data::Dumper;
 
+#############################
+# BIG WARNING ABOUT THE DATABASE IN HERE.
+#############################
+#
+# Despite the name 'original_subject' and 'subject' are logically reversed, e.g. 'original_subject' contains the cleaned up and filtered subject rather than the other way around.
+# This should be kept in mind when working on any and all of the code below
+#   --simcop2387 (previously also discovered by buu, but not documented or fixed).
+#
+# This might be fixed later but for now its easier to just "document" it. (boy doesn't this feel enterprisy!)
+#
+#############################
+
 my $COPULA = join '|', qw/is are was isn't were being am/, "to be", "will be", "has been", "have been", "shall be", "can has", "wus liek", "iz liek", "used to be";
 my $COPULA_RE = qr/\b(?:$COPULA)\b/i;
 
@@ -489,8 +501,9 @@ sub _soundex_matches {
 	my( $self, $soundex ) = @_;
 	my $dbh = $self->dbh;
 
+        #XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
 	my $rows = $dbh->selectall_arrayref(
-		"SELECT factoid_id,subject,predicate FROM factoid WHERE soundex = ? GROUP BY subject LIMIT 10",
+                "SELECT * FROM (SELECT factoid_id,subject,predicate FROM factoid GROUP BY original_subject) as subquery WHERE NOT (predicate = ' ') AND soundex = ? LIMIT 10",
 		undef,
 		$soundex
 	);
