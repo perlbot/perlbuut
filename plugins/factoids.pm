@@ -503,7 +503,7 @@ sub _soundex_matches {
 
         #XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
 	my $rows = $dbh->selectall_arrayref(
-                "SELECT * FROM (SELECT factoid_id,subject,predicate FROM factoid GROUP BY original_subject) as subquery WHERE NOT (predicate = ' ') AND soundex = ? LIMIT 10",
+                "SELECT * FROM (SELECT factoid_id,subject,predicate FROM factoid WHERE soundex = ? GROUP BY original_subject) as subquery WHERE NOT (predicate = ' ') LIMIT 10",
 		undef,
 		$soundex
 	);
