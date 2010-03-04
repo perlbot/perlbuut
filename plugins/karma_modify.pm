@@ -54,7 +54,7 @@ sub handle {
 	my( $self, $said, $pm ) = @_;
 	my $body = $said->{body};
 
-	if( $body =~ /\(([^\)]+)\)(\+\+|--)/ or $body =~ /(\w+)(\+\+|--)/ ) {
+	if( $body =~ /\(([^\)]+)\)(\+\+|--)/ or $body =~ /([\w\[\]\\`_^{|}-]+)(\+\+|--)/ ) {
 		my( $subject, $op ) = ($1,$2);
 		if( $op eq '--' ) { $op = -1 } elsif( $op eq '++' ) { $op = 1 }
 		my $lirc = l_irc($subject) || lc $subject;
