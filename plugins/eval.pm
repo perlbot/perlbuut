@@ -50,7 +50,7 @@ sub command {
 	warn "Found $type: $code";
 
 	my $filter = POE::Filter::Reference->new();
-	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14400' )
+	my $socket = IO::Socket::INET->new(  PeerAddr => 'simcop2387.info', PeerPort => '14400' )
 		or die "error: cannot connect to eval server";
 	my $refs = $filter->put( [ { code => "$type $code" } ] );
 
