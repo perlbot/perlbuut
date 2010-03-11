@@ -2,6 +2,8 @@ use POE::Component::IRC::Common qw/l_irc/;
 use DBI;
 use DBD::SQLite;
 
+no warnings 'void';
+
 sub {
 	my( $said, $pm ) = @_;
 	my $body = $said->{body};
@@ -43,9 +45,9 @@ sub {
         }
         else
         {
-           print "usage is: top/bottom \d+ karma";
+           print "usage is: top/bottom \\d+ karma";
         }
-}
+};
 
 __DATA__
 karmatop <number>; returns the top or bottom karma for a number of things.  to get bottom karma use negative numbers.

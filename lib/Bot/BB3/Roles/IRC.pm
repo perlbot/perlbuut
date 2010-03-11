@@ -339,7 +339,7 @@ sub _said {
 }
 
 sub irc_public {
-	my( $self ) = @_[OBJECT];
+	my $self  = $_[OBJECT];
 	my $said = _said( @_ );
 
 	if( $self->is_ignored( $said ) ) {
@@ -354,7 +354,7 @@ sub irc_public {
 }
 
 sub irc_msg {
-	my( $self ) = @_[OBJECT];
+	my $self = $_[OBJECT];
 	my $said = _said( @_ );
 
 	return if $self->is_ignored( $said );
@@ -363,13 +363,13 @@ sub irc_msg {
 }
 
 sub irc_ctcp_action {
-	my( $self ) = @_[OBJECT];
+	my $self = $_[OBJECT];
 	my $said = _said( @_ );
 }
 
 
 sub irc_join {
-	my( $self ) = @_[OBJECT];
+	my $self = $_[OBJECT];
 }
 
 sub irc_invite {

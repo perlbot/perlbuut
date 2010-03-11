@@ -1,5 +1,5 @@
 use WWW::Mechanize;
-
+no warnings 'void';
 sub {
 	my( $said ) = @_;
 

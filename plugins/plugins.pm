@@ -17,7 +17,7 @@ sub command {
 	return( "handled", $output );
 }
 
-"Bot::BB3::Plugin::Plugins";
+1#"Bot::BB3::Plugin::Plugins";
 
 __DATA__
 Returns a list of all of the loaded plugins for this bot. Syntax, plugins

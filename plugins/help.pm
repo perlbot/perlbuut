@@ -1,5 +1,7 @@
 use strict;
 
+no warnings 'void';
+
 sub {
 	my( $said, $pm ) = @_;
 
@@ -18,7 +20,7 @@ sub {
 	else {
 		print "Provides help text for a specific command. Try 'help echo'. See also the command 'plugins' to list all of the currently loaded plugins.";
 	}
-}
+};
 
 __DATA__
 Attempts to find the help for a plugin. Syntax help PLUGIN. 

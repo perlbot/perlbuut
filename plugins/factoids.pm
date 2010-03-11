@@ -352,7 +352,10 @@ sub get_fact_learn {
 
 	return "Stored $subject as $predicate";
 }
+
+{no warnings 'once'; #keep perl from complaining about this only being used once
 *get_fact_relearn = \&get_fact_learn; #Alias..
+}
 
 sub get_fact_search {
 	my( $self, $body, $name ) = @_;
@@ -453,8 +456,8 @@ sub basic_get_fact {
 	my( $self, $pm, $said, $subject, $name, $call_only ) = @_;
 
 	my ($fact, $key, $arg);
-	my $key = _clean_subject($subject);
-	my $fact;
+	$key = _clean_subject($subject);
+
 	if( !$call_only ) {
 		$fact = $self->_db_get_fact($key, $name);
 	}
@@ -512,6 +515,6 @@ sub _soundex_matches {
 }
 
 
-"Bot::BB3::Plugin::Factoids";
+1 #"Bot::BB3::Plugin::Factoids";
 __DATA__
 Learn or retrieve persistent factoids. "foo is bar" to store. "foo" to retrieve. try "forget foo" or "revisions foo" or "literal foo" or "revert $REV_ID" too. "macro foo is [echo bar]" or "func foo is [echo bar [arg]]" for compose macro factoids. The factoids/fact/call keyword is optional except in compose. Search <subject> to search for factoids that match.

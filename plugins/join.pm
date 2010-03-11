@@ -1,3 +1,4 @@
+no warnings 'void';
 sub {
 	my( $said, $pm ) = @_;
 
@@ -7,7 +8,7 @@ sub {
 		[ 'pci_join', @channels ];
 
 	print "Joining @{ $said->{recommended_args} }";
-}
+};
 
 __DATA__
 Attempts to join a list of channels. Syntax join #foo #bar #baz. Typically requires op or superuser.

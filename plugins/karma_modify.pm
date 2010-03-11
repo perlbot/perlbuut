@@ -71,4 +71,4 @@ sub handle {
 	return;
 }
 
-"Bot::BB3::Plugin::Karma_Modify";
+1 #"Bot::BB3::Plugin::Karma_Modify";

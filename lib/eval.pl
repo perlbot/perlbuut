@@ -42,7 +42,9 @@ require 'bytes_heavy.pl';
 
 use Tie::Hash::NamedCapture;
 
+ {no warnings 'constant';
  uc "\x{666}"; #Attempt to load unicode libraries.
+ }
  binmode STDOUT, ":utf8"; # Enable utf8 output.
 
 BEGIN{ eval "use PHP::Interpreter;"; }

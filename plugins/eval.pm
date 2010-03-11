@@ -72,7 +72,7 @@ sub command {
 	return( 'handled', $resultstr );
 }
 
-"Bot::BB3::Plugin::Eval";
+1 #"Bot::BB3::Plugin::Eval";
 
 __DATA__
 The eval plugin. Evaluates various different languages. Syntax, eval: code; also pleval deparse rbeval jseval pyeval phpeval k20eval luaeval jeval.

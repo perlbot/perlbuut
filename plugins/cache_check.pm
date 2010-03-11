@@ -34,4 +34,4 @@ sub command {
 
 }
 
-"Bot::BB3::Plugin::CacheCheck";
+1; #Bot::BB3::Plugin::CacheCheck

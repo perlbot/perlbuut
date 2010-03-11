@@ -1,6 +1,7 @@
 use XML::RSS::Parser;
 use strict;
 
+no warnings 'void';
 sub {
 	my( $said, $pm ) = @_;
 	my $feed_uri = $said->{recommended_args}->[0];
