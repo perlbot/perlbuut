@@ -366,8 +366,7 @@ sub get_fact_search {
 	my $results = $self->dbh->selectall_arrayref(
 		"SELECT subject,copula,predicate 
 		FROM (SELECT factoid_id,subject,predicate FROM factoid GROUP BY original_subject) as subquery
-		WHERE subject like ? OR predicate like ?
-		GROUP BY original_subject", # using a subquery so that i can do this properly
+		WHERE subject like ? OR predicate like ?", # using a subquery so that i can do this properly
 		{Slice => {}},
 		"%$body%", "%$body%",
 	);
@@ -514,7 +513,7 @@ sub _soundex_matches {
 	return [ map $_->[1], grep $_->[2] =~ /\S/, @$rows ];
 }
 
-
-1 #"Bot::BB3::Plugin::Factoids";
+no warnings 'void';
+"Bot::BB3::Plugin::Factoids";
 __DATA__
 Learn or retrieve persistent factoids. "foo is bar" to store. "foo" to retrieve. try "forget foo" or "revisions foo" or "literal foo" or "revert $REV_ID" too. "macro foo is [echo bar]" or "func foo is [echo bar [arg]]" for compose macro factoids. The factoids/fact/call keyword is optional except in compose. Search <subject> to search for factoids that match.

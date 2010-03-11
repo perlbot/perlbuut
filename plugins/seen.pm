@@ -87,7 +87,8 @@ sub handle {
 	return;
 }
 
-1#"Bot::BB3::Plugin::Seen";
+no warnings 'void';
+"Bot::BB3::Plugin::Seen";
 
 __DATA__
 The seen plugin. Attempts to keep track of every user the bot has 'seen'. Use the syntax, seen user; to ask the bot when it last saw the user named 'user'.

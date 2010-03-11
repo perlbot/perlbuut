@@ -8,6 +8,8 @@ use IO::Socket::INET;
 use Data::Dumper;
 use strict;
 
+no warnings 'void';
+
 sub new {
 	my( $class ) = @_;
 
@@ -72,7 +74,7 @@ sub command {
 	return( 'handled', $resultstr );
 }
 
-1 #"Bot::BB3::Plugin::Eval";
+"Bot::BB3::Plugin::Eval";
 
 __DATA__
 The eval plugin. Evaluates various different languages. Syntax, eval: code; also pleval deparse rbeval jseval pyeval phpeval k20eval luaeval jeval.

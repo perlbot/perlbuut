@@ -58,6 +58,7 @@ sub post_process {
 	}
 }
 
-1#"Bot::BB3::Plugin::More";
+no warnings 'void';
+"Bot::BB3::Plugin::More";
 __DATA__
 More acts as a pager. It automatically truncates output that is too long and saves it in a buffer based on your name. Use the command `more` to access the remainder of the text.

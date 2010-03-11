@@ -1,6 +1,6 @@
 package Bot::BB3::Plugin::Compose;
 use strict;
-
+no warnings 'void';
 sub new {
 	my( $class ) = @_;
 	my $self = bless {}, $class;
@@ -111,7 +111,7 @@ sub runplugin {
 }
 
 
-1 #"Bot::BB3::Plugin::Compose";
+"Bot::BB3::Plugin::Compose";
 
 __DATA__
 Supports composing multiple plugins together. That is, it allows you to feed the output of one plugin to another plugin. Syntax compose (eval (echo 2+2)). Note that it uses the first non whitespace character as the start-delimiter and the last non-whitespace as the end delimter.

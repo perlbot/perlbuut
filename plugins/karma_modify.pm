@@ -70,5 +70,5 @@ sub handle {
 
 	return;
 }
-
-1 #"Bot::BB3::Plugin::Karma_Modify";
+no warnings 'void';
+"Bot::BB3::Plugin::Karma_Modify";
