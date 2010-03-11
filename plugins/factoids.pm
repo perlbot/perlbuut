@@ -365,11 +365,11 @@ sub get_fact_search {
 	#XXX: need to also search contents of factoids TODO
 	my $results = $self->dbh->selectall_arrayref(
 		"SELECT subject,copula,predicate 
-		FROM factoid
-		WHERE subject like ?
-		GROUP BY subject", # Group by magically returns the right row first. I dunno.
+		FROM (SELECT factoid_id,subject,predicate FROM factoid GROUP BY original_subject) as subquery
+		WHERE subject like ? OR predicate like ?
+		GROUP BY original_subject", # using a subquery so that i can do this properly
 		{Slice => {}},
-		"%$body%",
+		"%$body%", "%$body%",
 	);
 
 	if( $results and @$results ) {
