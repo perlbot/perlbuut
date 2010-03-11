@@ -365,7 +365,7 @@ sub get_fact_search {
 	#XXX: need to also search contents of factoids TODO
 	my $results = $self->dbh->selectall_arrayref(
 		"SELECT subject,copula,predicate 
-		FROM (SELECT factoid_id,subject,predicate FROM factoid GROUP BY original_subject) as subquery
+		FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
 		WHERE subject like ? OR predicate like ?", # using a subquery so that i can do this properly
 		{Slice => {}},
 		"%$body%", "%$body%",
