@@ -362,15 +362,32 @@ sub get_fact_search {
 
 	$body =~ s/^\s*for\s*//; #remove the for from searches
 
-	#XXX: need to also search contents of factoids TODO
-	my $results = $self->dbh->selectall_arrayref(
-		"SELECT subject,copula,predicate 
-		FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
-		WHERE subject like ? OR predicate like ?", # using a subquery so that i can do this properly
-		{Slice => {}},
-		"%$body%", "%$body%",
-	);
+    my $results;
 
+    if ($body =~ m|^\s*m?/(.*)/\s*$|) 
+    {
+    	my $search = $1;
+		#XXX: need to also search contents of factoids TODO
+		$results = $self->dbh->selectall_arrayref(
+			"SELECT subject,copula,predicate 
+			FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
+			WHERE subject regexp ? OR predicate regexp ?", # using a subquery so that i can do this properly
+			{Slice => {}},
+			$search, $search,
+		);
+    }
+    else
+    {
+		#XXX: need to also search contents of factoids TODO
+		$results = $self->dbh->selectall_arrayref(
+			"SELECT subject,copula,predicate 
+			FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
+			WHERE subject like ? OR predicate like ?", # using a subquery so that i can do this properly
+			{Slice => {}},
+			"%$body%", "%$body%",
+		);
+    }
+    
 	if( $results and @$results ) {
 		my $ret_string;
 		for( @$results ) {
@@ -383,6 +400,8 @@ sub get_fact_search {
 	else {
 		return "No matches."
 	}
+    
+    
 }
 
 sub get_fact {
