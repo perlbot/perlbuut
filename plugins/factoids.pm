@@ -348,7 +348,7 @@ sub _fact_substitute
 			pos $pred = $matchstart+length($realsubst); #set the new position, might have an off by one?
 		}
 		
-		return "$pred";
+		return "G:$regex:$flags:$match:$subst:".$pred;
 	}
 	else
 	{
@@ -361,13 +361,9 @@ sub _fact_substitute
 			$realsubst =~ s/\$(\d+)/$caps[$1-1]/eg;
 			
 			$pred =~ s/$regex/$realsubst/;
-			
-			return $pred;
 		}
-		else
-		{
-			return "O:$regex:$flags:$match:$subst:".$pred;
-		}		
+
+		return "O:$regex:$flags:$match:$subst:".$pred;		
 	}
 }
 
