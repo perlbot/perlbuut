@@ -4,7 +4,7 @@ no warnings 'void';
 
 sub {
 	my( $said, $pm ) = @_;
-	my $gi = Geo::IP->open("/home/simcop2387/geoip/GeoLiteCite.dat", GEOIP_STANDARD);
+	my $gi = Geo::IP->open("/home/simcop2387/geoip/GeoLiteCity.dat", GEOIP_STANDARD);
 
 	print "Record for $said->{body}: ";
 
