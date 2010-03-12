@@ -454,11 +454,11 @@ sub _db_get_protect {
 
 
 sub _db_get_fact {
-	my( $self, $subj, $name ) = @_;
+	my( $self, $subj, $name, $func ) = @_;
 	
 	my $dbh = $self->dbh;
 	my $fact = $dbh->selectrow_hashref( "
-			SELECT factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected
+			SELECT factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject
 			FROM factoid 
 			WHERE original_subject = ?
 			ORDER BY factoid_id DESC
@@ -467,7 +467,15 @@ sub _db_get_fact {
 		$subj, 
 	);
 	
-	return $fact;
+	if ($func && (!$fact->{compose_macro}))
+	{
+		return undef;
+	}
+	else
+	{
+		return $fact;
+	}
+
 }
 
 sub basic_get_fact {
