@@ -324,10 +324,41 @@ sub get_fact_literal {
 	return _fact_literal_format($fact);
 }
 
+sub _fact_substitute_global
+{
+}
+
+sub _fact_substitute
+{
+	my ($self, $pred, $match, $subst, $flags) = @_;
+	
+	if ($flags =~ /g/)
+	{
+		return "Global replacements not coded yet"
+	}
+	else
+	{
+		my $regex = $flags=~/i/ ? qr/$match/i : qr/$match/;
+		
+		if ($pred =~ m/$regex/)
+		{
+			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
+			my $realsubst = $subst;
+			$realsubst =~ s/$(\d+)/$caps[$1]/eg;
+			
+			$pred =~ s/$match/$realsubst/;
+		}
+		else
+		{
+			return $pred;
+		}		
+	}
+}
+
 sub get_fact_substitute {
 	my( $self, $subject, $name, $said ) = @_;
 
-	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([a-z]*)\s*$|i)
+	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)\s*$|i)
 	{
 		my ($subject, $match, $subst, $flags) = ($1, $2, $3);
 		
@@ -338,8 +369,12 @@ sub get_fact_substitute {
 			if ($match !~ /(?:\(\?\??\{)/)
 			{ #ok, match has checked out to be "safe", this will likely be extended later
 				my $pred = $fact->{predicate};
-				$pred =~ s/$match/$subst/; #XXX: i need to use flags here too!
-				return "Change WOULD have been: [$pred]";
+				my $result;
+
+				#moving this to its own function for cleanliness				
+				$result = $self->_fact_substitute($pred, $match, $subst, $flags);
+				
+				return "Result was, [$result]";				
 			}
 			else
 			{
