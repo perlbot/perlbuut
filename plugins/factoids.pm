@@ -344,7 +344,7 @@ sub _fact_substitute
 		{
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
 			my $realsubst = $subst;
-			$realsubst =~ s/$(\d+)/$caps[$1]/eg;
+			$realsubst =~ s/\$(\d+)/$caps[$1]/eg;
 			
 			$pred =~ s/$match/$realsubst/;
 			
