@@ -342,7 +342,7 @@ sub _fact_substitute
 			my ($matchstart, $matchend) = ($-[0], $+[0]);
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
 			my $realsubst = $subst;
-			$realsubst =~ s/\$(\d+)/$caps[$1-1]/eg;
+			$realsubst =~ s/(?<!\\)\$(?:\{(\d+)\}|(\d+))/$caps[$1-1]/eg;
 			
 			substr $pred, $matchstart, $matchend-$matchstart, $realsubst;
 			pos $pred = $matchstart+length($realsubst); #set the new position, might have an off by one?
@@ -358,7 +358,7 @@ sub _fact_substitute
 		{
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
 			my $realsubst = $subst;
-			$realsubst =~ s/\$(\d+)/$caps[$1-1]/eg;
+			$realsubst =~ s/(?<!\\)\$(?:\{(\d+)\}|(\d+))/$caps[$1-1]/eg;
 			
 			$pred =~ s/$regex/$realsubst/;
 		}
