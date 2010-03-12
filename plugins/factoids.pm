@@ -352,7 +352,7 @@ sub _fact_substitute
 		}
 		else
 		{
-			return $pred;
+			return "O:".$pred;
 		}		
 	}
 }
