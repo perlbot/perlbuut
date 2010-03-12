@@ -362,7 +362,7 @@ sub get_fact_substitute {
 
 	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)\s*$|i)
 	{
-		my ($subject, $match, $subst, $flags) = ($1, $2, $3);
+		my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
 		
 		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
 		
