@@ -24,7 +24,7 @@ my $COPULA_RE = qr/\b(?:$COPULA)\b/i;
 
 #this is a hash that gives all the commands their names and functions, added to avoid some symbol table funkery that happened originally.
 my %commandhash = (
-	""          => \&get_fact,
+#	""          => \&get_fact, #don't ever add the default like this, it'll cause issues! i plan on changing that!
 	"forget"    => \&get_fact_forget,
 	"learn"     => \&get_fact_learn,
 	"relearn"   => \&get_fact_learn,
