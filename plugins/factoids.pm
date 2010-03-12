@@ -336,7 +336,7 @@ sub _fact_substitute
 	{
 		my $regex = $flags=~/i/ ? qr/(?i:$match)/i : qr/$match/;
 		
-		while ($pred =~ /\G$regex/g)
+		while ($pred =~ /$regex/g)
 		{
 			my $matchedstring = substr($pred, $-[0], $+[0] - $-[0]);
 			my ($matchstart, $matchend) = ($-[0], $+[0]);
