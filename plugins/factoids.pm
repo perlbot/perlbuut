@@ -338,15 +338,16 @@ sub _fact_substitute
 	}
 	else
 	{
-		#my $regex = $flags=~/i/ ? qr/(?i)$match/ : qr/$match/;
+		my $regex = $flags=~/i/ ? qr/$match/i : qr/$match/;
 		
-		if (($flags =~/i/ && ($pred =~ m/$match/i)) || ($pred =~ m/$match/))
+		if ($pred =~ /$regex/)
 		{
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
 			my $realsubst = $subst;
 			$realsubst =~ s/\$(\d+)/$caps[$1-1]/eg;
 			
-			$pred =~ s/$match/$realsubst/;
+			$pred =~ s/$match/$realsubst/  unless $flags =~ /i/;
+			$pred =~ s/$match/$realsubst/i if     $flags =~ /i/;
 			
 			return $pred;
 		}
