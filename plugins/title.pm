@@ -17,10 +17,10 @@ sub {
 		return;
 	}
 
-	my $resp = $ua->get( $url );
+	my $resp = eval {$ua->get( $url )};
 
-	if( not $resp ) {
-		print "Couldn't fetch [$url] you failure";
+	if( not $resp || $@) {
+		print "Couldn't fetch [$url]. you fail [$@]";
 		return;
 	}
 
