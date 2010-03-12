@@ -309,6 +309,7 @@ sub _said {
                         $said->{body} = $body;
                         $said->{addressed} = 1;
                         $said->{addressed_as} = $1;
+                        $said->{backdressed} = 1;
                 }
 	}
 

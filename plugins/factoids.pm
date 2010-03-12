@@ -512,12 +512,12 @@ sub basic_get_fact {
 			return "$fact->{predicate}";
 		}
 	}
-	else { 
+	else {
 		my $soundex = soundex( _clean_subject($subject, 1) );
 
 		my $matches = $self->_soundex_matches( $soundex );
 		
-		if( $matches and @$matches ) {
+		if( ($matches and @$matches) && (!$said->{backdressed}) ) {
 			return "No factoid found. Did you mean one of these: " . join " ", map "[$_]", @$matches;
 		}
 		else {
