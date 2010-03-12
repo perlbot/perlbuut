@@ -338,9 +338,9 @@ sub _fact_substitute
 	}
 	else
 	{
-		my $regex = $flags=~/i/ ? qr/(?i)$match/ : qr/$match/;
+		#my $regex = $flags=~/i/ ? qr/(?i)$match/ : qr/$match/;
 		
-		if ($pred =~ m/$regex/)
+		if (($flags =~/i/ && ($pred =~ m/$match/i)) || ($pred =~ m/$match/))
 		{
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
 			my $realsubst = $subst;
