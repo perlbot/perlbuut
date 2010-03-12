@@ -338,7 +338,7 @@ sub _fact_substitute
 	}
 	else
 	{
-		my $regex = $flags=~/i/ ? qr/$match/i : qr/$match/;
+		my $regex = $flags=~/i/ ? qr/(?i)$match/ : qr/$match/;
 		
 		if ($pred =~ /$regex/)
 		{
