@@ -22,6 +22,21 @@ use Data::Dumper;
 my $COPULA = join '|', qw/is are was isn't were being am/, "to be", "will be", "has been", "have been", "shall be", "can has", "wus liek", "iz liek", "used to be";
 my $COPULA_RE = qr/\b(?:$COPULA)\b/i;
 
+#this is a hash that gives all the commands their names and functions, added to avoid some symbol table funkery that happened originally.
+my %commandhash = (
+	""          => \&get_fact,
+	"forget"    => \&get_fact_forget,
+	"learn"     => \&get_fact_learn,
+	"relearn"   => \&get_fact_learn,
+	"literal"   => \&get_fact_literal,
+	"protect"   => \&get_fact_protect,
+	"revert"    => \&get_fact_revert,
+	"revisions" => \&get_fact_revisions,
+	"search"    => \&get_fact_search,
+	"unprotect" => \&get_fact_unprotect,
+	);
+
+
 sub new {
 	my( $class ) = @_;
 
@@ -103,14 +118,14 @@ sub command {
 		return( 'handled', "Stored @ret" );
 	}
 	else {
-		my $commands_re = join '|', qw/search relearn learn forget revisions literal revert protect unprotect/;
-			$commands_re = qr/$commands_re/;
+		my $commands_re = join '|', keys %commandhash;
+		   $commands_re = qr/$commands_re/;
 
 		my $fact_string;
 
 		if( !$call_only && $subject =~ s/^\s*($commands_re)\s+// ) {
-			my( $cmd_name ) = "get_fact_$1";
-			$fact_string = $self->$cmd_name($subject, $said->{name}, $said);
+			#i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
+			$fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
 		}
 		else {
 			$fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
@@ -351,10 +366,6 @@ sub get_fact_learn {
 	$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 , $self->_db_get_protect($subject));
 
 	return "Stored $subject as $predicate";
-}
-
-{no warnings 'once'; #keep perl from complaining about this only being used once
-*get_fact_relearn = \&get_fact_learn; #Alias..
 }
 
 sub get_fact_search {
