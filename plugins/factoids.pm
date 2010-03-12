@@ -352,7 +352,7 @@ sub _fact_substitute
 		}
 		else
 		{
-			return "O:".$pred;
+			return "O:$regex:$flags:$match:$subst:".$pred;
 		}		
 	}
 }
