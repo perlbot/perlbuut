@@ -348,7 +348,7 @@ sub _fact_substitute
 			pos $pred = $matchstart+length($realsubst)-1; #set the new position, might have an off by one?
 		}
 		
-		return "G:$regex:$flags:$match:$subst:".$pred;
+		return $pred;
 	}
 	else
 	{
@@ -363,7 +363,7 @@ sub _fact_substitute
 			$pred =~ s/$regex/$realsubst/;
 		}
 
-		return "O:$regex:$flags:$match:$subst:".$pred;		
+		return $pred;		
 	}
 }
 
@@ -386,7 +386,7 @@ sub get_fact_substitute {
 				#moving this to its own function for cleanliness				
 				$result = $self->_fact_substitute($pred, $match, $subst, $flags);
 				
-				return "Result was, [$result]";				
+				return "Result was, [$result]";
 			}
 			else
 			{
