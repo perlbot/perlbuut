@@ -345,7 +345,7 @@ sub _fact_substitute
 			$realsubst =~ s/\$(\d+)/$caps[$1-1]/eg;
 			
 			substr $pred, $matchstart, $matchend-$matchstart, $realsubst;
-			pos $pred = $matchstart+length($realsubst)-1; #set the new position, might have an off by one?
+			pos $pred = $matchstart+length($realsubst); #set the new position, might have an off by one?
 		}
 		
 		return $pred;
