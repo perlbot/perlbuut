@@ -347,6 +347,8 @@ sub _fact_substitute
 			$realsubst =~ s/$(\d+)/$caps[$1]/eg;
 			
 			$pred =~ s/$match/$realsubst/;
+			
+			return $pred;
 		}
 		else
 		{
