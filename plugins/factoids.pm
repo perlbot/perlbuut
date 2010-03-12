@@ -29,11 +29,12 @@ my %commandhash = (
 	"learn"     => \&get_fact_learn,
 	"relearn"   => \&get_fact_learn,
 	"literal"   => \&get_fact_literal,
-	"protect"   => \&get_fact_protect,
 	"revert"    => \&get_fact_revert,
 	"revisions" => \&get_fact_revisions,
 	"search"    => \&get_fact_search,
+	"protect"   => \&get_fact_protect,
 	"unprotect" => \&get_fact_unprotect,
+	"substitute"=> \&get_fact_substitute,
 	);
 
 
@@ -91,7 +92,6 @@ sub postload {
 	                     # Basically we delete the dbh we cached so we don't fork
 											 # with one active
 }
-
 
 # This whole code is a mess.
 # Essentially we need to check if the user's text either matches a 
@@ -322,6 +322,35 @@ sub get_fact_literal {
 	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
 
 	return _fact_literal_format($fact);
+}
+
+sub get_fact_substitute {
+	my( $self, $subject, $name, $said ) = @_;
+
+	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([a-z]*)\s*$|i)
+	{
+		my ($subject, $match, $subst, $flags) = ($1, $2, $3);
+		
+		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
+		
+		if ($fact && $fact->{predicate} =~ /\S/)
+		{ #we've got a fact to operate on
+			if ($match !~ /(?:\(\?\??\{)/)
+			{ #ok, match has checked out to be "safe", this will likely be extended later
+				my $pred = $fact->{predicate};
+				$pred =~ s/$match/$subst/; #XXX: i need to use flags here too!
+				return "Change WOULD have been: [$pred]";
+			}
+			else
+			{
+				return "Can't use dangerous things in a regex, you naughty user you";
+			}
+		}
+		else
+		{
+			return "Can't substitute on unknown factoid [$subject]";
+		}
+	}
 }
 
 sub get_fact_revert {
