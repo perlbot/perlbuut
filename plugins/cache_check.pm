@@ -1,6 +1,6 @@
 package Bot::BB3::Plugin::CacheCheck;
 use strict;
-
+no warnings 'void';
 sub new {
 	my( $class ) = @_;
 
@@ -34,4 +34,4 @@ sub command {
 
 }
 
-"Bot::BB3::Plugin::CacheCheck";
+"Bot::BB3::Plugin::CacheCheck"

@@ -1,6 +1,0 @@
-Revision history for Perl extension IMDB.
-
-0.01  Sun Jun  7 19:27:43 2009
-	- original version; created by h2xs 1.23 with options
-		-b 5.0.0 -X -n IMDB
-

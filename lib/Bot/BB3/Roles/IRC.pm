@@ -299,7 +299,7 @@ sub _said {
 		my $aliases = $self->get_aliases( $pci );
 		my $name_re = "(?:" . join( "|", map "(?:$_)", $said->{my_name}, @$aliases ) . ")"; 
 
-		if( $body =~ s/^\s*($name_re)\b\s*[;:,]\s*// ) {
+		if( $body =~ s/^\s*($name_re)\b\s*[;:, ]\s*// ) {
 			$said->{body} = $body;
 			$said->{addressed} = 1;
 			$said->{addressed_as} = $1;
@@ -339,7 +339,7 @@ sub _said {
 }
 
 sub irc_public {
-	my( $self ) = @_[OBJECT];
+	my $self  = $_[OBJECT];
 	my $said = _said( @_ );
 
 	if( $self->is_ignored( $said ) ) {
@@ -354,7 +354,7 @@ sub irc_public {
 }
 
 sub irc_msg {
-	my( $self ) = @_[OBJECT];
+	my $self = $_[OBJECT];
 	my $said = _said( @_ );
 
 	return if $self->is_ignored( $said );
@@ -363,13 +363,13 @@ sub irc_msg {
 }
 
 sub irc_ctcp_action {
-	my( $self ) = @_[OBJECT];
+	my $self = $_[OBJECT];
 	my $said = _said( @_ );
 }
 
 
 sub irc_join {
-	my( $self ) = @_[OBJECT];
+	my $self = $_[OBJECT];
 }
 
 sub irc_invite {

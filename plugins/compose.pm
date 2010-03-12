@@ -1,6 +1,6 @@
 package Bot::BB3::Plugin::Compose;
 use strict;
-
+no warnings 'void';
 sub new {
 	my( $class ) = @_;
 	my $self = bless {}, $class;

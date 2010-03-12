@@ -1,5 +1,6 @@
 use Bot::BB3::MacroQuote ();
 
+no warnings 'void';
 sub {
 	my( $said ) = @_;
 	

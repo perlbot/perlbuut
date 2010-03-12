@@ -100,7 +100,7 @@ sub _append_output {
 
 sub eval_read {
 	#my( $self, $cur_session, $kernel, $results, $id ) = @_[OBJECT,SESSION,KERNEL,ARG0,ARG1];
-	my( $self ) = @_[OBJECT];
+	my $self  = $_[OBJECT];
 
 	$self->_append_output( @_ );
 }

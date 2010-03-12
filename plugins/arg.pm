@@ -1,5 +1,5 @@
 use Bot::BB3::MacroQuote ();
-
+no warnings 'void';
 sub {
 	my( $said ) = @_;
 	
@@ -33,6 +33,7 @@ sub {
 	}
 	
 	print Bot::BB3::MacroQuote::quote($quotemode, $str);
-}
+};
+
 __DATA__
 Prints macro argument in a function macro factoid.  Takes optional quoting mode letter or signed number for word splitting; or '&n' or '&c' etc to access extra info.

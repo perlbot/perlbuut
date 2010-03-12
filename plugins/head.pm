@@ -1,5 +1,5 @@
 use LWP::UserAgent;
-
+no warnings 'void';
 sub {
 	my( $said ) = @_;
 
@@ -25,7 +25,7 @@ sub {
 	}
 
 	print "$url: " . $resp->code . ": " . $resp->message . ". " . $resp->header("server");
-}
+};
 
 __DATA__
 head http://url/; returns the response code and server type from a HEAD request for a particular url.

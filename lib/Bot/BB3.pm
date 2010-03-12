@@ -154,10 +154,12 @@ sub parse_main_conf {
 		exit 1;
 	}
 
-
-	my $conf = Bot::BB3::ConfigParser->parse_file( $conf_file )
+    my $conf;
+    {no warnings 'once'; #this keeps perl from bitching about something only used once
+	$conf = Bot::BB3::ConfigParser->parse_file( $conf_file )
 		or die "Failed to parse a conf file! $BB3::Conf::PARSE_ERROR\n";
-	
+    }
+    
 	unless( keys %$conf ) {
 		error "Failed to successfully read [$conf_file]!";
 		exit 1;

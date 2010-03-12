@@ -8,6 +8,8 @@ use IO::Socket::INET;
 use Data::Dumper;
 use strict;
 
+no warnings 'void';
+
 sub new {
 	my( $class ) = @_;
 

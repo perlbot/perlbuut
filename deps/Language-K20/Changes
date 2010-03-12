@@ -1,6 +1,0 @@
-Revision history for Perl extension Language::K20.
-
-0.01  Thu May 28 16:42:04 2009
-	- original version; created by h2xs 1.23 with options
-		-b 5.6.0 -n Language::K20
-

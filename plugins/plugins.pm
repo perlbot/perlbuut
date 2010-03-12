@@ -17,6 +17,7 @@ sub command {
 	return( "handled", $output );
 }
 
+no warnings 'void';
 "Bot::BB3::Plugin::Plugins";
 
 __DATA__

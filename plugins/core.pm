@@ -1,5 +1,6 @@
 use Module::CoreList;
 
+no warnings 'void';
 sub {
 	my( $said, $pm ) = @_;
 	my $module = $said->{recommended_args}->[0];
@@ -19,7 +20,7 @@ sub {
 					else { 
 							print "Module $module does not appear to be in core. Perhaps capitalization matters or try using the 'cpan' command to search for it." }
 			}
-}
+};
 
 __DATA__
 Tells you when the module you searched for was added to the Perl Core, if it was.

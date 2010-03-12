@@ -1,8 +1,0 @@
-Changes
-Jplugin.xs
-Makefile.PL
-MANIFEST
-ppport.h
-README
-t/Jplugin.t
-lib/Jplugin.pm

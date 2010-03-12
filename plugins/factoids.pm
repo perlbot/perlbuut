@@ -352,23 +352,42 @@ sub get_fact_learn {
 
 	return "Stored $subject as $predicate";
 }
+
+{no warnings 'once'; #keep perl from complaining about this only being used once
 *get_fact_relearn = \&get_fact_learn; #Alias..
+}
 
 sub get_fact_search {
 	my( $self, $body, $name ) = @_;
 
 	$body =~ s/^\s*for\s*//; #remove the for from searches
 
-	#XXX: need to also search contents of factoids TODO
-	my $results = $self->dbh->selectall_arrayref(
-		"SELECT subject,copula,predicate 
-		FROM factoid
-		WHERE subject like ?
-		GROUP BY subject", # Group by magically returns the right row first. I dunno.
-		{Slice => {}},
-		"%$body%",
-	);
+    my $results;
 
+    if ($body =~ m|^\s*m?/(.*)/\s*$|) 
+    {
+    	my $search = $1;
+		#XXX: need to also search contents of factoids TODO
+		$results = $self->dbh->selectall_arrayref(
+			"SELECT subject,copula,predicate 
+			FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
+			WHERE subject regexp ? OR predicate regexp ?", # using a subquery so that i can do this properly
+			{Slice => {}},
+			$search, $search,
+		);
+    }
+    else
+    {
+		#XXX: need to also search contents of factoids TODO
+		$results = $self->dbh->selectall_arrayref(
+			"SELECT subject,copula,predicate 
+			FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
+			WHERE subject like ? OR predicate like ?", # using a subquery so that i can do this properly
+			{Slice => {}},
+			"%$body%", "%$body%",
+		);
+    }
+    
 	if( $results and @$results ) {
 		my $ret_string;
 		for( @$results ) {
@@ -381,6 +400,8 @@ sub get_fact_search {
 	else {
 		return "No matches."
 	}
+    
+    
 }
 
 sub get_fact {
@@ -453,8 +474,8 @@ sub basic_get_fact {
 	my( $self, $pm, $said, $subject, $name, $call_only ) = @_;
 
 	my ($fact, $key, $arg);
-	my $key = _clean_subject($subject);
-	my $fact;
+	$key = _clean_subject($subject);
+
 	if( !$call_only ) {
 		$fact = $self->_db_get_fact($key, $name);
 	}
@@ -511,7 +532,7 @@ sub _soundex_matches {
 	return [ map $_->[1], grep $_->[2] =~ /\S/, @$rows ];
 }
 
-
+no warnings 'void';
 "Bot::BB3::Plugin::Factoids";
 __DATA__
 Learn or retrieve persistent factoids. "foo is bar" to store. "foo" to retrieve. try "forget foo" or "revisions foo" or "literal foo" or "revert $REV_ID" too. "macro foo is [echo bar]" or "func foo is [echo bar [arg]]" for compose macro factoids. The factoids/fact/call keyword is optional except in compose. Search <subject> to search for factoids that match.

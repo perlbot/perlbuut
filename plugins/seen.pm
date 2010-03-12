@@ -87,6 +87,7 @@ sub handle {
 	return;
 }
 
+no warnings 'void';
 "Bot::BB3::Plugin::Seen";
 
 __DATA__

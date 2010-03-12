@@ -1,5 +1,7 @@
 use DBI;
 
+no warnings 'void';
+
 sub {
 	my( $said, $pm ) = @_;
 
@@ -8,7 +10,7 @@ sub {
 	my $recs = $dbh->selectall_arrayref( "SELECT * FROM hosts where host = ?", {Slice=>{}}, $said->{body} );
 
 	print "$said->{body}: ", join ", ", map $_->{nick}, @$recs;
-}
+};
 
 __DATA__
 host_lookup <hostname>. Returns all of the nicks this bot has seen using the host name you specify.

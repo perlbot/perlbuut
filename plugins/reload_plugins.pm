@@ -1,4 +1,4 @@
-
+no warnings 'void';
 sub {
 	my( $said, $pm ) = @_;
 

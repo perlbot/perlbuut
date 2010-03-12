@@ -33,7 +33,7 @@ sub spawn_session {
 }
 
 sub _start {
-	my( $self ) = @_[OBJECT];
+	my( $self ) = $_[OBJECT];
 
 	$self->{socket_factory} = POE::Wheel::SocketFactory->new(
 		BindAddress => "127.0.0.1",

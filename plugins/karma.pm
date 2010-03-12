@@ -2,6 +2,8 @@ use POE::Component::IRC::Common qw/l_irc/;
 use DBI;
 use DBD::SQLite;
 
+no warnings 'void';
+
 sub {
 	my( $said, $pm ) = @_;
 	my $body = $said->{body};
@@ -36,7 +38,7 @@ sub {
 			print "$body has no karma";
 		}
 	}
-}
+};
 
 __DATA__
 karma <nickname>; returns the "karma" value for a user or arbitrary subject. Karma works by appending either ++ or -- to a word to modify its karma.

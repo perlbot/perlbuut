@@ -34,6 +34,7 @@ my $foo=sub {
 	}
 };
 
+no warnings 'void';
 if ($0 =~ /host.pm$/)
 {
   $foo->({recommended_args=>['google.com','A']});
