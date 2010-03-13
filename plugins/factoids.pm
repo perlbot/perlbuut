@@ -127,6 +127,10 @@ sub command {
 			#i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
 			$fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
 		}
+		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)\s*$|i) 
+		{
+			return $self->get_fact_substitute( $subject, $said->{name}, $said);
+		}
 		else {
 			$fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
 		}
