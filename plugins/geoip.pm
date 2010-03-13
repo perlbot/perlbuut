@@ -1,6 +1,6 @@
 use Geo::IP;
 
-no warnings 'void';
+no warnings 'void', 'once';
 
 sub {
 	my( $said, $pm ) = @_;

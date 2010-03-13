@@ -324,10 +324,6 @@ sub get_fact_literal {
 	return _fact_literal_format($fact);
 }
 
-sub _fact_substitute_global
-{
-}
-
 sub _fact_substitute
 {
 	my ($self, $pred, $match, $subst, $flags) = @_;
@@ -393,7 +389,7 @@ sub get_fact_substitute {
 #	$body =~ s/^\s*learn\s+//;
 #	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
 
-				$self->get_fact_learn("learn $subject as $result");
+				$self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result);
 				
 				return "learned $subject as $result";
 			}
@@ -439,10 +435,10 @@ sub get_fact_revert {
 }
 
 sub get_fact_learn {
-	my( $self, $body, $name, $said ) = @_;
+	my( $self, $body, $name, $said, $subject, $predicate ) = @_;
 
 	$body =~ s/^\s*learn\s+//;
-	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
+	($subject, $predicate ) = split /\s+as\s+/, $body, 2 unless ($subject && $predicate);
 
 	#XXX check permissions here
 	return "Insufficient permissions for changing protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
