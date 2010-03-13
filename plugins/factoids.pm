@@ -387,12 +387,19 @@ sub get_fact_substitute {
 
 				#moving this to its own function for cleanliness				
 				$result = $self->_fact_substitute($pred, $match, $subst, $flags);
+
+#	my( $self, $body, $name, $said ) = @_;
+
+#	$body =~ s/^\s*learn\s+//;
+#	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
+
+				$self->get_fact_learn("learn $subject as $result");
 				
-				return "Result was, [$result]";
+				return "learned $subject as $result";
 			}
 			else
 			{
-				return "Can't use dangerous things in a regex, you naughty user you";
+				return "Can't use dangerous things in a regex, you naughty user";
 			}
 		}
 		else

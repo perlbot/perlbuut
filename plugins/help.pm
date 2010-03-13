@@ -14,7 +14,7 @@ sub {
 			print $plugin->{help_text};
 		}
 		else {
-			print "Sorry, no plugin named $plugin_name found.";
+			print "Sorry, no plugin named $plugin_name found." unless $said->{backdressed};
 		}
 	}
 	else {

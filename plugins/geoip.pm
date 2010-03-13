@@ -4,7 +4,8 @@ no warnings 'void';
 
 sub {
 	my( $said, $pm ) = @_;
-	my $gi = Geo::IP->open("/home/simcop2387/geoip/GeoLiteCity.dat", GEOIP_STANDARD);
+    $Geo::IP::PP_OPEN_TYPE_PATH = "/home/simcop2387/geoip/";
+	my $gi = Geo::IP->open_type(GEOIP_CITY_EDITION_REV0, GEOIP_STANDARD);
 
 	print "Record for $said->{body}: ";
 
