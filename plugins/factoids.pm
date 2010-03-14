@@ -111,8 +111,7 @@ sub command {
 	if( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
 		my @ret = $self->store_factoid( $said ); 
 
-		return( 'handled', "Failed to store $said->{body}" )
-		unless @ret;
+		return( 'handled', "Failed to store $said->{body}" ) unless @ret;
 
 		return ('handled', "@ret") if ($ret[0] =~ /^insuff/i);
 		return( 'handled', "Stored @ret" );
@@ -127,7 +126,7 @@ sub command {
 			#i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
 			$fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
 		}
-		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)|i) 
+		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)|i)
 		{
 		    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
 		}
@@ -178,7 +177,7 @@ sub store_factoid {
 	my( $self, $said) =@_;
 	my ($author, $body ) = ($said->{name}, $said->{body});
 
-	return unless $body =~ /^\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
+	return unless $body =~ /^(?:no[, ]?)\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
 	my( $subject, $copula, $predicate ) = ($1,$2,$3);
 	my $compose_macro = 0;
 
