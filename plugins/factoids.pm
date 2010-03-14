@@ -392,9 +392,9 @@ sub get_fact_substitute {
 #	$body =~ s/^\s*learn\s+//;
 #	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
 
-				$self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result);
+				my $ret = $self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result);
 				
-				return "learned $subject as $result";
+				return $ret;
 			}
 			else
 			{
