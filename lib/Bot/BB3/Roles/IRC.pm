@@ -530,13 +530,9 @@ sub plugin_output {
     		$said->{forwarding} = undef; #unset forwarding, we will never forward to someone with this.
     		$text = "I can't forward that to another user because of the contents, it might trigger an exploit that would get both me and you in trouble.";
     	}
-    	elsif ($said->{channel} eq "*irc_msg")
+    	elsif ($said->{channel} ne "*irc_msg")    		#we don't care about it if they're doing it to themselves in /msg
     	{
-    		#we don't care about it if they're doing it to themselves in /msg	
-    	}
-    	else
-    	{
-    		$text = "I can't do that, if i did both you and i could get in trouble.";
+    		$text = "I can't do that, if I did both you and I could get in trouble.";
     	}
     }
         #this forwards messages to priv_msg for users
