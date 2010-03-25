@@ -391,7 +391,7 @@ sub irc_001 {
 	
 	# GIANT HACK
 	if( $bot_conf->{server} =~ /freenode/ ) {
-		open my $fh, "/home/buu/nickservpass" or goto HACKEND; #sorry
+		open my $fh, "/home/simcop2387/nickservpass" or open my $fh, "/home/simcop/nickservpass" or goto HACKEND; #sorry
 		my $pass = <$fh>;
 		chomp $pass;
 
@@ -523,6 +523,22 @@ sub plugin_output {
 	return unless $text =~ /\S/;
 	$text =~ s/\0/\\0/g; # Replace nulls to prevent them truncating strings we attempt to output.
 
+    if ($text =~ /DCC\s+SEND\s+/)
+    {
+    	if (exists($said->{forwarding}) && defined($said->{forwarding}))
+    	{
+    		$said->{forwarding} = undef; #unset forwarding, we will never forward to someone with this.
+    		$text = "I can't forward that to another user because of the contents, it might trigger an exploit that would get both me and you in trouble.";
+    	}
+    	elsif ($said->{channel} eq "*irc_msg")
+    	{
+    		#we don't care about it if they're doing it to themselves in /msg	
+    	}
+    	else
+    	{
+    		$text = "I can't do that, if i did both you and i could get in trouble.";
+    	}
+    }
         #this forwards messages to priv_msg for users
         if (exists($said->{forwarding}) && defined($said->{forwarding}) && ($said->{forwarding} =~ /\S/))
         {
