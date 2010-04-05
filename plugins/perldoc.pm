@@ -9,6 +9,8 @@ sub {
     
 	if ($said->{body} =~ /-q\s+(.*)/i) #faq questions
 	{#http://perldoc.perl.org/search.html?q=foo+bar
+	 my $query = uri_encode($1);
+	 $query =~ s/%20/+/g;
 	 $url = "http://perldoc.perl.org/search.html?q=".uri_encode($1);
 	}
 	elsif ($said->{body} =~ /-f\s+(.*?)\s*/i) #functions, only use the first part of a multiword expression
