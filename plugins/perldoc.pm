@@ -9,9 +9,11 @@ sub {
     
 	if ($said->{body} =~ /-q\s+(.*)/i) #faq questions
 	{#http://perldoc.perl.org/search.html?q=foo+bar
-	 my $query = uri_encode($1);
-	 $query =~ s/%20/+/g;
-	 $url = "http://perldoc.perl.org/search.html?q=".uri_encode($1);
+	  my $trimmed = $said->{body};
+	  $trimmed =~ s/^\s*(\S+)\s*$/$1/;
+	  my $query = uri_encode($trimmed);
+	  $query =~ s/%20/+/g;
+	  $url = "http://perldoc.perl.org/search.html?q=".$query;
 	}
 	elsif ($said->{body} =~ /-f\s+(.*?)\s*/i) #functions, only use the first part of a multiword expression
 	{
@@ -24,12 +26,18 @@ sub {
 		
 		$url = "http://perldoc.perl.org/functions/".$1.".html"
 	}
-	elsif ($said->{body} =~ /-m\s+(.*)/i) # got a module!
+	elsif ($said->{body} =~ /-m\s+(.*)\s*$/i) # got a module!
 	{#http://search.cpan.org/search?query=foo%3ABar&mode=all
-	  $url = "http://search.cpan.org/search?query=".uri_encode($1)."&mode=module";
+	  my $query = uri_encode($1);
+	  $query =~ s/%20/+/g;
+	  $url = "http://search.cpan.org/search?query=".$query."&mode=module";
 	}
 	elsif ($said->{body} =~ /::/) #module, go to cpan also
 	{
+	  my $trimmed = $said->{body};
+	  $trimmed =~ s/^\s*(\S+)\s*$/$1/;
+	  my $query = uri_encode($trimmed);
+	  $query =~ s/%20/+/g;
 	  $url = "http://search.cpan.org/search?query=".uri_encode($said->{body})."&mode=module";
 	}
 	else # we've got just a plain word, use it as a doc title
