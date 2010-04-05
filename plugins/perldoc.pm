@@ -24,7 +24,7 @@ sub {
 		
 		$func = "-X" if ($func eq "-x"); #only case where it isn't lowercase, its easier to test at this point
 		
-		$url = "http://perldoc.perl.org/functions/".$1.".html"
+		$url = "http://perldoc.perl.org/functions/".$func.".html"
 	}
 	elsif ($said->{body} =~ /-m\s+(.*)\s*$/i) # got a module!
 	{#http://search.cpan.org/search?query=foo%3ABar&mode=all
