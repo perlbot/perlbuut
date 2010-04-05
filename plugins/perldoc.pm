@@ -15,7 +15,7 @@ sub {
 	  $query =~ s/%20/+/g;
 	  $url = "http://perldoc.perl.org/search.html?q=".$query;
 	}
-	elsif ($said->{body} =~ /-f\s+(.*?)\s*/i) #functions, only use the first part of a multiword expression
+	elsif ($said->{body} =~ /-f\s+(.*)/i) #functions, only use the first part of a multiword expression
 	{
 		#http://perldoc.perl.org/functions/abs.html
 		my $func = $1;
