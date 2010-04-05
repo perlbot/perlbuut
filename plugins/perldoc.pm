@@ -19,6 +19,7 @@ sub {
 	{
 		#http://perldoc.perl.org/functions/abs.html
 		my $func = $1;
+		print "orig func: $func\n";
 		$func =~ s/^\s*(.*)\s*$/$1/; #trim whitespace
 		$func = lc($func); #all functions are lowercase, except the exception below
 		
