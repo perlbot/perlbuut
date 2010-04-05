@@ -9,7 +9,7 @@ sub {
     
 	if ($said->{body} =~ /-q\s+(.*)/i) #faq questions
 	{#http://perldoc.perl.org/search.html?q=foo+bar
-	  my $trimmed = $said->{body};
+	  my $trimmed = $1;
 	  $trimmed =~ s/^\s*(\S+)\s*$/$1/;
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
