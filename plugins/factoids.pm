@@ -168,7 +168,7 @@ sub _clean_subject_func { # for parametrized macros
 
 		( $key, $arg ) = ( $1, $2 );
 	}
-	$key =~ s/[^\w\s]//g;
+	#$key =~ s/[^\w\s]//g;
 
 	return $key, $arg;
 }
