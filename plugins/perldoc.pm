@@ -14,6 +14,7 @@ sub {
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
 	  $url = "http://perldoc.perl.org/search.html?q=".$query;
+	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /-f\s+(.*)/i) #functions, only use the first part of a multiword expression
 	{
@@ -32,6 +33,7 @@ sub {
 	  my $query = uri_encode($1);
 	  $query =~ s/%20/+/g;
 	  $url = "http://search.cpan.org/search?query=".$query."&mode=module";
+	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /::/) #module, go to cpan also
 	{
@@ -40,6 +42,7 @@ sub {
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
 	  $url = "http://search.cpan.org/search?query=".uri_encode($said->{body})."&mode=module";
+	  $url = makeashorterlink($url);
 	}
 	else # we've got just a plain word, use it as a doc title
 	{ #http://perldoc.perl.org/perlrun.html
@@ -54,5 +57,5 @@ sub {
 	  }
 	}
 
-	print "Your documentation is available at: ", makeashorterlink($url);
+	print "Your documentation is available at: ", $url;
 }
