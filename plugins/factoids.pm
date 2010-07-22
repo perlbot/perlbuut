@@ -608,6 +608,13 @@ sub basic_get_fact {
 		}
 	}
 	else {
+		if ($subject =~ /\?$/) #check if some asshole decided to add a ? at the end of the factoid, if so remove it and recurse, this should only be able to recurse N times so it should be fine
+		{
+			my $newsubject = $subject;
+			$newsubject =~ s/\?$//;
+			return $self->basic_get_fact($pm, $said, $newsubject, $name, $call_only);
+		}
+		
 		my $soundex = soundex( _clean_subject($subject, 1) );
 
 		my $matches = $self->_soundex_matches( $soundex );
