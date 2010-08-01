@@ -15,4 +15,4 @@ sub {
 }
 
 __DATA__
-head http://url/; returns the response code and server type from a HEAD request for a particular url.
+zippit <text>; gives back a random saying from the zippit plugin
