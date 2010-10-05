@@ -17,7 +17,7 @@ sub {
 			@a = split(/(?:\bor\b|\s*,\s*)/, $said->{body});
 		}
 		
-		s/^\s*//, s/\s*$// for @a; #trim them up
+		s/^\s*//, s/\s*\?\s*$// for @a; #trim them up
 	}
 	else
 	{
