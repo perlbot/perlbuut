@@ -36,7 +36,11 @@ sub {
 		s/^\s*//, s/\s*(\?\s*)?$// for @a; #trim them up
 		
 		$common = $findcommon->(@a);
-		s/^$common// for @a; # remove the common stuff for grammar
+		
+		if ($common =~ /\s$/) #only remove if we end on whitespace
+		{
+		  s/^$common// for @a; # remove the common stuff for grammar
+		}
 	}
 	else
 	{
