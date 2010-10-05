@@ -1,8 +1,31 @@
+use List::Util qw(min);
+
+	
+	my $findcommon = sub {
+		my @input = map {lc $_} @_;
+		my $min = min(map {length $_} @input);
+		my $common = "";
+		
+		for my $i (0..$min-1)
+		{
+			my $count = 1;
+			for my $j (1..$#input)
+			{
+				$count++ if (substr($input[0], $i, 1) eq substr($input[$j], $i, 1))
+			}
+			
+			$common .= substr($input[0], $i, 1) if ($count == @input) # did it match all inputs?
+		}
+		
+		return $common;
+	};
+
 sub {
 	my( $said ) = @_;
 
     my $ors =()= $said->{body}=~m/\bor\b/g;
     my $commas =()= $said->{body}=~m/,(?=.*\bor\b)/g;
+    my $common = "";
 
     my @a;
 
@@ -18,6 +41,8 @@ sub {
 		}
 		
 		s/^\s*//, s/\s*\?\s*$// for @a; #trim them up
+		
+		$common = $findcommon->(@a);
 	}
 	else
 	{
@@ -43,7 +68,7 @@ sub {
            "As I see it, yes");
 	}
 
-     print $a[rand@a]."."
+     print $a[rand@a]." $common."
 }
 
 __DATA__
