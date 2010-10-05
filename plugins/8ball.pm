@@ -27,6 +27,8 @@ sub {
     my $common = "";
 
     my @a;
+    
+    $said->{body} =~ s/^[^,]*://;
 
 	if ($ors >= 1)
 	{
