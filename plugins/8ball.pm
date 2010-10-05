@@ -39,10 +39,11 @@ sub {
 		{
 			@a = split(/(?:\bor\b|\s*,\s*)/, $said->{body});
 		}
-		
+	    
 		s/^\s*//, s/\s*\?\s*$// for @a; #trim them up
 		
 		$common = $findcommon->(@a);
+		s/^$common// for @a; # remove the common stuff for grammar
 	}
 	else
 	{
@@ -68,7 +69,7 @@ sub {
            "As I see it, yes");
 	}
 
-     print $a[rand@a]." $common."
+     print $a[rand@a]."."
 }
 
 __DATA__
