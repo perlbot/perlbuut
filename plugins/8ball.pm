@@ -22,13 +22,12 @@ use List::Util qw(min);
 
 sub {
 	my( $said ) = @_;
-
+    $said->{body} =~ s/^[^,]*://;
+    
     my $ors =()= $said->{body}=~m/\bor\b/g;
     my $common = "";
 
     my @a;
-    
-    $said->{body} =~ s/^[^,]*://;
 
 	if ($ors >= 1)
 	{
