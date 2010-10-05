@@ -24,21 +24,13 @@ sub {
 	my( $said ) = @_;
 
     my $ors =()= $said->{body}=~m/\bor\b/g;
-    my $commas =()= $said->{body}=~m/,(?=.*\bor\b)/g;
     my $common = "";
 
     my @a;
 
-	if ($ors == 1)
+	if ($ors >= 1)
 	{
-		if ($commas > 0)
-		{
-			@a = split(/\bor\b/, $said->{body});
-		}
-		else
-		{
-			@a = split(/(?:\bor\b|\s*,\s*)+/, $said->{body});
-		}
+		@a = split(/(?:\bor\b|\s*,\s*)+/, $said->{body});
 	    
 		s/^\s*//, s/\s*(\?\s*)?$// for @a; #trim them up
 		
