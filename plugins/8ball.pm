@@ -20,7 +20,7 @@ use List::Util qw(min);
 		return $common;
 	};
 
-sub {
+my $a=sub {
 	my( $said ) = @_;
     $said->{body} =~ s/^[^,]*://;
     
@@ -67,7 +67,9 @@ sub {
 	}
 
      print $a[rand@a]."."
-}
+};
+
+return $a
 
 __DATA__
 8ball, magic 8ball if you don't understand then you need to stop having a life.
