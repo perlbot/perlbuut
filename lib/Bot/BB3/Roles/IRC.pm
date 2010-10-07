@@ -391,7 +391,8 @@ sub irc_001 {
 	
 	# GIANT HACK
 	if( $bot_conf->{server} =~ /freenode/ ) {
-		open my $fh, "/home/simcop2387/nickservpass" or open my $fh, "/home/simcop/nickservpass" or goto HACKEND; #sorry
+		my $fh;
+		open $fh, "/home/simcop2387/nickservpass" or open $fh, "/home/simcop/nickservpass" or goto HACKEND; #sorry
 		my $pass = <$fh>;
 		chomp $pass;
 
