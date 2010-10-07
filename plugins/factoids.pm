@@ -188,7 +188,7 @@ sub store_factoid {
 	elsif( $predicate =~ s/^\s*also\s+// ) {
 		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $author );
 		
-		$predicate = $fact->{predicate} . " " .  $predicate;
+		$predicate = $fact->{predicate} . " | " .  $predicate;
 	}
 	
 	return unless
