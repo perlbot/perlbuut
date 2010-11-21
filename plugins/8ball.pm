@@ -66,7 +66,7 @@ my $a=sub {
            "As I see it, yes");
 	}
 
-     print $a[rand@a]."."
+     print $a[rand@a]
 };
 
 return $a
