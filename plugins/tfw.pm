@@ -21,10 +21,12 @@ sub {
 
 	my $weathertext = $weather->as_text;
         $weathertext =~ s/\n/ /g; #filter them so when it goes ITS FUCKING NICE\nAND THUNDERING it'll display properly
+        my $remarktext = $remark->as_text;
+        $remarktext =~ s/\n/ /g;
 
 	print $location->as_text;
 	print " ";
-	print $weather->as_text;
+	print $weathertext;
 	print " ";
-	print '(', $remark->as_text, ')';
+	print '(', $remarktext, ')';
 }
