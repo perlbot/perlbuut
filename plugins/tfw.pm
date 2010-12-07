@@ -20,9 +20,10 @@ sub {
 	my $remark = $tree->look_down( id => 'remark' );
 
 	my $weathertext = $weather->as_text;
-        $weathertext =~ s/\n/ /g; #filter them so when it goes ITS FUCKING NICE\nAND THUNDERING it'll display properly
-        my $remarktext = $remark->as_text;
-        $remarktext =~ s/\n/ /g;
+	$weathertext =~ s/\n/ /g; #filter them so when it goes ITS FUCKING NICE\nAND THUNDERING it'll display properly
+		$weathertext =~ s/\?\!/?! /g;
+	my $remarktext = $remark->as_text;
+	$remarktext =~ s/\n/ /g;
 
 	print $location->as_text;
 	print " ";
