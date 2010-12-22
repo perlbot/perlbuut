@@ -126,7 +126,7 @@ sub command {
 			#i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
 			$fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
 		}
-		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)|i)
+		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)|i)
 		{
 		    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
 		}
@@ -371,7 +371,7 @@ sub _fact_substitute
 sub get_fact_substitute {
 	my( $self, $subject, $name, $said ) = @_;
 
-	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)\s*$|i)
+	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)\s*$|i)
 	{
 		my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
 		
