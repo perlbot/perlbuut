@@ -21,6 +21,7 @@ sub {
 	);
 
         my $lirc = l_irc($said->{body}) || lc $said->{body};
+        $lirc =~ s/^\s*(.*)\s*$/$1/;
 	warn "SUBJECT: $lirc";
 	my $karma = $dbh->selectrow_arrayref(
 		"SELECT sum(operation) FROM karma WHERE subject = ?",
