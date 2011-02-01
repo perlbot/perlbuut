@@ -27,7 +27,7 @@ sub command {
 sub compose {
 	my($said, $pm) = @_;
 	my $str = $said->{body};
-	$said->{recursion} = 10 unless defined $said->{recursion};
+	$said->{recursion} = 50 unless defined $said->{recursion};
 
 	$str =~ /\A\s*((\S).*(\S))\s*\z/s or
 		return "Error: empty expression for compose";
