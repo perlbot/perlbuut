@@ -101,7 +101,7 @@ sub runplugin {
 	$captured and local $said->{captured} = 1; 
 		# but things called on top-level of compose are captured only if the compose itself is captured
 	
-	$said->{recursion} = $said->{recursion}-1; # recurse things
+	local $said->{recursion} = $said->{recursion}-1; # recurse things
         if( $said->{recursion} == 0) { return( 0, "Deep recursion on $cmd" ); }
 
 	local $@;
