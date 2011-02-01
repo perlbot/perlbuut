@@ -27,6 +27,7 @@ sub command {
 sub compose {
 	my($said, $pm) = @_;
 	my $str = $said->{body};
+	$said->{recursion} = 10 unless defined $said->{recursion};
 
 	$str =~ /\A\s*((\S).*(\S))\s*\z/s or
 		return "Error: empty expression for compose";
@@ -100,6 +101,9 @@ sub runplugin {
 	$captured and local $said->{captured} = 1; 
 		# but things called on top-level of compose are captured only if the compose itself is captured
 	
+	$said->{recursion} = $said->{recursion}-1; # recurse things
+        if( $said->{recursion} == 0) { return( 0, "Deep recursion on $cmd" ); }
+
 	local $@;
 	my( $status, $results ) = eval { $plugin->command( $said, $pm ) };
 
