@@ -24,7 +24,7 @@ sub {
 		return;
 	}
 
-	print "$url: " . $ua->title();
+	print "$url :is: " . $ua->title();
 }
 
 __DATA__
