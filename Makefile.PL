@@ -21,5 +21,11 @@ requires 'XML::RSS::Parser' => 0;
 requires 'WWW::Shorten' => 0;
 requires 'WWW::Mechanize' => 0;
 requires 'URI::Encode' => 0;
+requires 'Text::Glob' => 0;
+
+requires 'DBD::SQLite' => 0;
+requires 'DBI' => 0;
+requires 'Net::DNS' => 0;
+requires 'HTML::TreeBuilder' => 0;
 
 WriteAll;

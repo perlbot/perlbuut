@@ -360,7 +360,8 @@ sub _parse_for_commands {
 	my $command_re = join '|', map "\Q$_", keys %$commands;
 	$command_re = qr/$command_re/; #TODO move to _pre_build_chains and switch to Trie
 
-	if( $said->{body} =~ s/^\s*($command_re)[ \t:,;.-]\s*(.+)/$2/
+	if( (!$said->{addressed} && $said->{body} =~ s/^\s*($command_re)[:,;]\s*(.+)/$2/)
+          or ($said->{addressed} && $said->{body} =~ s/^\s*($command_re)[ :,;-]\s*(.+)/$2/)
 		or $said->{body} =~ s/^\s*($command_re)\s*$// ) {
 
 			my $found_command = $1;

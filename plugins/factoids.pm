@@ -126,7 +126,7 @@ sub command {
 			#i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
 			$fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
 		}
-		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)|i)
+		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)|i)
 		{
 		    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
 		}
@@ -177,7 +177,7 @@ sub store_factoid {
 	my( $self, $said) =@_;
 	my ($author, $body ) = ($said->{name}, $said->{body});
 
-	return unless $body =~ /^(?:no[, ]?)?\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
+	return unless $body =~ /^(?:no[, ])?\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
 	my( $subject, $copula, $predicate ) = ($1,$2,$3);
 	my $compose_macro = 0;
 
@@ -188,7 +188,7 @@ sub store_factoid {
 	elsif( $predicate =~ s/^\s*also\s+// ) {
 		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $author );
 		
-		$predicate = $fact->{predicate} . " " .  $predicate;
+		$predicate = $fact->{predicate} . " | " .  $predicate;
 	}
 	
 	return unless
@@ -371,7 +371,7 @@ sub _fact_substitute
 sub get_fact_substitute {
 	my( $self, $subject, $name, $said ) = @_;
 
-	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]+)/([gi]*)\s*$|i)
+	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)\s*$|i)
 	{
 		my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
 		
@@ -608,10 +608,10 @@ sub basic_get_fact {
 		}
 	}
 	else {
-		if ($subject =~ /\?$/) #check if some asshole decided to add a ? at the end of the factoid, if so remove it and recurse, this should only be able to recurse N times so it should be fine
+		if ($subject =~ /[\?\.\!]$/) #check if some asshole decided to add a ? at the end of the factoid, if so remove it and recurse, this should only be able to recurse N times so it should be fine
 		{
 			my $newsubject = $subject;
-			$newsubject =~ s/\?$//;
+			$newsubject =~ s/[\?\.\!]$//;
 			return $self->basic_get_fact($pm, $said, $newsubject, $name, $call_only);
 		}
 		
