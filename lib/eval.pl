@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use lib '/home/ryan/perl5/lib/perl5';
+
 use strict;
 use Data::Dumper;
 use Scalar::Util; #Required by Data::Dumper
@@ -31,6 +33,7 @@ use utf8; eval "\$\343\201\257 = 42";  # attempt to automatically load the utf8 
 use charnames qw(:full);
 use PerlIO;
 use PerlIO::scalar;
+use Text::ParseWords;
 
 # Required for perl_deparse
 use B::Deparse;
@@ -42,7 +45,7 @@ require 'bytes_heavy.pl';
 
 use Tie::Hash::NamedCapture;
 
- {no warnings 'constant';
+ {#no warnings 'constant';
  uc "\x{666}"; #Attempt to load unicode libraries.
  }
  binmode STDOUT, ":utf8"; # Enable utf8 output.
