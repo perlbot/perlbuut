@@ -22,7 +22,7 @@ use List::Util qw(min);
 
 my $a=sub {
 	my( $said ) = @_;
-    $said->{body} =~ s/^[^,]*://;
+    #$said->{body} =~ s/^[^,]*://;
     
     my $ors =()= $said->{body}=~m/\bor\b/g;
     my $common = "";
