@@ -1,4 +1,7 @@
 package EvalServer;
+
+use lib '/home/farnsworth/perl5/lib/perl5/';
+$ENV{PERL5LIB}="/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi:/home/farnsworth/perl5/lib/perl5";
 use POE;
 use POE::Wheel::SocketFactory;
 use POE::Wheel::ReadWrite;

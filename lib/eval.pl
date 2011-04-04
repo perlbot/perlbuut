@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
-use lib '/home/ryan/perl5/lib/perl5';
+use lib '/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi';
+use lib '/home/farnsworth/perl5/lib/perl5';
 
 use strict;
 use Data::Dumper;
@@ -8,6 +9,16 @@ use Scalar::Util; #Required by Data::Dumper
 use BSD::Resource;
 use File::Glob;
 use POSIX;
+
+use List::Util;
+use List::MoreUtils;
+use List::UtilsBy;
+use Data::Munge;
+use Scalar::MoreUtils;
+
+require Moose;
+require MooseX::Declare;
+no warnings;
 
 # This sub is defined here so that it is defined before the 'use charnames'
 # command. This causes extremely strange interactions that result in the
@@ -129,7 +140,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 50 * $meg;
+	my $limit = 150 * $meg;
 
 	(
 	setrlimit(RLIMIT_DATA, $limit, $limit )
@@ -156,6 +167,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	)
 		or die "Failed to set rlimit: $!";
 
+        %ENV=();
 	#setrlimit(RLIMIT_MSGQUEUE,100,100);
 
 	die "Failed to drop root: $<" if $< == 0;

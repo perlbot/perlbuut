@@ -16,9 +16,8 @@ cd ../..
 cd JavaScript-SpiderMonkey-0.19-patched
 perl Makefile.PL
 make
-make test
-sudo make install
+make test && make install
 cd ..
 
 
-sudo cpan Log::Log4perl
+#sudo cpan Log::Log4perl
