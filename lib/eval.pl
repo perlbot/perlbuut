@@ -18,6 +18,8 @@ use Scalar::MoreUtils;
 
 require Moose;
 require MooseX::Declare;
+eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
+
 no warnings;
 
 # This sub is defined here so that it is defined before the 'use charnames'
