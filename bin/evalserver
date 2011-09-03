@@ -1,7 +1,9 @@
-#!/usr/bin/perl
+#!/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin/perl
 
+use lib '/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi';
 use lib '/home/farnsworth/perl5/lib/perl5';
-use local::lib;
+
+#use local::lib;
 # Guess we're being activated inside bin/, so go up a directory.
 BEGIN { if( not -e 'lib' and not -e 'etc' and -e 'bb3' ) { chdir ".."; } }
 
@@ -9,7 +11,7 @@ use lib 'lib';
 use EvalServer;
 use POSIX qw/setsid/;
 
-$ENV{PATH}="/usr/bin/:/bin/";
+$ENV{PATH}="/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin:/usr/bin/:/bin/";
 
 # Only daemonize if we're asked to.
 if( $ARGV[0] eq '-d' ) {
