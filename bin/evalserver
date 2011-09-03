@@ -1,11 +1,10 @@
-#!/usr/bin/perl
+#!/home/ryan/perl5/perlbrew/perls/perl-5.14.1/bin/perl
 
-use lib '/home/farnsworth/perl5/lib/perl5';
-use local::lib;
 # Guess we're being activated inside bin/, so go up a directory.
 BEGIN { if( not -e 'lib' and not -e 'etc' and -e 'bb3' ) { chdir ".."; } }
 
-use lib 'lib';
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use EvalServer;
 use POSIX qw/setsid/;
 
