@@ -42,7 +42,7 @@ sub spawn_eval {
 	}
 warn "Spawning Eval: $args->{code}\n";
 	my $wheel = POE::Wheel::Run->new(
-		Program => [ 'perl', $filename ],
+		Program => [ '/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin/perl', $filename ],
 		ProgramArgs => [ ],
 
 		CloseOnCall => 1, #Make sure all of the filehandles are closed.

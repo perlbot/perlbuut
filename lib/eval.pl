@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin/perl
 
 use lib '/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi';
 use lib '/home/farnsworth/perl5/lib/perl5';
@@ -15,10 +15,13 @@ use List::MoreUtils;
 use List::UtilsBy;
 use Data::Munge;
 use Scalar::MoreUtils;
+use Regexp::Common;
+use Encode;
 
 require Moose;
 require MooseX::Declare;
 eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
+require "utf8_heavy.pl";
 
 no warnings;
 
@@ -52,7 +55,7 @@ use Text::ParseWords;
 use B::Deparse;
 
 # Javascript Libs
-BEGIN{ eval "use JavaScript::SpiderMonkey;"; }
+BEGIN{ eval "use JavaScript::V8; use JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
 my $JSENV_CODE = do { local $/; open my $fh, "deps/env.js"; <$fh> };
 require 'bytes_heavy.pl';
 
@@ -60,6 +63,7 @@ use Tie::Hash::NamedCapture;
 
  {#no warnings 'constant';
  uc "\x{666}"; #Attempt to load unicode libraries.
+ lc "JONQUIÉRE";
  }
  binmode STDOUT, ":utf8"; # Enable utf8 output.
 
@@ -145,6 +149,8 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	my $limit = 150 * $meg;
 
 	(
+	setrlimit(RLIMIT_VMEM, 1024*$meg, 1024*$meg)
+		and
 	setrlimit(RLIMIT_DATA, $limit, $limit )
 		and
 	setrlimit(RLIMIT_STACK, $limit, $limit )
@@ -160,8 +166,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	setrlimit(RLIMIT_LOCKS, 0,0)
 		and
 	setrlimit(RLIMIT_AS,$limit,$limit)
-		and
-	setrlimit(RLIMIT_VMEM,$limit, $limit)
 		and
 	setrlimit(RLIMIT_MEMLOCK,100,100)
 		and
@@ -244,38 +248,22 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		my( $code ) = @_;
 		local $@;
 
-		my $js = JavaScript::SpiderMonkey->new;
-		$js->init;
-		# This is great evil!
-		JavaScript::SpiderMonkey::JS_ForceLatest( $js->{context} );
-
+		my $js = JavaScript::V8::Context->new;
 
 		# Set up the Environment for ENVJS
-		$js->property_by_path("Envjs.profile", 0);
-		$js->function_set("print", sub { print @_ } );
+		$js->bind("print", sub { print @_ } );
+		$js->bind("write", sub { print @_ } );
 
-		for( qw/log debug info warn error/ ) {
-			$js->eval("Envjs.$_=function(x){}");
-		}
+#		for( qw/log debug info warn error/ ) {
+#			$js->eval("Envjs.$_=function(x){}");
+#		}
 
 		$js->eval($JSENV_CODE) or die $@;
 
-
-
-		my $modified_code = qq! 
-			var ret = eval("\Q$code\E"); 
-			if( ret === null ) {
-				"null"
-			}
-			else if( typeof ret == "object" || typeof ret == "array" ) {
-				ret.toSource(); 
-			}
-			else { ret } 
-		!;
-
-		print $js->ret_eval($modified_code);
+		my $out = eval { $js->eval($code) };
 
 		if( $@ ) { print "ERROR: $@"; }
+                else { print encode_json $out }
 	}
 
 	sub ruby_code {
