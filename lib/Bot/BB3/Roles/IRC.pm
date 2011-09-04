@@ -70,7 +70,6 @@ sub new {
 				irc_public
 				irc_ctcp_action
 				irc_join
-				irc_invite
 				irc_msg
 				irc_registered
 				irc_474
