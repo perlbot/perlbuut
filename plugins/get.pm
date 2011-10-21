@@ -1,3 +1,4 @@
+use Net::INET6Glue::INET_is_INET6;
 use LWP::UserAgent;
 use HTML::TreeBuilder::XPath;
 
