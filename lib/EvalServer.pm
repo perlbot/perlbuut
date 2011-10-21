@@ -1,7 +1,5 @@
 package EvalServer;
 
-use lib '/home/farnsworth/perl5/lib/perl5/';
-$ENV{PERL5LIB}="/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi:/home/farnsworth/perl5/lib/perl5";
 use POE;
 use POE::Wheel::SocketFactory;
 use POE::Wheel::ReadWrite;
@@ -38,11 +36,11 @@ sub spawn_eval {
 
 	my $filename = 'eval.pl';
 	if( not -e $filename ) {
-		$filename = "lib/$filename";
+		$filename = "/home/ryan/bots/perlbuut/lib/$filename";
 	}
 warn "Spawning Eval: $args->{code}\n";
 	my $wheel = POE::Wheel::Run->new(
-		Program => [ '/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin/perl', $filename ],
+		Program => [ '/home/ryan/perl5/perlbrew/perls/perl-5.14.1/bin/perl', $filename ],
 		ProgramArgs => [ ],
 
 		CloseOnCall => 1, #Make sure all of the filehandles are closed.
@@ -167,7 +165,7 @@ sub _start {
 	warn "Eval Server starting\n";
 
 	$self->{socket_factory} = POE::Wheel::SocketFactory->new(
-#			BindAddress  => "127.0.0.1",
+			BindAddress  => "127.0.0.1",
 			BindPort     => '14400',
 			SuccessEvent => 'socket_new',
 			FailureEvent => 'socket_fail',

@@ -1,7 +1,7 @@
-#!/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin/perl
+#!/home/ryan/perl5/perlbrew/perls/perl-5.14.1/bin/perl
 
-use lib '/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi';
-use lib '/home/farnsworth/perl5/lib/perl5';
+#use lib '/home/farnsworth/perl5/lib/perl5/x86_64-linux-gnu-thread-multi';
+#use lib '/home/farnsworth/perl5/lib/perl5';
 
 use strict;
 use Data::Dumper;
