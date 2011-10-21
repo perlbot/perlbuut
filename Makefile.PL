@@ -27,5 +27,6 @@ requires 'DBD::SQLite' => 0;
 requires 'DBI' => 0;
 requires 'Net::DNS' => 0;
 requires 'HTML::TreeBuilder' => 0;
+requires 'Net::INET6Glue::INET_is_INET6' => 0;
 
 WriteAll;
