@@ -22,7 +22,6 @@ use Digest::SHA;
 use DateTime;
 use DateTimeX::Easy;
 use Date::Parse;
-use autobox;
 
 require Moose;
 require MooseX::Declare;
