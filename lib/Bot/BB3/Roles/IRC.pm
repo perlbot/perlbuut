@@ -316,11 +316,11 @@ sub _said {
         # Check for forwarded message
         #--------------------------
 
-        if ($said->{addressed} && $said->{body} =~ s/\s*>\s*\b([^\s>]+)\s*$//)
-        {
+#        if ($said->{addressed} && $said->{body} =~ s/\s*>\s*\b([^\s>]+)\s*$//)
+#        {
            #we have a forwarded message
-           $said->{forwarding} = $1;
-        }
+#           $said->{forwarding} = $1;
+#        }
 
 	#--------------------------
 

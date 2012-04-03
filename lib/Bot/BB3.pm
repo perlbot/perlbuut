@@ -166,8 +166,8 @@ sub parse_main_conf {
 	}
 
 	my %conf_defaults = (
-		start_plugin_children => 1,
-		max_plugin_children => 6,
+		start_plugin_children => 3,
+		max_plugin_children => 10,
 		child_handle_count => 10,
 		http_plugin_port => 10080,
 		pastebot_plugin_port => 10081,
