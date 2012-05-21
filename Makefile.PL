@@ -32,4 +32,26 @@ requires 'Net::INET6Glue::INET_is_INET6' => 0;
 requires 'Net::Dict' => 0;
 requires 'HTML::TreeBuilder::XPath' => 0;
 
+requires 'Data::Dumper' => 0;
+requires 'Scalar::Util' => 0; #Required by Data::Dumper
+requires 'BSD::Resource' => 0;
+requires 'File::Glob' => 0;
+requires 'POSIX' => 0;
+
+requires 'List::Util' => 0;
+requires 'List::MoreUtils' => 0;
+requires 'List::UtilsBy' => 0;
+requires 'Data::Munge' => 0;
+requires 'Scalar::MoreUtils' => 0;
+requires 'Regexp::Common' => 0;
+requires 'Encode' => 0;
+requires 'Digest::MD5' => 0;
+requires 'Digest::SHA' => 0;
+requires 'DateTime' => 0;
+requires 'DateTimeX::Easy' => 0;
+requires 'Date::Parse' => 0;
+
+requires 'Moose' => 0;
+requires 'MooseX::Declare' => 0;
+
 WriteAll;
