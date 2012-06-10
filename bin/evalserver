@@ -1,4 +1,4 @@
-#!/home/ryan/perl5/perlbrew/perls/perl-5.14.1/bin/perl
+#!perl
 
 #use local::lib;
 # Guess we're being activated inside bin/, so go up a directory.
@@ -9,7 +9,7 @@ use lib "$FindBin::Bin/../lib";
 use EvalServer;
 use POSIX qw/setsid/;
 
-$ENV{PATH}="/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin:/usr/bin/:/bin/";
+#$ENV{PATH}="/home/farnsworth/perl5/perlbrew/perls/perl-5.14.0/bin:/usr/bin/:/bin/";
 
 # Only daemonize if we're asked to.
 if( $ARGV[0] eq '-d' ) {

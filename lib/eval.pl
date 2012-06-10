@@ -1,4 +1,4 @@
-#!/home/ryan/perl5/perlbrew/perls/perl-5.14.1/bin/perl
+#!perl
 
 #use lib '/home/ryan/perl5/lib/perl5/i686-linux';
 #use lib '/home/ryan/perl5/lib/perl5';
