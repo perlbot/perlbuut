@@ -107,38 +107,38 @@ sub command {
 	my $call_only = $said->{command_match} eq "call";
 
 	my $subject = $said->{body};
-	
-	if( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
+
+        my $commands_re = join '|', keys %commandhash;
+           $commands_re = qr/$commands_re/;
+        
+        my $fact_string; # used to capture return values
+
+        if( !$call_only && $subject =~ s/^\s*($commands_re)\s+// ) {
+          #i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
+          $fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
+        }
+        elsif (($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)|i) ||
+               ($subject =~ m/^\s*(.*?)\s*=~\s*s\{(.+)\}\{(.*)\}([gi]*)/i))
+        {
+          $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
+        }
+	elsif( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
 		my @ret = $self->store_factoid( $said ); 
 
-		return( 'handled', "Failed to store $said->{body}" ) unless @ret;
+		$fact_string = "Failed to store $said->{body}" unless @ret;
 
-		return ('handled', "@ret") if ($ret[0] =~ /^insuff/i);
-		return( 'handled', "Stored @ret" );
-	}
+		$fact_string = "@ret" if ($ret[0] =~ /^insuff/i);
+		$fact_string = "Stored @ret";
+        }
+        else {
+          $fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
+        }
+
+	if( $fact_string ) {
+          return( 'handled', $fact_string );
+        }
 	else {
-		my $commands_re = join '|', keys %commandhash;
-		   $commands_re = qr/$commands_re/;
-
-		my $fact_string;
-
-		if( !$call_only && $subject =~ s/^\s*($commands_re)\s+// ) {
-			#i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
-			$fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
-		}
-		elsif ($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)|i)
-		{
-		    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
-		}
-		else {
-			$fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
-		}
-		if( $fact_string ) {
-			return( 'handled', $fact_string );
-		}
-		else {
-			return;
-		}
+	  return;
 	}
 }
 
@@ -371,7 +371,8 @@ sub _fact_substitute
 sub get_fact_substitute {
 	my( $self, $subject, $name, $said ) = @_;
 
-	if ($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)\s*$|i)
+	if (($said->{body} =~ m|^(?:\s*substitute)?\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)\s*$|i) ||
+            ($said->{body} =~ m/^(?:\s*substitute)?\s*(.*?)\s*=~\s*s\{(.+)\}\{(.*?)\}([gi]*)\s*$/i))
 	{
 		my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
 		
