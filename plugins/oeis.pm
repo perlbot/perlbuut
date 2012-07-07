@@ -13,14 +13,14 @@ sub {
 	warn 1;
 	if( $q =~ /^\s*(?:(?:help|wtf|\?|\:)\s*)?$/i )
 	{
-		print "see http://tinyurl.com/7xmvs and http://tinyurl.com/2blo2w";
+		print "see http://oeis.org/";
 		return;
 	}
 	warn 2;
-	my $uri = "http://www.research.att.com/~njas/sequences/?q=" . CGI::escape($q) . "&n=1&fmt=3";
+	my $uri = "http://oeis.org/search?q=" . CGI::escape($q)."&fmt=text";
 	local $_ = get($uri); # change this in the real plugin
 	warn 2.5;
-	if (/^Results .* of (\d+) results/mi) {
+	if (/^Showing .* of (\d+)/mi) {
 		my $nrfound = $1;
 		unless( /^%N (\S+) (.*)/m )
 		{
@@ -34,20 +34,20 @@ sub {
 		$elts =~ s/,,+/,/g;
 		warn 3.5;
 		if (1 == $nrfound) {
-			my $outuri = sprintf "http://tinyurl.com/4zq4q/%.10s", $anum;
+			my $outuri = sprintf "http://oeis.org/%s", $anum;
 			print sprintf "%s %.256s: %.512s", $outuri, $title, $elts;
 		} else {
-			my $outuri1 = "http://www.research.att.com/~njas/sequences/?q=" . CGI::escape($q);
+			my $outuri1 = "http://oeis.org/searchs?q=" . CGI::escape($q);
 			warn 3.6;
-			my $outuri = makeashorterlink($outuri1) || $outuri1;
-			print sprintf "%s %.10s(1/%d) %.256s: %.512s", $outuri, $anum, $nrfound, $title, $elts;
+#			my $outuri = makeashorterlink($outuri1) || $outuri1;
+			print sprintf "%s %.10s(1/%d) %.256s: %.512s", $outuri1, $anum, $nrfound, $title, $elts;
 		}
 	} elsif (/^no matches/mi) {
 		print "No matches found";
 		warn 4
 	} else {
 	warn 5;
-		print "Reply from OEIS in unknown format";
+		print "Reply from OEIS in unknown format: $_";
 	}
 }
 
