@@ -14,7 +14,7 @@ sub {
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
 	  $url = "http://perldoc.perl.org/search.html?q=".$query;
-	  $url = makeashorterlink($url);
+#	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /-f\s+(.*)/i) #functions, only use the first part of a multiword expression
 	{
@@ -31,9 +31,9 @@ sub {
 	elsif ($said->{body} =~ /-m\s+(.*)\s*$/i) # got a module!
 	{#http://search.cpan.org/search?query=foo%3ABar&mode=all
 	  my $query = uri_encode($1);
-	  $query =~ s/%20/+/g;
-	  $url = "http://search.cpan.org/search?query=".$query."&mode=module";
-	  $url = makeashorterlink($url);
+#	  $query =~ s/%20/+/g;
+	  $url = "https://metacpan.org/module/".$query;
+#	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /::/) #module, go to cpan also
 	{
@@ -41,8 +41,8 @@ sub {
 	  $trimmed =~ s/^\s*(\S+)\s*$/$1/;
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
-	  $url = "http://search.cpan.org/search?query=".uri_encode($said->{body})."&mode=module";
-	  $url = makeashorterlink($url);
+	  $url = "https://metacpan.org/search?q=".$query;
+#	  $url = makeashorterlink($url);
 	}
 	else # we've got just a plain word, use it as a doc title
 	{ #http://perldoc.perl.org/perlrun.html
