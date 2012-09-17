@@ -22,6 +22,7 @@ use Digest::SHA;
 use DateTime;
 use DateTimeX::Easy;
 use Date::Parse;
+use Time::Piece;
 
 require Moose;
 require MooseX::Declare;
@@ -50,7 +51,7 @@ no warnings;
 		print $ret;
 	}
 
-use utf8; eval "\$\343\201\257 = 42";  # attempt to automatically load the utf8 libraries.
+use utf8; eval "\$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
 use charnames qw(:full);
 use PerlIO;
 use PerlIO::scalar;
@@ -263,9 +264,14 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 #			$js->eval("Envjs.$_=function(x){}");
 #		}
 
-		$js->eval($JSENV_CODE) or die $@;
+#		$js->eval($JSENV_CODE) or die $@;
 
-		my $out = eval { $js->eval($code) };
+                $code =~ s/(["\\])/\\$1/g;
+                my $rcode = qq{write(eval("$code"))};
+
+       
+
+		my $out = eval { $js->eval($rcode) };
 
 		if( $@ ) { print "ERROR: $@"; }
                 else { print encode_json $out }
