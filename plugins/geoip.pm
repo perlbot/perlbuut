@@ -4,8 +4,10 @@ no warnings 'void', 'once';
 
 sub {
 	my( $said, $pm ) = @_;
-    $Geo::IP::PP_OPEN_TYPE_PATH = "/home/simcop2387/geoip/";
-	my $gi = Geo::IP->open_type(GEOIP_CITY_EDITION_REV0, GEOIP_STANDARD);
+#        $Geo::IP::PP_OPEN_TYPE_PATH = "/usr/share/GeoIP/";
+#	my $gi = Geo::IP->open_type(GEOIP_CITY_EDITION_REV0, GEOIP_STANDARD);
+        my $gi = Geo::IP->open("/usr/share/GeoIP/GeoIP.dat", GEOIP_STANDARD);
+
 
 	print "Record for $said->{body}: ";
 
