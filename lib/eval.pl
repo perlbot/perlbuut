@@ -34,7 +34,11 @@ require "utf8_heavy.pl";
 my $oldout;
 my $outbuffer = "";
 open($oldout, ">&STDOUT") or die "Can't dup STDOUT: $!";
-$oldout->print("penis\n");
+open(my $stdh, ">", \$outbuffer) 
+               or die "Can't dup to buffer: $!";
+select($stdh);
+$|++;
+#*STDOUT = $stdh;
 
 no warnings;
 
@@ -44,7 +48,7 @@ no warnings;
 	sub deparse_perl_code {
 		my( $code ) = @_;
 		my $sub = eval "no strict; no warnings; no charnames; sub{ $code\n }";
-		if( $@ ) { print "Error: $@"; return }
+		if( $@ ) { print STDOUT "Error: $@"; return }
 
 		my $dp = B::Deparse->new("-p", "-q", "-x7");
 		my $ret = $dp->coderef2text($sub);
@@ -55,7 +59,7 @@ no warnings;
 			$ret =~ s/\s+/ /g;
 			$ret =~ s/\s*\}\s*$//;
 
-		print $ret;
+		print STDOUT $ret;
 	}
 
 use utf8; eval "\$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
@@ -162,9 +166,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	my $limit = 150 * $meg;
 
         # clobber stdout before we set rlimits.  otherwise we can't do anything STDOUT
-        open(my $stdh, ">", \$outbuffer) 
-                     or die "Can't dup to buffer: $!";
-        *STDOUT = $stdh;
 
 	(
 	setrlimit(RLIMIT_VMEM, 1024*$meg, 1024*$meg)
@@ -234,7 +235,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		j_code($code);
 	}
 
-        *STDOUT = $oldout;
+#        *STDOUT = $oldout;
+        close($stdh);
+        select(STDOUT);
         print($outbuffer);
 
 	exit;
@@ -249,7 +252,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
  
 		local $_;
 
-                # setup STDOUT for use in the eval.  I should really try to hide these better but it can't cause any issues
 		$code = "no strict; no warnings; package main; $code";
 		my $ret = eval $code;
 
@@ -260,7 +262,8 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 		my $out = ref($ret) ? Dumper( $ret ) : "" . $ret;
 
-		print $out; # unless $outbuffer;
+		print $out unless $outbuffer;
+
 		if( $@ ) { print "ERROR: $@" }
 	}
 
