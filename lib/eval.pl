@@ -29,6 +29,13 @@ require MooseX::Declare;
 eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
 require "utf8_heavy.pl";
 
+
+# save the old stdout, we're going to clobber it soon. STDOUT
+my $oldout;
+my $outbuffer;
+my $outputcode;
+open($oldout, ">&STDOUT") or die "Can't dup STDOUT: $!";
+
 no warnings;
 
 # This sub is defined here so that it is defined before the 'use charnames'
@@ -154,6 +161,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	my $meg = $kilo * $kilo;
 	my $limit = 150 * $meg;
 
+        # clobber stdout before we set rlimits.  otherwise we can't do anything STDOUT
+        open(STDOUT, ">", \$outbuffer) or die "Can't dup to buffer: $!";
+
 	(
 	setrlimit(RLIMIT_VMEM, 1024*$meg, 1024*$meg)
 		and
@@ -222,6 +232,8 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		j_code($code);
 	}
 
+        $oldout->print($outbuffer);
+
 	exit;
 
 	#-----------------------------------------------------------------------------
@@ -231,8 +243,10 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		my( $code ) = @_;
 		local $@;
 		local @INC;
-
+ 
 		local $_;
+
+                # setup STDOUT for use in the eval.  I should really try to hide these better but it can't cause any issues
 		$code = "no strict; no warnings; package main; $code";
 		my $ret = eval $code;
 
@@ -243,8 +257,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 		my $out = ref($ret) ? Dumper( $ret ) : "" . $ret;
 
-		print $out;
-
+		print $out unless $outbuffer;
 		if( $@ ) { print "ERROR: $@" }
 	}
 
