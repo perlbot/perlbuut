@@ -32,9 +32,9 @@ require "utf8_heavy.pl";
 
 # save the old stdout, we're going to clobber it soon. STDOUT
 my $oldout;
-my $outbuffer;
-my $outputcode;
+my $outbuffer = "";
 open($oldout, ">&STDOUT") or die "Can't dup STDOUT: $!";
+$oldout->print("penis\n");
 
 no warnings;
 
@@ -162,7 +162,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	my $limit = 150 * $meg;
 
         # clobber stdout before we set rlimits.  otherwise we can't do anything STDOUT
-        open(STDOUT, ">", \$outbuffer) or die "Can't dup to buffer: $!";
+        open(my $stdh, ">", \$outbuffer) 
+                     or die "Can't dup to buffer: $!";
+        *STDOUT = $stdh;
 
 	(
 	setrlimit(RLIMIT_VMEM, 1024*$meg, 1024*$meg)
@@ -232,7 +234,8 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		j_code($code);
 	}
 
-        $oldout->print($outbuffer);
+        *STDOUT = $oldout;
+        print($outbuffer);
 
 	exit;
 
@@ -257,7 +260,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 		my $out = ref($ret) ? Dumper( $ret ) : "" . $ret;
 
-		print $out unless $outbuffer;
+		print $out; # unless $outbuffer;
 		if( $@ ) { print "ERROR: $@" }
 	}
 
