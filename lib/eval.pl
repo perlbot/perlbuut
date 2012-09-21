@@ -87,7 +87,7 @@ use Tie::Hash::NamedCapture;
 BEGIN{ eval "use PHP::Interpreter;"; }
 
 # Evil Ruby stuff
-BEGIN{ eval "use Ruby qw/rb_eval/;"; }
+BEGIN{ eval "use Inline::Ruby qw/rb_eval/;"; }
 BEGIN { $SIG{SEGV} = sub { die "Segmentation Fault\n"; } } #Attempt to override the handler Ruby installs.
 
 # Evil K20 stuff
