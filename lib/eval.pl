@@ -23,6 +23,7 @@ use DateTime;
 use DateTimeX::Easy;
 use Date::Parse;
 use Time::Piece;
+use Time::HiRes;
 
 require Moose;
 require MooseX::Declare;
