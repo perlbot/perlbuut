@@ -71,6 +71,7 @@ sub new {
 				irc_ctcp_action
 				irc_join
 				irc_msg
+				irc_invite
 				irc_registered
 				irc_474
 				irc_dcc_request
