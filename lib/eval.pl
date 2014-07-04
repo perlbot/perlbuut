@@ -25,6 +25,9 @@ use Date::Parse;
 use Time::Piece;
 use Time::HiRes;
 
+require Function::Parameters;
+require experimental;
+
 require Moose;
 require MooseX::Declare;
 eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
