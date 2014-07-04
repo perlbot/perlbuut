@@ -54,4 +54,6 @@ requires 'Date::Parse' => 0;
 requires 'Moose' => 0;
 requires 'MooseX::Declare' => 0;
 
+requires 'Function::Parameters' => 0;
+
 WriteAll;
