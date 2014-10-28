@@ -67,6 +67,8 @@ no warnings;
 	}
 
 use utf8; eval "\$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
+eval "[ 'ß' =~ m/^\Qss\E\z/i ? 'True' : 'False' ];"; # Try to grab some more utf8 libs
+eval "[CORE::fc '€']";
 use charnames qw(:full);
 use PerlIO;
 use PerlIO::scalar;
