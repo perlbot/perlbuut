@@ -1,0 +1,21 @@
+version : 0.5
+languages : %
+    C : C
+    Foo : Foo
+    RUBY : Ruby
+    Ruby : Ruby
+    foo : Foo
+    rb : Ruby
+    ruby : Ruby
+types : %
+    C : compiled
+    Foo : interpreted
+    Ruby : interpreted
+modules : %
+    C : Inline::C
+    Foo : Inline::Foo
+    Ruby : Inline::Ruby
+suffixes : %
+    C : so
+    Foo : foo
+    Ruby : rbdat
