@@ -24,15 +24,21 @@ use DateTimeX::Easy;
 use Date::Parse;
 use Time::Piece;
 use Time::HiRes;
+use URI;
 
 require Function::Parameters;
 require experimental;
+require "if.pm";
 
 require Moose;
 require MooseX::Declare;
 eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
 require "utf8_heavy.pl";
 
+{
+my $len = eval "lc 'ẞ'";
+warn $@ if $@;
+}
 
 # save the old stdout, we're going to clobber it soon. STDOUT
 my $oldout;
@@ -169,7 +175,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 150 * $meg;
+	my $limit = 512 * $meg;
 
         # clobber stdout before we set rlimits.  otherwise we can't do anything STDOUT
 
