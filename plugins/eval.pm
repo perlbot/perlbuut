@@ -6,6 +6,7 @@ package Bot::BB3::Plugin::Eval;
 use POE::Filter::Reference;
 use IO::Socket::INET;
 use Data::Dumper;
+use Encode;
 use strict;
 
 no warnings 'void';
@@ -70,6 +71,8 @@ sub command {
 	}
 
 	$resultstr =~ s/\x0a?\x0d//g; # Prevent sending messages to the IRC server..
+
+    $resultstr = decode("utf8", $resultstr);
 	
 	return( 'handled', $resultstr );
 }
