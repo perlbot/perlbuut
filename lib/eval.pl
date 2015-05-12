@@ -25,6 +25,7 @@ use Date::Parse;
 use Time::Piece;
 use Time::HiRes;
 use URI;
+use URI::Encode;
 
 require Function::Parameters;
 require experimental;
@@ -34,6 +35,8 @@ require Moose;
 require MooseX::Declare;
 eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
 require "utf8_heavy.pl";
+use arybase;
+use Errno;
 
 {
 my $len = eval "lc 'ẞ'";
@@ -79,6 +82,8 @@ use charnames qw(:full);
 use PerlIO;
 use PerlIO::scalar;
 use Text::ParseWords;
+
+eval {"\N{SPARKLE}"}; # force loading of some of the charnames stuff
 
 # Required for perl_deparse
 use B::Deparse;
