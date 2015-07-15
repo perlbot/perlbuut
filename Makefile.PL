@@ -59,5 +59,8 @@ requires 'Function::Parameters' => 0;
 requires 'Rand::MersenneTwister' => 0;
 requires 'arybase' => 0;
 requires 'Errno' => 0;
+requires 'JSON' => 0;
+requires 'JSON::XS' => 0;
+requires 'JSON::MaybeXS' => 0;
 
 WriteAll;

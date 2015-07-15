@@ -31,6 +31,11 @@ use Rand::MersenneTwister;
 require Function::Parameters;
 require experimental;
 require "if.pm";
+#use JSON;
+#use JSON::XS;
+require JSON::MaybeXS;
+require JSON::XS;
+require JSON;
 
 require Moose;
 require MooseX::Declare;
@@ -61,7 +66,7 @@ no warnings;
 # deparse output being much longer than it should be.
 	sub deparse_perl_code {
 		my( $code ) = @_;
-		my $sub = eval "no strict; no warnings; no charnames; sub{ $code\n }";
+		my $sub = eval "no strict; no warnings; no charnames; use $]; sub{ $code\n }";
 		if( $@ ) { print STDOUT "Error: $@"; return }
 
 		my $dp = B::Deparse->new("-p", "-q", "-x7");
@@ -270,7 +275,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
  
 		local $_;
 
-		$code = "no strict; no warnings; package main; $code";
+		$code = "no strict; no warnings; package main; use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; $code";
 		my $ret = eval $code;
 
 		local $Data::Dumper::Terse = 1;
