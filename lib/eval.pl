@@ -33,6 +33,7 @@ require experimental;
 require "if.pm";
 #use JSON;
 #use JSON::XS;
+require Cpanel::JSON::XS;
 require JSON::MaybeXS;
 require JSON::XS;
 require JSON;
