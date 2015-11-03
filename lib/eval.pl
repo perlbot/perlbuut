@@ -67,7 +67,11 @@ no warnings;
 # deparse output being much longer than it should be.
 	sub deparse_perl_code {
 		my( $code ) = @_;
-		my $sub = eval "no strict; no warnings; no charnames; use $]; sub{ $code\n }";
+        my $sub; 
+        {
+            no strict; no warnings; no charnames;
+	    	$sub = eval "use $]; sub{ $code\n }";
+        }
 		if( $@ ) { print STDOUT "Error: $@"; return }
 
 		my $dp = B::Deparse->new("-p", "-q", "-x7");
@@ -187,7 +191,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 512 * $meg;
+	my $limit = 768 * $meg;
 
         # clobber stdout before we set rlimits.  otherwise we can't do anything STDOUT
 
@@ -276,8 +280,16 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
  
 		local $_;
 
-		$code = "no strict; no warnings; package main; use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; $code";
-		my $ret = eval $code;
+        my $ret;
+
+        my @os = qw/aix bsdos darwin dynixptx freebsd haiku linux hpux irix next openbsd dec_osf svr4 sco_sv unicos unicosmk solaris sunos MSWin32 MSWin16 MSWin63 dos os2 cygwin VMS vos os390 os400 posix-bc riscos amigaos/;
+
+        {
+        local $^O = $os[rand()*@os];
+        no strict; no warnings; package main;
+		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; $code";
+		$ret = eval $code;
+        }
 
 		local $Data::Dumper::Terse = 1;
 		local $Data::Dumper::Quotekeys = 0;

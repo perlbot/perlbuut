@@ -1,4 +1,3 @@
-use WWW::Shorten 'Metamark';
 use URI::Encode qw(uri_encode);
 
 no warnings 'void';

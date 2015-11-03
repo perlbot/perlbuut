@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use CGI;
 use LWP::Simple;
-use WWW::Shorten 'Metamark';
+use WWW::Shorten 'TinyURL';
 
 sub {
 	my($said) = @_;

@@ -5,7 +5,7 @@ use HTML::TreeBuilder::XPath;
 sub {
 	my( $said ) = @_;
 
-	my $ua = LWP::UserAgent->new( agent => "BB3WebAgent! (mozilla)" );
+	my $ua = LWP::UserAgent->new( agent => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36" );
 	my $url;
 
 	if( $said->{body} =~ s{(http://\S+)\s*}{} ) {
