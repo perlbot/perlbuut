@@ -22,7 +22,10 @@ sub handle {
         $said->{body} =~ /^!@(?<user>\S+)\s+(?<fact>.+)$/) {
         my $fact = $+{fact};
         my $user = $+{user};
-        
+
+        # TODO HACK XXX bad hack to prevent noise until better way is decided
+        return ('', 'handled') if $fact =~ /^regex\s/;
+
         my ($s, $r) = runfacts($fact, $said, $pm);
         if ($s) {
             $r = "$user: $r" if $user;
