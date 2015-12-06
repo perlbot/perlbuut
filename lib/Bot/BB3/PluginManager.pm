@@ -303,8 +303,7 @@ sub _start_plugin_child {
 
 			# Only add the default if we're being addressed
 			if( $said->{addressed} ) {
-				push @{ $chain->[1] }, @{ $self->{default_plugin_chain} }; # Append default plugins to the command section
-																																	 # of the plugin chain
+				push @{ $chain->[4] }, @{ $self->{default_plugin_chain} }; # Append default plugins to the command section
 			}
 			
 			my $results = $self->_execute_plugin_chain( $said, $chain );
@@ -406,13 +405,30 @@ sub _filter_plugin_list {
 
 sub _execute_plugin_chain {
 	my( $self, $said, $chain ) = @_;
-	my( $pre, $commands, $handlers, $post ) = @$chain;
+	my( $pre, $commands, $handlers, $post, $default ) = @$chain;
 
 	for( @$pre ) { 
 		$_->pre_process( $said, $self );
 	}
 
 	my $total_output = [];
+	for( @$handlers ) {
+        warn "HANDLE => " . ref($_);
+		local $@;
+		my( $output, $stop ) = eval { $_->handle( $said, $self ) };
+
+		if( $@ ) { push @$total_output, "Error: $@"; next; }
+
+		push @$total_output, $output if $output;
+
+        last if $stop;
+	}
+
+    # only put default in if the handlers did nothing
+    unless (@$total_output) {
+        push @$commands, @$default if (ref $default eq 'ARRAY');
+    }
+
 	for( @$commands ) {
 		local $@;
 		my( $return, $output ) = eval { $_->command( $said, $self ) };
@@ -426,15 +442,6 @@ sub _execute_plugin_chain {
 		if( $return eq 'handled' ) {
 			last;
 		}
-	}
-
-	for( @$handlers ) {
-		local $@;
-		my( $output ) = eval { $_->handle( $said, $self ) };
-
-		if( $@ ) { push @$total_output, "Error: $@"; next; }
-
-		push @$total_output, $output;
 	}
 
 	my $output = join " ", @$total_output;

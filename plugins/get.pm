@@ -33,7 +33,9 @@ sub {
         print "Could not parsinate that page!";
     }
     # just the xpath left
-    if ($said->{body}) {
+    if ($said->{body} =~ /^\s*\.\*\s*$/) {
+        print $resp->content;
+    } elsif ($said->{body}) {
         @text = eval{
             $document->findvalues( $said->{body} );
         };

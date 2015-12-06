@@ -522,7 +522,7 @@ sub plugin_output {
 	utf8::decode( $text );
 
 	return unless $text =~ /\S/;
-	$text =~ s/\0/\\0/g; # Replace nulls to prevent them truncating strings we attempt to output.
+	$text =~ s/.\K\0/\\0/g; # Replace nulls to prevent them truncating strings we attempt to output.
 
     if ($text =~ /DCC\s+SEND\s+/)
     {
@@ -578,7 +578,13 @@ sub plugin_output {
 	}
 	else {
 		$text =~ s/\r?\n/ /g;
-		$pci->yield( privmsg => $said->{channel} => "$said->{name}: $text" );
+        if ($text =~ /^\x00/) {
+            $text =~ s/^\x00//;
+
+		    $pci->yield( privmsg => $said->{channel} => $text );
+        } else {
+		    $pci->yield( privmsg => $said->{channel} => "$said->{name}: $text" );
+        }
 	}
 
 }

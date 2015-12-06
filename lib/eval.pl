@@ -27,6 +27,11 @@ use Time::HiRes;
 use URI;
 use URI::Encode;
 use Rand::MersenneTwister;
+use Mojo::DOM;
+use Mojo::DOM::HTML;
+use Mojo::DOM::CSS;
+use Mojo::Collection;
+use YAPE::Regex::Explain;
 
 require Function::Parameters;
 require experimental;
@@ -282,7 +287,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
         my $ret;
 
-        my @os = qw/aix bsdos darwin dynixptx freebsd haiku linux hpux irix next openbsd dec_osf svr4 sco_sv unicos unicosmk solaris sunos MSWin32 MSWin16 MSWin63 dos os2 cygwin VMS vos os390 os400 posix-bc riscos amigaos/;
+        my @os = qw/aix bsdos darwin dynixptx freebsd haiku linux hpux irix next openbsd dec_osf svr4 sco_sv unicos unicosmk solaris sunos MSWin32 MSWin16 MSWin63 dos os2 cygwin VMS vos os390 os400 posix-bc riscos amigaos xenix/;
 
         {
         local $^O = $os[rand()*@os];
