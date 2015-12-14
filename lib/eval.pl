@@ -91,9 +91,9 @@ no warnings;
 		print STDOUT $ret;
 	}
 
-use utf8; eval "\$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
-eval "[ 'ß' =~ m/^\Qss\E\z/i ? 'True' : 'False' ];"; # Try to grab some more utf8 libs
-eval "[CORE::fc '€']";
+eval "use utf8; \$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
+eval "use utf8; [ 'ß' =~ m/^\Qss\E\z/i ? 'True' : 'False' ];"; # Try to grab some more utf8 libs
+eval "use utf8; [CORE::fc '€']";
 use charnames qw(:full);
 use PerlIO;
 use PerlIO::scalar;
