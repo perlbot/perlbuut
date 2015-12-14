@@ -6,7 +6,7 @@ sub {
 use WWW::Shorten::TinyURL;
 use WWW::Shorten 'TinyURL';
 
-	print "New link: ", WWW::Shorten::TinyURL::makeashorterlink($said->{body}) // $said->{body};
+	print WWW::Shorten::TinyURL::makeashorterlink($said->{body}) // $said->{body};
 }
 
 
