@@ -45,7 +45,7 @@ require JSON;
 
 require Moose;
 require MooseX::Declare;
-eval "use MooseX::Declare; class Foo { has dongs => ( is => ro, isa => 'Int' ); };";
+eval "use MooseX::Declare; class LoadAllMooseXDeclare { has dongs => ( is => ro, isa => 'Int' ); };";
 require "utf8_heavy.pl";
 use arybase;
 use Errno;

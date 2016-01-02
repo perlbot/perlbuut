@@ -357,6 +357,7 @@ sub _parse_for_commands {
 	my( $self, $said, $commands ) = @_;
 
 	my $command_re = join '|', map "\Q$_", keys %$commands;
+        warn "$command_re";
 	$command_re = qr/$command_re/; #TODO move to _pre_build_chains and switch to Trie
 
 	if( (!$said->{addressed} && $said->{body} =~ s/^\s*($command_re)[:,;]\s*(.+)/$2/)
