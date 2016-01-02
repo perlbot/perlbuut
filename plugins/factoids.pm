@@ -117,12 +117,13 @@ sub command {
           #i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
           $fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
         }
-        elsif (($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)|i) ||
-               ($subject =~ m/^\s*(.*?)\s*=~\s*s\{(.+)\}\{(.*)\}([gi]*)/i))
+        elsif (($subject =~ m|^\s*(.*?)\s*=~\s*s/([^/]+)/([^/]*)/([gi]*)\s*$|i) ||
+               ($subject =~ m/^\s*(.*?)\s*=~\s*s\{(.+)\}\{(.*)\}([gi]*)\s*$/i))
         {
           $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
         }
 	elsif( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
+                return if $said->{nolearn};
 		my @ret = $self->store_factoid( $said ); 
 
 		$fact_string = "Failed to store $said->{body}" unless @ret;
@@ -441,6 +442,8 @@ sub get_fact_revert {
 sub get_fact_learn {
 	my( $self, $body, $name, $said, $subject, $predicate ) = @_;
 
+        return if ($said->{nolearn});
+	
 	$body =~ s/^\s*learn\s+//;
 	($subject, $predicate ) = split /\s+as\s+/, $body, 2 unless ($subject && $predicate);
 
@@ -619,6 +622,8 @@ sub basic_get_fact {
 		my $soundex = soundex( _clean_subject($subject, 1) );
 
 		my $matches = $self->_soundex_matches( $soundex );
+		
+		push @{$said->{soundex_matches}}, @$matches;
 		
 		if( ($matches and @$matches) && (!$said->{backdressed}) ) {
 			return "No factoid found. Did you mean one of these: " . join " ", map "[$_]", @$matches;
