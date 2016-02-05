@@ -182,6 +182,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 			chdir "./jail" or die "Failed to find a jail live in, couldn't make one either: $!\n";
 		};
 
+    # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
+    open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
+
 	chroot(".") or die $!;
 
 	# Here's where we actually drop our root privilege
@@ -197,8 +200,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
 	my $limit = 768 * $meg;
-
-        # clobber stdout before we set rlimits.  otherwise we can't do anything STDOUT
 
 	(
 	setrlimit(RLIMIT_VMEM, 1024*$meg, 1024*$meg)
@@ -229,7 +230,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	#setrlimit(RLIMIT_MSGQUEUE,100,100);
 
 	die "Failed to drop root: $<" if $< == 0;
-	close STDIN;
+	# close STDIN;
 
 	$code =~ s/^\s*(\w+)\s*//
 		or die "Failed to parse code type! $code";
