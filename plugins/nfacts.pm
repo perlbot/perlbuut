@@ -135,8 +135,8 @@ sub runfacts {
     my $err = $@;
     
     push @suggests, @{$said->{soundex_matches} // []};
-    
-    if (!$results || !$status || $err) {
+   
+    if ($err || !$status || !defined($results)) {
         $said->{body} = $body;
         $said->{recommended_args} = [ split /\s+/, $said->{body} ];
         $said->{nolearn} = 1; # never learn a global this way

@@ -135,7 +135,7 @@ sub command {
           $fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
         }
 
-	if( $fact_string ) {
+	if( defined $fact_string ) {
           return( 'handled', $fact_string );
         }
 	else {

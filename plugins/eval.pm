@@ -73,6 +73,7 @@ sub command {
 	$resultstr =~ s/\x0a?\x0d//g; # Prevent sending messages to the IRC server..
 
     $resultstr = decode("utf8", $resultstr);
+    $resultstr =~ s/\0//g;
 	
 	return( 'handled', $resultstr );
 }
