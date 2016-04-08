@@ -72,5 +72,8 @@ requires 'Mojo::DOM' => 0;
 requires 'Mojo::DOM::CSS' => 0;
 requires 'Mojo::Collection' => 0;
 requires 'YAPE::Regex::Explain' => 0;
+requires 'bigint' => 0;
+requires 'Math::BigInt' => 0;
+requires 'indirect' => 0;
 
 WriteAll;

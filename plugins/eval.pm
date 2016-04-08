@@ -20,6 +20,7 @@ sub new {
 		command => 1,
 	};
 	$self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/ ];
+    $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
 }
@@ -28,6 +29,7 @@ sub command {
 	my( $self, $said, $pm ) = @_;
 
 	my $code = $said->{"body"};
+    my $dbh = $self->{dbh};
 
 	my $type = $said->{command_match};
 	$type =~ s/^\s*(\w+?)eval/$1/;
@@ -65,6 +67,8 @@ sub command {
 
 	my $result = $filter->get( [ $output ] );
 	my $resultstr = $result->[0]->[0];
+
+    $dbh->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
 
 	if (!$said->{captured} && $resultstr !~ /\S/) {
 		$resultstr = "No output.";

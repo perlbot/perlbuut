@@ -50,6 +50,10 @@ require "utf8_heavy.pl";
 use arybase;
 use Errno;
 
+require indirect;
+
+eval 'use bigint; use Math::BigInt; 1e1000';
+
 {
 my $len = eval "lc 'ẞ'";
 warn $@ if $@;
@@ -105,7 +109,7 @@ eval {"\N{SPARKLE}"}; # force loading of some of the charnames stuff
 use B::Deparse;
 
 # Javascript Libs
-BEGIN{ eval "use JavaScript::V8; use JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
+BEGIN{ eval "use JavaScript::V8; require JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
 my $JSENV_CODE = do { local $/; open my $fh, "deps/env.js"; <$fh> };
 require 'bytes_heavy.pl';
 
@@ -199,10 +203,10 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 768 * $meg;
+	my $limit = 1024 * $meg;
 
 	(
-	setrlimit(RLIMIT_VMEM, 1024*$meg, 1024*$meg)
+	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
 		and
 	setrlimit(RLIMIT_DATA, $limit, $limit )
 		and
