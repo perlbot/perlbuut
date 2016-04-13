@@ -20,22 +20,22 @@ use Encode;
 use Digest::MD5;
 use Digest::SHA;
 use DateTime;
-use DateTimeX::Easy;
+# use DateTimeX::Easy;
 use Date::Parse;
 use Time::Piece;
 use Time::HiRes;
 use URI;
 use URI::Encode;
-use Rand::MersenneTwister;
-use Mojo::DOM;
-use Mojo::DOM::HTML;
-use Mojo::DOM::CSS;
-use Mojo::Collection;
-use YAPE::Regex::Explain;
+# use Rand::MersenneTwister;
+#use Mojo::DOM;
+#use Mojo::DOM::HTML;
+#use Mojo::DOM::CSS;
+#use Mojo::Collection;
+#use YAPE::Regex::Explain;
 
 require Function::Parameters;
 require experimental;
-require "if.pm";
+#require "if.pm";
 #use JSON;
 #use JSON::XS;
 require Cpanel::JSON::XS;
@@ -45,7 +45,7 @@ require JSON;
 
 require Moose;
 require MooseX::Declare;
-eval "use MooseX::Declare; class LoadAllMooseXDeclare { has dongs => ( is => ro, isa => 'Int' ); };";
+# eval "use MooseX::Declare; class LoadAllMooseXDeclare { has dongs => ( is => ro, isa => 'Int' ); };";
 require "utf8_heavy.pl";
 use arybase;
 use Errno;
@@ -108,10 +108,10 @@ eval {"\N{SPARKLE}"}; # force loading of some of the charnames stuff
 # Required for perl_deparse
 use B::Deparse;
 
-# Javascript Libs
-BEGIN{ eval "use JavaScript::V8; require JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
-my $JSENV_CODE = do { local $/; open my $fh, "deps/env.js"; <$fh> };
-require 'bytes_heavy.pl';
+## Javascript Libs
+#BEGIN{ eval "use JavaScript::V8; require JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
+#my $JSENV_CODE = do { local $/; open my $fh, "deps/env.js"; <$fh> };
+#require 'bytes_heavy.pl';
 
 use Tie::Hash::NamedCapture;
 
@@ -121,34 +121,34 @@ use Tie::Hash::NamedCapture;
  }
  binmode STDOUT, ":utf8"; # Enable utf8 output.
 
-BEGIN{ eval "use PHP::Interpreter;"; }
+#BEGIN{ eval "use PHP::Interpreter;"; }
 
 # Evil Ruby stuff
-BEGIN{ eval "use Inline::Ruby qw/rb_eval/;"; }
-BEGIN { $SIG{SEGV} = sub { die "Segmentation Fault\n"; } } #Attempt to override the handler Ruby installs.
+#BEGIN{ eval "use Inline::Ruby qw/rb_eval/;"; }
+#BEGIN { $SIG{SEGV} = sub { die "Segmentation Fault\n"; } } #Attempt to override the handler Ruby installs.
 
-# Evil K20 stuff
-BEGIN {
-	local $@;
-	eval "use Language::K20;"; 
-	unless( $@ ) {
-		Language::K20::k20eval( "2+2\n" ); # This eval loads the dynamic components before the chroot.
-                                   # Note that k20eval always tries to output to stdout so we
-                                   # must end the command with a \n to prevent this output.
-	}
-}
+# # Evil K20 stuff
+# BEGIN {
+# 	local $@;
+# 	eval "use Language::K20;"; 
+# 	unless( $@ ) {
+# 		Language::K20::k20eval( "2+2\n" ); # This eval loads the dynamic components before the chroot.
+#                                    # Note that k20eval always tries to output to stdout so we
+#                                    # must end the command with a \n to prevent this output.
+# 	}
+# }
+# 
+# BEGIN { chdir "var/"; $0="../$0"; } # CHDIR to stop inline from creating stupid _Inline directories everywhere
+# # Inline::Lua doesn't seem to provide an eval function. SIGH.
+# BEGIN { eval 'use Inline Lua => "function lua_eval(str) return loadstring(str) end";'; }
+# BEGIN { chdir ".."; $0=~s/^\.\.\/// } # Assume our earlier chdir succeded. Yay!
 
-BEGIN { chdir "var/"; $0="../$0"; } # CHDIR to stop inline from creating stupid _Inline directories everywhere
-# Inline::Lua doesn't seem to provide an eval function. SIGH.
-BEGIN { eval 'use Inline Lua => "function lua_eval(str) return loadstring(str) end";'; }
-BEGIN { chdir ".."; $0=~s/^\.\.\/// } # Assume our earlier chdir succeded. Yay!
 
+# # Evil python stuff
+# BEGIN { eval "use Inline::Python qw/py_eval/;"; }
 
-# Evil python stuff
-BEGIN { eval "use Inline::Python qw/py_eval/;"; }
-
-# Evil J stuff
-BEGIN { eval "use Jplugin;"; }
+# # Evil J stuff
+# BEGIN { eval "use Jplugin;"; }
 
 use Carp::Heavy;
 use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on demand
@@ -203,7 +203,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 1024 * $meg;
+	my $limit = 200 * $meg;
 
 	(
 	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
@@ -248,30 +248,30 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	if( $type eq 'perl' or $type eq 'pl' ) {
 		perl_code($code);
 	}
-	elsif( $type eq 'javascript' ) {
-		javascript_code($code);
-	}
-	elsif( $type eq 'php' ) {
-		php_code($code);
-	}
 	elsif( $type eq 'deparse' ) {
 		deparse_perl_code($code);
 	}
-	elsif( $type eq 'k20' ) {
-		k20_code($code);
-	}
-	elsif( $type eq 'rb' or $type eq 'ruby' ) {
-		ruby_code($code);
-	}
-	elsif( $type eq 'py' or $type eq 'python' ) {
-		python_code($code);
-	}
-	elsif( $type eq 'lua' ) {
-		lua_code($code);
-	}
-	elsif( $type eq 'j' ) {
-		j_code($code);
-	}
+#	elsif( $type eq 'javascript' ) {
+#		javascript_code($code);
+#	}
+#	elsif( $type eq 'php' ) {
+#		php_code($code);
+#	}
+#	elsif( $type eq 'k20' ) {
+#		k20_code($code);
+#	}
+#	elsif( $type eq 'rb' or $type eq 'ruby' ) {
+#		ruby_code($code);
+#	}
+#	elsif( $type eq 'py' or $type eq 'python' ) {
+#		python_code($code);
+#	}
+#	elsif( $type eq 'lua' ) {
+#		lua_code($code);
+#	}
+#	elsif( $type eq 'j' ) {
+#		j_code($code);
+#	}
 
 #        *STDOUT = $oldout;
         close($stdh);
@@ -315,88 +315,88 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 
 
-	sub javascript_code {
-		my( $code ) = @_;
-		local $@;
-
-		my $js = JavaScript::V8::Context->new;
-
-		# Set up the Environment for ENVJS
-		$js->bind("print", sub { print @_ } );
-		$js->bind("write", sub { print @_ } );
-
-#		for( qw/log debug info warn error/ ) {
-#			$js->eval("Envjs.$_=function(x){}");
-#		}
-
-#		$js->eval($JSENV_CODE) or die $@;
-
-                $code =~ s/(["\\])/\\$1/g;
-                my $rcode = qq{write(eval("$code"))};
-
-       
-
-		my $out = eval { $js->eval($rcode) };
-
-		if( $@ ) { print "ERROR: $@"; }
-                else { print encode_json $out }
-	}
-
-	sub ruby_code {
-		my( $code ) = @_;
-		local $@;
-
-		print rb_eval( $code );
-	}
-
-	sub php_code {
-		my( $code ) = @_;
-		local $@;
-
-		#warn "PHP - [$code]";
-
-		my $php = PHP::Interpreter->new;
-
-		$php->set_output_handler(\ my $output );
-
-		$php->eval("$code;");
-
-		print $php->get_output;
-
-		#warn "ENDING";
-
-		if( $@ ) { print "ERROR: $@"; }
-	}
-
-	sub k20_code {
-		my( $code ) = @_;
-
-		$code =~ s/\r?\n//g;
-
-		
-		Language::K20::k20eval( '."\\\\r ' . int(rand(2**31)) . '";' . "\n"); # set random seed
-		
-		Language::K20::k20eval(	$code );
-	}
-
-	sub python_code {
-		my( $code ) = @_;
-
-		py_eval( $code, 2 );
-	}
-
-	sub lua_code {
-		my( $code ) = @_;
-
-		#print lua_eval( $code )->();
-
-		my $ret = lua_eval( $code );
-
-		print ref $ret ? $ret->() : $ret;
-	}
-
-	sub j_code {
-		my( $code ) = @_;
-
-		Jplugin::jplugin( $code );
-	}
+# 	sub javascript_code {
+# 		my( $code ) = @_;
+# 		local $@;
+# 
+# 		my $js = JavaScript::V8::Context->new;
+# 
+# 		# Set up the Environment for ENVJS
+# 		$js->bind("print", sub { print @_ } );
+# 		$js->bind("write", sub { print @_ } );
+# 
+# #		for( qw/log debug info warn error/ ) {
+# #			$js->eval("Envjs.$_=function(x){}");
+# #		}
+# 
+# #		$js->eval($JSENV_CODE) or die $@;
+# 
+#                 $code =~ s/(["\\])/\\$1/g;
+#                 my $rcode = qq{write(eval("$code"))};
+# 
+#        
+# 
+# 		my $out = eval { $js->eval($rcode) };
+# 
+# 		if( $@ ) { print "ERROR: $@"; }
+#                 else { print encode_json $out }
+# 	}
+# 
+# 	sub ruby_code {
+# 		my( $code ) = @_;
+# 		local $@;
+# 
+# 		print rb_eval( $code );
+# 	}
+# 
+# 	sub php_code {
+# 		my( $code ) = @_;
+# 		local $@;
+# 
+# 		#warn "PHP - [$code]";
+# 
+# 		my $php = PHP::Interpreter->new;
+# 
+# 		$php->set_output_handler(\ my $output );
+# 
+# 		$php->eval("$code;");
+# 
+# 		print $php->get_output;
+# 
+# 		#warn "ENDING";
+# 
+# 		if( $@ ) { print "ERROR: $@"; }
+# 	}
+# 
+# 	sub k20_code {
+# 		my( $code ) = @_;
+# 
+# 		$code =~ s/\r?\n//g;
+# 
+# 		
+# 		Language::K20::k20eval( '."\\\\r ' . int(rand(2**31)) . '";' . "\n"); # set random seed
+# 		
+# 		Language::K20::k20eval(	$code );
+# 	}
+# 
+# 	sub python_code {
+# 		my( $code ) = @_;
+# 
+# 		py_eval( $code, 2 );
+# 	}
+# 
+# 	sub lua_code {
+# 		my( $code ) = @_;
+# 
+# 		#print lua_eval( $code )->();
+# 
+# 		my $ret = lua_eval( $code );
+# 
+# 		print ref $ret ? $ret->() : $ret;
+# 	}
+# 
+# 	sub j_code {
+# 		my( $code ) = @_;
+# 
+# 		Jplugin::jplugin( $code );
+# 	}

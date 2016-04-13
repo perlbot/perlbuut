@@ -68,7 +68,9 @@ sub command {
 	my $result = $filter->get( [ $output ] );
 	my $resultstr = $result->[0]->[0];
 
-    $dbh->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
+    if ($type eq 'perl') {
+        $dbh->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
+    }
 
 	if (!$said->{captured} && $resultstr !~ /\S/) {
 		$resultstr = "No output.";
