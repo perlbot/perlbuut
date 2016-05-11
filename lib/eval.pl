@@ -203,7 +203,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 200 * $meg;
+	my $limit = 300 * $meg;
 
 	(
 	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
