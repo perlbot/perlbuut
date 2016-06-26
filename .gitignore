@@ -1,1 +1,8 @@
 etc/bing_secret.txt
+inc/
+META.yml
+MYMETA.json
+MYMETA.yml
+Makefile
+modules.lst
+*.log
