@@ -91,6 +91,8 @@ no warnings;
 			$ret =~ s/ no warnings;//;
 			$ret =~ s/\s+/ /g;
 			$ret =~ s/\s*\}\s*$//;
+            $ret =~ s/\s*\$\^H\{[^}]+\}(\s+=\s+[^;]+;?)?\s*//g;
+            $ret =~ s/\s*BEGIN\s*\{\s*[^}]*\s*\}\s*/ /;
 
 		print STDOUT $ret;
 	}
@@ -155,6 +157,8 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 	my $code = do { local $/; <STDIN> };
 
+    # Kill @INC to shorten errors;
+    @INC = ();
 
 	# Close every other filehandle we may have open
 	# this is probably legacy code at this point since it was used
