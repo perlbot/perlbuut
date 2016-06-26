@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Bing::Translate;
+#use Bing::Translate;
 
 
 

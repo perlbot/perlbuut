@@ -20,6 +20,27 @@ sub new {
 	return $self;
 }
 
+{
+    my $dbh;
+    sub dbh {
+        if( $dbh and $dbh->ping ) {
+            return $dbh;
+        }
+
+        $dbh = DBI->connect( "dbi:SQLite:dbname=var/allowpaste.db", "", "", { PrintError => 0, RaiseError => 1 } );
+
+        return $dbh;
+    }
+}
+
+sub get_status {
+    my ($chancon) = @_;
+
+    my $status = dbh()->selectrow_hashref('SELECT value FROM allowpaste WHERE channel = ?', {}, $chancon);
+
+    return ($status // {})->{value};
+}
+
 sub _start {
 	my( $self, $kernel ) = @_[OBJECT,KERNEL];
 	my $conf = $self->{conf};
@@ -50,13 +71,19 @@ sub receive_paste {
         if( $alert_channel !~ /^\s*---/ ) { # Ignore things like "---irc.freenode, skip server names
             my($server,$nick,$channel) = split /:/,$alert_channel,3;
 
-            $_[KERNEL]->post( "Bot::BB3::Roles::IRC", 
-                external_message => 
-                    $server, 
-                    $nick, 
-                    $channel,
-                "$who pasted a new file at $link - $summary"
-            );
+            my $setting = get_status($alert_channel) // 1;
+
+            if ($setting) {
+                $_[KERNEL]->post( "Bot::BB3::Roles::IRC", 
+                    external_message => 
+                        $server, 
+                        $nick, 
+                        $channel,
+                    "$who pasted a new file at $link - $summary"
+                );
+            } else {
+                return; # we've been disallowed
+            }
         }
     }
 }

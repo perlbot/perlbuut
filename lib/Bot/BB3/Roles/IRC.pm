@@ -500,6 +500,16 @@ sub external_message {
 	}
 }
 
+sub get_server_conf {
+	my( $self, $input_pci_id) = @_[OBJECT,ARG0];
+
+	for my $pci_id ( keys %{ $self->{bot_confs} } ) {
+		my $conf = $self->{bot_confs}->{$pci_id};
+		my $poco_irc = $self->get_component($pci_id);
+
+    }
+}
+
 sub channel_list {
 	my( $self, $kernel, $sender ) = @_[OBJECT,KERNEL,SENDER];
 		
