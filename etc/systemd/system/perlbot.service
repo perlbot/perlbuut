@@ -1,0 +1,16 @@
+[Unit]
+Description=Perlbot service
+After=network.target
+
+[Service]
+Type=simple
+User=ryan
+Group=ryan
+ExecStart=/home/ryan/perl5/perlbrew/perls/perlbot-inuse/bin/perl /home/ryan/bots/perlbuut/bin/bb3
+
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,16 @@
+[Unit]
+Description=Perlbot eval server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/home/ryan/bots/perlbuut/bin/evalserver
+
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
+
