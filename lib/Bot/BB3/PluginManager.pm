@@ -41,7 +41,7 @@ sub new {
 sub yield {
 	my ( $self, $event, @args ) = @_;
 
-	warn "YIELD CALLED: $event\n";
+	# warn "YIELD CALLED: $event\n";
 
 	return POE::Kernel->post( $self->{session}, $event, @args );
 }
@@ -49,7 +49,7 @@ sub yield {
 sub call {
 	my ( $self, $event, @args ) = @_;
 
-	warn "CALL CALLED: $event\n";
+	# warn "CALL CALLED: $event\n";
 
 	return POE::Kernel->call( $self->{session}, $event, @args );
 }
@@ -478,7 +478,7 @@ sub handle_said_queue {
 	return unless $queue and @$queue;
 
 	while( defined( my $said = shift @$queue ) ) {
-		warn "Queuing $said\n";
+		# warn "Queuing $said\n";
 
 		for( @$children ) { 
 			warn "Checking ", $_->{wheel}->PID, ": $_->{queue}";
@@ -601,10 +601,10 @@ sub child_output {
 	my( $self, $kernel, $output, $child_id ) = @_[OBJECT,KERNEL,ARG0,ARG1];
 	my( $said, $text ) = @$output;
 
-	warn "Got some child output! $text\n";
+	# warn "Got some child output! $text\n";
 
 	my $child = $self->{children}->{$child_id};
-	warn "Deleting child queue: $child_id, $child->{queue}";
+	# warn "Deleting child queue: $child_id, $child->{queue}";
 	$child->{queue} = undef;
 
 	$self->yield('handle_said_queue');
@@ -639,7 +639,7 @@ sub child_err {
 
 	return unless $err_output =~ /\S/;
 
-	warn "\n\tChild $child_id: $err_output\n";
+	# warn "\n\tChild $child_id: $err_output\n";
 }
 
 sub child_fail {
