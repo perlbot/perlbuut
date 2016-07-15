@@ -19,7 +19,7 @@ sub new {
 	$self->{opts} = {
 		command => 1,
 	};
-	$self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/ ];
+	$self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval weval/ ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -31,6 +31,7 @@ sub command {
 	my $code = $said->{"body"};
     my $dbh = $self->{dbh};
 
+    my $command = $said->{command_match};
 	my $type = $said->{command_match};
 	$type =~ s/^\s*(\w+?)eval/$1/;
 	warn "Initial type: $type\n";
@@ -48,11 +49,16 @@ sub command {
 		'python' => 'python',
 		'lua' => 'lua',
 		'j' => 'j',
+        'w' => 'perl',
 	);
 
 	$type = $translations{$type};
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
+
+    if ($command eq 'weval') {
+        $code = "use warnings; ".$code;
+    }
 
 	my $filter = POE::Filter::Reference->new();
 	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14400' )
