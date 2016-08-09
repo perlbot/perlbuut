@@ -301,7 +301,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
         {
         local $^O = $os[rand()*@os];
         no strict; no warnings; package main;
-		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; $code";
+		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs'; $code";
 		$ret = eval $code;
         }
 
