@@ -580,6 +580,7 @@ sub _db_get_fact {
 sub basic_get_fact {
 	my( $self, $pm, $said, $subject, $name, $call_only ) = @_;
 
+ #   open(my $fh, ">>/tmp/facts");
 	my ($fact, $key, $arg);
 	$key = _clean_subject($subject);
 
@@ -605,7 +606,13 @@ sub basic_get_fact {
 			local $said->{body} = $fact->{predicate};
 			local $said->{addressed} = 1; # Force addressed to circumvent restrictions? May not be needed!
 
-			return $plugin->command($said,$pm);
+            my $ret = $plugin->command($said, $pm);
+#            use Data::Dumper;
+#            print $fh Dumper({key => $key, arg => $arg, fact => $fact, ret => $ret, wa => wantarray});
+
+            $ret = "\x00$ret" if ($key eq "tell");
+
+			return $ret;
 		}
 		else {
 			return "$fact->{predicate}";
