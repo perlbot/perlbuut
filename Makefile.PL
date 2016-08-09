@@ -75,5 +75,6 @@ requires 'YAPE::Regex::Explain' => 0;
 requires 'bigint' => 0;
 requires 'Math::BigInt' => 0;
 requires 'indirect' => 0;
+#requires 'List::Gather' => 0;
 
 WriteAll;
