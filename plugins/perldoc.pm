@@ -31,7 +31,7 @@ sub {
 	{#http://search.cpan.org/search?query=foo%3ABar&mode=all
 	  my $query = uri_encode($1);
 #	  $query =~ s/%20/+/g;
-	  $url = "https://metacpan.org/module/".$query;
+	  $url = "https://p3rl.org/".$query;
 #	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /::/) #module, go to cpan also
@@ -40,7 +40,7 @@ sub {
 	  $trimmed =~ s/^\s*(\S+)\s*$/$1/;
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
-	  $url = "https://metacpan.org/search?q=".$query;
+	  $url = "https://p3rl.org/".$query;
 #	  $url = makeashorterlink($url);
 	}
 	else # we've got just a plain word, use it as a doc title
