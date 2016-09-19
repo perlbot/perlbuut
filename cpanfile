@@ -1,14 +1,3 @@
-#!env perl
-
-use strict;  
-use warnings;
-
-use inc::Module::Install;
-
-name "Buubot";
-version 0.1;
-#all_from       'lib/Bot/BB3.pm';
-
 requires  'POE' => 0;
 requires  'Parse::RecDescent' => 0;
 requires  'Config::General' => 0;
@@ -78,6 +67,3 @@ requires 'Math::BigFloat' => 0;
 requires 'Math::BigRat' => 0;
 requires 'indirect' => 0;
 requires 'Moo' => 0;
-#requires 'List::Gather' => 0;
-
-WriteAll;
