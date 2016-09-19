@@ -27,9 +27,9 @@ use Time::HiRes;
 use URI;
 use URI::Encode;
 # use Rand::MersenneTwister;
-#use Mojo::DOM;
-#use Mojo::DOM::HTML;
-#use Mojo::DOM::CSS;
+use Mojo::DOM;
+use Mojo::DOM::HTML;
+use Mojo::DOM::CSS;
 #use Mojo::Collection;
 #use YAPE::Regex::Explain;
 
@@ -43,6 +43,7 @@ require JSON::MaybeXS;
 require JSON::XS;
 require JSON;
 
+require Moo;
 require Moose;
 require MooseX::Declare;
 # eval "use MooseX::Declare; class LoadAllMooseXDeclare { has dongs => ( is => ro, isa => 'Int' ); };";
@@ -53,6 +54,8 @@ use Errno;
 require indirect;
 
 eval 'use bigint; use Math::BigInt; 1e1000';
+eval 'use Math::BigFloat; 1.1e1000';
+eval 'use Math::BigRat; 1e1000';
 
 {
 my $len = eval "lc 'ẞ'";
