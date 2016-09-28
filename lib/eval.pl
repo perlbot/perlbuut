@@ -44,7 +44,12 @@ require JSON::XS;
 require JSON;
 
 require Moo;
+require Moo::Object;
+require Moo::Role;
 require Moose;
+require Moose::Role;
+require Method::Generate::Accessor;
+require Method::Generate::Constructor;
 require MooseX::Declare;
 # eval "use MooseX::Declare; class LoadAllMooseXDeclare { has dongs => ( is => ro, isa => 'Int' ); };";
 require "utf8_heavy.pl";
@@ -56,6 +61,7 @@ require indirect;
 eval 'use bigint; use Math::BigInt; 1e1000';
 eval 'use Math::BigFloat; 1.1e1000';
 eval 'use Math::BigRat; 1e1000';
+require autovivification;
 
 {
 my $len = eval "lc 'ẞ'";
