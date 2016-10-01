@@ -67,3 +67,4 @@ requires 'Math::BigFloat' => 0;
 requires 'Math::BigRat' => 0;
 requires 'indirect' => 0;
 requires 'Moo' => 0;
+requires 'autovivification' => 0;

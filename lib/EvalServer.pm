@@ -61,8 +61,8 @@ warn "Spawning Eval: $args->{code}\n";
 
 	$wheel->put( $args->{code} );
 
-	warn "Adding delay for 12 seconds: ", $wheel->ID;
-	$kernel->delay_set( timeout => 12, $wheel->ID );
+	warn "Adding delay for 30 seconds: ", $wheel->ID;
+	$kernel->delay_set( timeout => 30, $wheel->ID );
 }
 
 sub timeout {
