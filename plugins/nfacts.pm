@@ -95,9 +95,9 @@ sub handle {
 
     my $prefix = $conf->{prefix} || "!";
     
-    my $regex = qr/^\Q$prefix\E(?<fact>[^@].*?)(?:\s@\s*(?<user>\S*))?$/;
+    my $regex = qr/^\Q$prefix\E(?<fact>[^@].*?)(?:\s@\s*(?<user>\S*)\s*)?$/;
 
-    if ($said->{body} =~ /^\Q$prefix\E(?<fact>[^@].*?)(?:\s@\s*(?<user>\S*))?$/ ||
+    if ($said->{body} =~ /^\Q$prefix\E(?<fact>[^@].*?)(?:\s@\s*(?<user>\S*)\s*)?$/ ||
         $said->{body} =~ /^\Q$prefix\E!@(?<user>\S+)\s+(?<fact>.+)$/) {
         my $fact = $+{fact};
         my $user = $+{user};
