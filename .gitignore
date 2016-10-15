@@ -6,3 +6,7 @@ MYMETA.yml
 Makefile
 modules.lst
 *.log
+jail/dev/
+jail/lib/
+jail/usr/
+jail/perl5/

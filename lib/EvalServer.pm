@@ -40,7 +40,7 @@ sub spawn_eval {
 	}
 warn "Spawning Eval: $args->{code}\n";
 	my $wheel = POE::Wheel::Run->new(
-		Program => [ $^X, $filename ],
+		Program => sub { system($^X, $filename); print "[Died $?]" if $? },
 		ProgramArgs => [ ],
 
 		CloseOnCall => 1, #Make sure all of the filehandles are closed.
@@ -64,6 +64,7 @@ warn "Spawning Eval: $args->{code}\n";
 	warn "Adding delay for 30 seconds: ", $wheel->ID;
 	$kernel->delay_set( timeout => 30, $wheel->ID );
 }
+
 
 sub timeout {
 	my( $self, $wheel_id ) = @_[OBJECT,ARG0];
