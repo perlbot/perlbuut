@@ -61,6 +61,7 @@ sub get_seccomp {
     # also seems to be used when freeing/allocating large blocks of memory, as you'd expect
     $rule_add->(mmap => );
     $rule_add->(munmap => );
+    $rule_add->(mremap => );
     $rule_add->(mprotect =>);
 
     # These are the allowed modes on open, allow that to work in any combo
