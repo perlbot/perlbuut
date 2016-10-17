@@ -79,3 +79,11 @@ requires 'Switch::Plain' => 0;
 requires 'Quote::Code' => 0;
 requires 'JSON::Tiny' => 0;
 
+requires 'List::SomeUtils' => 0;
+requires 'IO::Async' => 0; 
+requires 'Future' => 0;
+requires 'Class::Tiny' => 0;
+requires 'Capture::Tiny' => 0;
+
+requires 'Return::MultiLevel' => 0;
+requires 'Try::Tiny::ByClass' => 0;
