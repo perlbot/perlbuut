@@ -75,3 +75,7 @@ requires 'Cwd' => 0;
 requires 'File::Slurper' => 0;
 requires 'Path::Tiny' => 0;
 requires 'Time::Moment' => 0;
+requires 'Switch::Plain' => 0;
+requires 'Quote::Code' => 0;
+requires 'JSON::Tiny' => 0;
+
