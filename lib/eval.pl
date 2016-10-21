@@ -210,11 +210,11 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	# that chroot will prevent, so do it here.
 	setrlimit(RLIMIT_CPU, 10,10);
 
-	# Root Check
-	if( $< != 0 )
-	{
-		die "Not root, can't chroot or take other precautions, dying\n";
-	}
+# 	# Root Check
+# 	if( $< != 0 )
+# 	{
+# 		die "Not root, can't chroot or take other precautions, dying\n";
+# 	}
 
 	# The chroot section
 	chdir($FindBin::Bin."/../jail") or die "Jail not made, see bin/makejail.sh";
@@ -224,11 +224,11 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 	chroot(".") or die $!;
 
-	# Here's where we actually drop our root privilege
-	$)="$nobody_uid $nobody_uid";
-	$(=$nobody_uid;
-	$<=$>=$nobody_uid;
-	POSIX::setgid($nobody_uid); #We just assume the uid is the same as the gid. Hot.
+# 	# Here's where we actually drop our root privilege
+# 	$)="$nobody_uid $nobody_uid";
+# 	$(=$nobody_uid;
+# 	$<=$>=$nobody_uid;
+# 	POSIX::setgid($nobody_uid); #We just assume the uid is the same as the gid. Hot.
 
 
 	die "Failed to drop to nobody"
