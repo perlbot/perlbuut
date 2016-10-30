@@ -334,7 +334,7 @@ get_seccomp();
         {
         local $^O = $os[rand()*@os];
         no strict; no warnings; package main;
-		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs'; $code";
+		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs';\n$code";
 		$ret = eval $code;
         }
 
