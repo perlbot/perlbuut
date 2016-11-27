@@ -264,7 +264,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	)
 		or die "Failed to set rlimit: $!";
 
-        %ENV=();
+        %ENV=(TZ=>'Asia/Pyongyang');
 	#setrlimit(RLIMIT_MSGQUEUE,100,100);
 
 	die "Failed to drop root: $<" if $< == 0;
@@ -324,6 +324,7 @@ get_seccomp();
 		my( $code ) = @_;
 		local $@;
 		local @INC = map {s|/home/ryan||r} @INC;
+        local $$=24601;
 
 		local $_;
 
