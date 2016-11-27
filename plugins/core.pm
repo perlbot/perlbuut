@@ -18,9 +18,14 @@ sub {
     my ( $said, $pm ) = @_;
     my $module = $said->{recommended_args}->[0];
 
+    unless ($module) {
+        print "usage: core Module::Here";
+        return 'handled';
+    }
+
     my $rev = Module::CoreList->first_release($module);
     if ($rev) {
-        print "Added to perl core as of $rev";
+        print "$module Added to perl core as of $rev";
         if ( Module::CoreList->can('deprecated_in') ) {
             my $dep = Module::CoreList->deprecated_in($module);
             print " and deprecated in $dep" if $dep;
