@@ -157,7 +157,7 @@ use Tie::Hash::NamedCapture;
  uc "\x{666}"; #Attempt to load unicode libraries.
  lc "JONQUIÉRE";
  }
- binmode STDOUT, ":utf8"; # Enable utf8 output.
+ binmode STDOUT, ":encoding(utf8)"; # Enable utf8 output.
 
 #BEGIN{ eval "use PHP::Interpreter;"; }
 

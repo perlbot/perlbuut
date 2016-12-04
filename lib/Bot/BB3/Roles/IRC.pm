@@ -8,6 +8,7 @@ use POE::Wheel::Run;
 use POE::Filter::Reference;
 use POE::Component::IRC::Common qw/parse_user l_irc/;
 use POE::Component::IRC::State;
+use POE::Component::IRC;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Plugin::NickReclaim;
@@ -531,6 +532,8 @@ sub plugin_output {
 
 	utf8::decode( $text );
 
+#    $text = unpack "H*", $text;
+
 	return unless $text =~ /\S/;
 	$text =~ s/.\K\0/\\0/g; # Replace nulls to prevent them truncating strings we attempt to output.
 
@@ -573,6 +576,7 @@ sub plugin_output {
 			# Note that in the future we'll probably want to generalize channels
 			# that receive multiple lines and those that don't..
 			while( length $text ) {
+                $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 				my $substr = substr( $text, 0, 400, '' );
 				$pci->yield( privmsg => $said->{name} => $substr );
 
@@ -584,6 +588,7 @@ sub plugin_output {
 		}
 	}
 	elsif ( $said->{channel} eq '*dcc_chat' ) { 
+        $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 		$pci->yield( dcc_chat => $said->{dcc_id} => $text );
 	}
 	else {
@@ -591,8 +596,10 @@ sub plugin_output {
         if ($text =~ /^\x00/) {
             $text =~ s/^\x00//;
 
+            $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 		    $pci->yield( privmsg => $said->{channel} => $text );
         } else {
+            $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 		    $pci->yield( privmsg => $said->{channel} => "$said->{name}: $text" );
         }
 	}
