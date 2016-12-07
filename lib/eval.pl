@@ -342,9 +342,11 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
         {
         local $^O = $os[rand()*@os];
         no strict; no warnings; package main;
+#        my $oldout;
 		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs';\n#line 1\n$code";
 		$ret = eval $code;
         }
+        select STDOUT;
 
 		local $Data::Dumper::Terse = 1;
 		local $Data::Dumper::Quotekeys = 0;
