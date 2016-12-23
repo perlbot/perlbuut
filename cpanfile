@@ -88,3 +88,4 @@ requires 'Capture::Tiny' => 0;
 requires 'Return::MultiLevel' => 0;
 requires 'Try::Tiny::ByClass' => 0;
 requires 'IPC::Run' => 0;
+requires 'Text::Metaphone' => 0;
