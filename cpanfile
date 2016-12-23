@@ -56,7 +56,6 @@ requires 'Cpanel::JSON::XS' => 0;
 
 requires 'JavaScript::V8::Context' => 0;
 requires 'LWP::Protocol::https' => 0;
-requires 'Text::Soundex' => 0;
 requires 'Mojo::DOM' => 0;
 requires 'Mojo::DOM::CSS' => 0;
 requires 'Mojo::Collection' => 0;
