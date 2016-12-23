@@ -2,7 +2,7 @@ package Bot::BB3::Plugin::Factoids;
 use DBI;
 use DBD::SQLite;
 use POE::Component::IRC::Common qw/l_irc/;
-use Text::Soundex qw/soundex/;
+use Text::Metaphone;
 use strict;
 
 use Data::Dumper;
@@ -81,7 +81,7 @@ sub postload {
 		predicate TEXT,
 		author VARCHAR(100),
 		modified_time INTEGER,
-		soundex VARCHAR(4),
+		metaphone TEXT,
 		compose_macro CHAR(1) DEFAULT '0',
 		protected BOOLEAN DEFAULT '0'
 	)"; # Stupid lack of timestamp fields
@@ -218,7 +218,7 @@ sub _insert_factoid {
 	return unless $key =~ /\S/;
 
 	$dbh->do( "INSERT INTO factoid 
-		(original_subject,subject,copula,predicate,author,modified_time,soundex,compose_macro,protected)
+		(original_subject,subject,copula,predicate,author,modified_time,metaphone,compose_macro,protected)
 		VALUES (?,?,?,?,?,?,?,?,?)",
 		undef,
 		$key,
@@ -227,7 +227,7 @@ sub _insert_factoid {
 		$predicate,
 		l_irc($author),
 		time,
-		soundex($key),
+		Metaphone($key),
 		$compose_macro || 0,
 		$protected || 0,
 	);
@@ -626,11 +626,11 @@ sub basic_get_fact {
 			return $self->basic_get_fact($pm, $said, $newsubject, $name, $call_only);
 		}
 		
-		my $soundex = soundex( _clean_subject($subject, 1) );
+		my $metaphone = Metaphone( _clean_subject($subject, 1) );
 
-		my $matches = $self->_soundex_matches( $soundex );
+		my $matches = $self->_metaphone_matches( $metaphone );
 		
-		push @{$said->{soundex_matches}}, @$matches;
+		push @{$said->{metaphone_matches}}, @$matches;
 		
 		if( ($matches and @$matches) && (!$said->{backdressed}) ) {
 			return "No factoid found. Did you mean one of these: " . join " ", map "[$_]", @$matches;
@@ -641,15 +641,16 @@ sub basic_get_fact {
 	}
 }
 
-sub _soundex_matches {
-	my( $self, $soundex ) = @_;
+sub _metaphone_matches {
+	my( $self, $metaphone ) = @_;
 	my $dbh = $self->dbh;
 
+        # TODO this needs to be rewritten to do an edit distance based on the metaphone columns, rather than a direct comparison
         #XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
 	my $rows = $dbh->selectall_arrayref(
-                "SELECT * FROM (SELECT factoid_id,subject,predicate FROM factoid WHERE soundex = ? GROUP BY original_subject) as subquery WHERE NOT (predicate = ' ') LIMIT 10",
+                "SELECT * FROM (SELECT factoid_id,subject,predicate FROM factoid WHERE metaphone = ? GROUP BY original_subject) as subquery WHERE NOT (predicate = ' ') LIMIT 10",
 		undef,
-		$soundex
+		$metaphone
 	);
 
 	return [ map $_->[1], grep $_->[2] =~ /\S/, @$rows ];

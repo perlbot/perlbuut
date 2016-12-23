@@ -134,18 +134,18 @@ sub runfacts {
     my( $status, $results ) = eval { $plugin->command( $said, $pm ) };
     my $err = $@;
     
-    push @suggests, @{$said->{soundex_matches} // []};
+    push @suggests, @{$said->{metaphone_matches} // []};
    
     if ($err || !$status || !defined($results)) {
         $said->{body} = $body;
         $said->{recommended_args} = [ split /\s+/, $said->{body} ];
         $said->{nolearn} = 1; # never learn a global this way
-        delete $said->{soundex_matches};
+        delete $said->{metaphone_matches};
         
         ( $status, $results ) = eval { $plugin->command( $said, $pm ) };
         $err = $@;
         
-        push @suggests, @{$said->{soundex_matches} // []};
+        push @suggests, @{$said->{metaphone_matches} // []};
     }
     
     warn $err if $err;
