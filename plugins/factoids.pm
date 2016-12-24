@@ -651,14 +651,16 @@ sub _metaphone_matches {
         # TODO this needs to be rewritten to do an edit distance based on the metaphone columns, rather than a direct comparison
         #XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
 	my $rows = $dbh->selectall_arrayref(
-        "SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 ORDER BY score ASC LIMIT 10;",
+        "SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 AND score < 200 ORDER BY score ASC;",
 		undef,
 		$metaphone
 	);
 
     use Text::Levenshtein qw/distance/; # only import it in this scope
 
-	return [ map {$_->[0]} sort {$a->[1] <=> $b->[1]} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ];
+	my @sorted =  map {$_->[0]} sort {$a->[1] <=> $b->[1]} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ;
+
+    return [@sorted[0..9]];
 }
 
 no warnings 'void';
