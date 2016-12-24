@@ -1,6 +1,7 @@
 package Bot::BB3::Plugin::Factoids;
 use DBI;
 use DBD::SQLite;
+use DBD::SQLite::BundledExtensions;
 use POE::Component::IRC::Common qw/l_irc/;
 use Text::Metaphone;
 use strict;
@@ -65,6 +66,8 @@ sub dbh {
 		"",
 		{ RaiseError => 1, PrintError => 0 }
 	);
+
+    DBD::SQLite::BundledExtensions->load_spellfix($dbh);
 
 	return $dbh;
 }
@@ -628,7 +631,7 @@ sub basic_get_fact {
 		
 		my $metaphone = Metaphone( _clean_subject($subject, 1) );
 
-		my $matches = $self->_metaphone_matches( $metaphone );
+		my $matches = $self->_metaphone_matches( $metaphone, $subject );
 		
 		push @{$said->{metaphone_matches}}, @$matches;
 		
@@ -642,18 +645,20 @@ sub basic_get_fact {
 }
 
 sub _metaphone_matches {
-	my( $self, $metaphone ) = @_;
+	my( $self, $metaphone, $subject ) = @_;
 	my $dbh = $self->dbh;
 
         # TODO this needs to be rewritten to do an edit distance based on the metaphone columns, rather than a direct comparison
         #XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
 	my $rows = $dbh->selectall_arrayref(
-                "SELECT * FROM (SELECT factoid_id,subject,predicate FROM factoid WHERE metaphone = ? GROUP BY original_subject) as subquery WHERE NOT (predicate = ' ') LIMIT 10",
+        "SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 ORDER BY score ASC LIMIT 10;",
 		undef,
 		$metaphone
 	);
 
-	return [ map $_->[1], grep $_->[2] =~ /\S/, @$rows ];
+    use Text::Levenshtein qw/distance/; # only import it in this scope
+
+	return [ map {$_->[0]} sort {$a->[1] <=> $b->[1]} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ];
 }
 
 no warnings 'void';
