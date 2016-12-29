@@ -660,7 +660,7 @@ sub _metaphone_matches {
 
 	my @sorted =  map {$_->[0]} sort {$a->[1] <=> $b->[1]} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ;
 
-    return [@sorted[0..9]];
+    return [grep {$_} @sorted[0..9]];
 }
 
 no warnings 'void';
