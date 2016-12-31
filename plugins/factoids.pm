@@ -78,7 +78,7 @@ sub get_conf_for_channel {
 	my $gc = sub {$pm->plugin_conf($_[0], $server, $channel)};
 	
 	# Load factoids if it exists, otherwise grab the old nfacts setup
-	my $conf = $gc->("factoids") // $gc->("nfacts");
+	my $conf = $gc->("factoids");
 	return $conf;
 }
 
@@ -93,23 +93,30 @@ sub get_namespaced_factoid {
     
 	return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
 
-    warn "NAMESPACE: [ $channel , $server ]";
+    open(my $fh, ">/tmp/notwut");
+
+    print $fh "NAMESPACE: [ $channel , $server ]";
     
-    my $conf = $self->get_conf_for_channel($pm, $server, $channel);
+    my $conf = $self->get_conf_for_channel($pm, $said->{server}, $channel);
     
-    warn Dumper($conf);
+    print $fh Dumper($conf);
     
     my $realserver = $conf->{serverspace} // $server;
     my $realchannel = $conf->{chanspace}  // $channel;
+
+    print $fh Dumper($realserver, $realchannel);
+
 	my $sepbody = $fsep.join($fsep, ($realserver, $realchannel, $body));
-    
+   
+    print $fh $sepbody, "\n";
+
     return $sepbody;
 }
 
 sub namespace_filter {
     my ($self, $body, $enabled) = @_;
 
-    return $body =~ s|$fsep[^$fsep]*?$fsep[^$fsep]*?$fsep(\S+)(?=\s)|$1|rg if $enabled;
+    return $body =~ s|$fsep[^$fsep]*?$fsep[^$fsep]*?$fsep(\S+)|$1|rg if $enabled;
     $body;
 }
 
