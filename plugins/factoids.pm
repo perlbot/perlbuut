@@ -20,6 +20,8 @@ use Data::Dumper;
 #
 #############################
 
+my $fsep = "\034"; # ASCII file seperator
+
 my $COPULA = join '|', qw/is are was isn't were being am/, "to be", "will be", "has been", "have been", "shall be", "can has", "wus liek", "iz liek", "used to be";
 my $COPULA_RE = qr/\b(?:$COPULA)\b/i;
 
@@ -38,7 +40,6 @@ my %commandhash = (
 	"substitute"=> \&get_fact_substitute,
 	);
 
-
 sub new {
 	my( $class ) = @_;
 
@@ -46,7 +47,7 @@ sub new {
 	$self->{name} = 'factoids'; # Shouldn't matter since we aren't a command
 	$self->{opts} = {
 		command => 1,
-		#handler => 1,
+		handler => 1,
 	};
 	$self->{aliases} = [ qw/fact call/ ];
 
@@ -70,6 +71,44 @@ sub dbh {
     DBD::SQLite::BundledExtensions->load_spellfix($dbh);
 
 	return $dbh;
+}
+
+sub get_conf_for_channel {
+    my ($self, $pm, $server, $channel) = @_;
+	my $gc = sub {$pm->plugin_conf($_[0], $server, $channel)};
+	
+	# Load factoids if it exists, otherwise grab the old nfacts setup
+	my $conf = $gc->("factoids") // $gc->("nfacts");
+	return $conf;
+}
+
+sub get_namespaced_factoid {
+    my ($self, $pm, $body, $said, $forcechan, $forceserver) = @_;
+
+    my ($channel, $server) = @{$said}{qw/channel server/};
+    $server =~ s/^.*?([^.]+\.(?:com|net|co.uk|org|bot|info))$/$1/; # grab just the domain and tld, will expand to more domains later
+    
+    $channel = $forcechan   // $channel;
+    $server  = $forceserver // $server;
+    
+    warn "NAMESPACE: [ $channel , $server ]";
+    
+    my $conf = $self->get_conf_for_channel($pm, $server, $channel);
+    
+    warn Dumper($conf);
+    
+    my $realserver = $conf->{serverspace} // $server;
+    my $realchannel = $conf->{chanspace}  // $channel;
+	my $sepbody = $fsep.join($fsep, ($realserver, $realchannel, $body));
+    
+    return $sepbody;
+}
+
+sub namespace_filter {
+    my ($self, $body, $enabled) = @_;
+
+    return $body =~ s|$fsep[^$fsep]*?$fsep[^$fsep]*?$fsep(\S+)(?=\s)|$1|rg if $enabled;
+    $body;
 }
 
 sub postload {
@@ -103,6 +142,66 @@ sub postload {
 # command such as "forget foo"
 # Need to add "what is foo?" support...
 sub command {
+	my( $self, $said, $pm ) = @_;
+
+	my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
+
+	open (my $fh, ">/tmp/wut");
+	print $fh "COMMAND INCOMING\n";
+	print $fh Dumper($conf);
+	print $fh Dumper($said);
+
+	my $response; #namespaced factoids have no fallback
+
+	my $commands_re = join '|', keys %commandhash;
+		$commands_re = qr/$commands_re/;
+
+	if ($conf->{namespaced}) {
+		# Parse body here
+		my $body = $said->{body};
+
+		if ($body =~ /^(?<command>$commands_re)\s+(?<fact>.*)$/){
+			my ($command, $fact) = @+{qw/command fact/};
+
+			print $fh "Got command $command :: $fact\n";
+
+			# handle a channel prefix on everything
+			if ($fact =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
+				$said->{channel} = $+{channel};
+				$body = $+{fact};
+			}
+
+			if ($said->{channel} ne '##NULL') { # fuck ##NULL, they don't get factoids
+				$body = $command . " " . $self->get_namespaced_factoid($pm, $fact, $said);
+				print $fh "New body is $body\n";
+			} else {
+				$body = $command . " " . $body;
+			}
+		} else {
+			# handle a channel prefix on everything
+			if ($body =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
+				$said->{channel} = $+{channel};
+				$body = $+{fact};
+			}
+
+			if ($said->{channel} ne '##NULL') { # fuck ##NULL, they don't get factoids
+				$body = $self->get_namespaced_factoid($pm, $body, $said);
+			}
+		}
+
+		$said->{body} = $body; # rewrite the input
+	}
+
+	print $fh Dumper($said);
+
+	my ($handled, $fact_out) = $self->sub_command($said, $pm);
+
+	$fact_out = $self->namespace_filter($fact_out, $conf->{filtersep});
+
+	return ($handled, $fact_out);
+}
+
+sub sub_command {
 	my( $self, $said, $pm ) = @_;
 	
 	return unless $said->{body} =~ /\S/; #Try to prevent "false positives"
@@ -145,6 +244,42 @@ sub command {
 	  return;
 	}
 }
+
+# Handler code stolen from the old nfacts plugin
+sub handle {
+    my ($self, $said, $pm) = @_;
+    my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
+
+	my $prefix = $conf->{prefix_command};
+    return unless $prefix;
+   
+    if ($said->{body} =~ /^\Q$prefix\E(?<fact>[^@]*?)(?:\s@\s*(?<user>\S*)\s*)?$/ ||
+        $said->{body} =~ /^\Q$prefix\E!@(?<user>\S+)\s+(?<fact>.+)$/) {
+        my $fact = $+{fact};
+        my $user = $+{user};
+
+		my $newsaid = +{$said->%*};
+		$newsaid->{body} = $fact;
+
+		if ($fact =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
+			my ($fact, $channel) = @+{qw/fact channel/};
+			$newsaid->{body} = $fact;
+			$newsaid->{channel} = $channel;
+		}
+
+		$newsaid->{addressed} = 1;
+
+        my ($s, $r) = $self->command($newsaid, $pm);
+        if ($s) {
+            $r = "$user: $r" if $user;
+            $r = "\0".$r;
+            return ($r, 'handled');
+        }
+    }
+
+    return;
+}
+
 
 sub _clean_subject {
 	my( $subject ) = @_;
@@ -608,6 +743,9 @@ sub basic_get_fact {
 			local $said->{macro_arg} = $arg;
 			local $said->{body} = $fact->{predicate};
 			local $said->{addressed} = 1; # Force addressed to circumvent restrictions? May not be needed!
+
+			open(my $fh, ">/tmp/wutwut");
+			print $fh Dumper($said, $plugin, $pm);
 
             my $ret = $plugin->command($said, $pm);
 #            use Data::Dumper;
