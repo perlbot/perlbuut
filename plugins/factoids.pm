@@ -144,7 +144,8 @@ sub postload {
 # command such as "forget foo"
 # Need to add "what is foo?" support...
 sub command {
-	my( $self, $said, $pm ) = @_;
+	my( $self, $_said, $pm ) = @_;
+	my $said = +{$_said->%*};
 
 	my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
 
