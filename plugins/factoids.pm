@@ -49,7 +49,7 @@ sub new {
 		command => 1,
 		handler => 1,
 	};
-	$self->{aliases} = [ qw/fact call/ ];
+	$self->{aliases} = [ qw/fact call nfacts/ ];
 
 	return $self;
 }
