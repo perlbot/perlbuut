@@ -91,6 +91,8 @@ sub get_namespaced_factoid {
     $channel = $forcechan   // $channel;
     $server  = $forceserver // $server;
     
+	return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
+
     warn "NAMESPACE: [ $channel , $server ]";
     
     my $conf = $self->get_conf_for_channel($pm, $server, $channel);
@@ -156,9 +158,10 @@ sub command {
 	my $commands_re = join '|', keys %commandhash;
 		$commands_re = qr/$commands_re/;
 
-	if ($conf->{namespaced}) {
+	if ($conf->{namespaced} || $said->{channel} eq '*irc_msg') {
 		# Parse body here
 		my $body = $said->{body};
+		$said->{channel} = "##NULL" if $said->{channel} eq '*irc_msg';
 
 		if ($body =~ /^(?<command>$commands_re)\s+(?<fact>.*)$/){
 			my ($command, $fact) = @+{qw/command fact/};
