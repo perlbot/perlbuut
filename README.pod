@@ -1,0 +1,20 @@
+=encoding utf8
+
+=head1 ABOUT
+
+This is the source code for perlbot, the resident infobot on Freenode’s
+#perl channel. See:
+
+=over 4
+
+=item * L<http://perl-begin.org/FAQs/freenode-perl/>
+
+=item * L<https://github.com/simcop2387/perlbuut>
+
+=back
+
+=head1 LICENSE
+
+Good question - what is the license?
+
+=cut
