@@ -92,3 +92,4 @@ requires 'Text::Metaphone' => 0;
 requires 'DBD::SQLite::BundledExtensions' => 0;
 requires 'Text::Levenshtein' => 0;
 requires 'Text::Metaphone' => 0;
+requires 'Math::Round' => 0;

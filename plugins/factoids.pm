@@ -135,7 +135,10 @@ sub postload {
 		metaphone TEXT,
 		compose_macro CHAR(1) DEFAULT '0',
 		protected BOOLEAN DEFAULT '0'
-	)"; # Stupid lack of timestamp fields
+	);
+    CREATE INDEX factoid_subject_idx ON factoid(subject);
+    CREATE INDEX factoid_original_subject_idx ON factoid(original_subject_idx);
+    "; # Stupid lack of timestamp fields
 
 	$pm->create_table( $self->dbh, "factoid", $sql );
 
@@ -617,9 +620,10 @@ sub get_fact_search {
     	my $search = $1;
 		#XXX: need to also search contents of factoids TODO
 		$results = $self->dbh->selectall_arrayref(
-			"SELECT subject,copula,predicate 
-			FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
-			WHERE subject regexp ? OR predicate regexp ?", # using a subquery so that i can do this properly
+            "SELECT subject,copula,predicate 
+            FROM factoid 
+            JOIN (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) AS subquery ON subquery.factoid_id = factoid.factoid_id 
+            WHERE subject regexp ? OR predicate regexp ?",
 			{Slice => {}},
 			$search, $search,
 		);
@@ -628,9 +632,10 @@ sub get_fact_search {
     {
 		#XXX: need to also search contents of factoids TODO
 		$results = $self->dbh->selectall_arrayref(
-			"SELECT subject,copula,predicate 
-			FROM (SELECT subject,copula,predicate FROM factoid GROUP BY original_subject) as subquery
-			WHERE subject like ? OR predicate like ?", # using a subquery so that i can do this properly
+            "SELECT subject,copula,predicate 
+            FROM factoid 
+            JOIN (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) AS subquery ON subquery.factoid_id = factoid.factoid_id 
+            WHERE subject like ? OR predicate like ?",
 			{Slice => {}},
 			"%$body%", "%$body%",
 		);
@@ -691,7 +696,7 @@ sub _db_get_protect {
                         SELECT protected
                         FROM factoid
                         WHERE original_subject = ?
-                        ORDER BY factoid_id DESC
+                        ORDER BY factoid_id DESC LIMIT 1
                 ",
                 undef,
                 $subj,
@@ -800,7 +805,7 @@ sub _metaphone_matches {
         # TODO this needs to be rewritten to do an edit distance based on the metaphone columns, rather than a direct comparison
         #XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
 	my $rows = $dbh->selectall_arrayref(
-        "SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 AND score < 200 ORDER BY score ASC;",
+        "SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ' OR f.predicate = '') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 AND score < 200 ORDER BY score ASC;",
 		undef,
 		$metaphone
 	);

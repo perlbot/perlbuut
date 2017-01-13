@@ -68,6 +68,8 @@ sub receive_paste {
     } else {
         my ($alert_channel, $link, $who, $summary) = split(/\x1E/, $line);
 
+        $who = "Anonymous" unless $who =~ /\S/;
+
         if( $alert_channel !~ /^\s*---/ ) { # Ignore things like "---irc.freenode, skip server names
             my($server,$nick,$channel) = split /:/,$alert_channel,3;
 

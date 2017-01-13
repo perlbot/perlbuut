@@ -18,6 +18,9 @@ use Encode qw/encode decode/;
 use IO::String;
 use File::Slurper qw/read_text/;
 
+# Easter egg
+do {package Tony::Robbins; sub import {die "Tony Robbins hungry: https://www.youtube.com/watch?v=GZXp7r_PP-w\n"}; $INC{"Tony/Robbins.pm"}=1};
+
 # save the old stdout, we're going to clobber it soon. STDOUT
 my $oldout;
 my $outbuffer = "";
