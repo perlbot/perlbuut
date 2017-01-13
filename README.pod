@@ -1,0 +1,25 @@
+=encoding utf8
+
+=head1 ABOUT
+
+This is the source code for perlbot, the resident infobot on Freenode’s
+#perl channel. See:
+
+=over 4
+
+=item * L<http://perl-begin.org/FAQs/freenode-perl/>
+
+=item * L<https://github.com/simcop2387/perlbuut>
+
+=back
+
+=head1 DOCUMENTATION
+
+There is a docs/ directory but it's woefully outdated and doesn't reflect a number of things about the bot that have changed over the years.  That said it should be relavent for learning how things work to start with at least.  Otherwise I'd recommend looking at some of the shorter modules in plugins/ to see how things usually work.  You'll most likely want to be making one of those.
+
+=head1 LICENSE
+
+Good question - what is the license?
+This is a semi-complicated situation as while the code is obstensibly open source there have been several authors involved.  Notably myself (simcop2387), buu, and b_jonas.  Buu started the original project (see https://github.com/simcop2387/buutbot ) but then disappeared not long after i forked it (with permission) to make a new version of perlbot.  b_jonas was involved in the creation of some of a few plugins, if not more, that made the framework incredibly flexible.
+
+=cut
