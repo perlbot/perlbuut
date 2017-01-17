@@ -18,8 +18,9 @@ use Encode qw/encode decode/;
 use IO::String;
 use File::Slurper qw/read_text/;
 
-# Easter egg
+# Easter eggs
 do {package Tony::Robbins; sub import {die "Tony Robbins hungry: https://www.youtube.com/watch?v=GZXp7r_PP-w\n"}; $INC{"Tony/Robbins.pm"}=1};
+do {package Zathras; our $AUTOLOAD; sub AUTOLOAD {$AUTOLOAD=~s/.*:://; "Everybody come to Zathras for '$AUTOLOAD'.  Zathras not mind.";}};
 
 # save the old stdout, we're going to clobber it soon. STDOUT
 my $oldout;

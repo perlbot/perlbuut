@@ -88,7 +88,12 @@ sub command {
 
     $resultstr = decode("utf8", $resultstr);
     $resultstr =~ s/\0//g;
-	
+    chomp $resultstr;
+
+    if (lc $resultstr eq "hello world" || lc $resultstr eq "hello, world!" ) {
+        $resultstr .= " I'm back!"
+    }
+
 	return( 'handled', $resultstr );
 }
 
