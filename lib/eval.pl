@@ -20,7 +20,14 @@ use File::Slurper qw/read_text/;
 
 # Easter eggs
 do {package Tony::Robbins; sub import {die "Tony Robbins hungry: https://www.youtube.com/watch?v=GZXp7r_PP-w\n"}; $INC{"Tony/Robbins.pm"}=1};
-do {package Zathras; our $AUTOLOAD; sub AUTOLOAD {$AUTOLOAD=~s/.*:://; "Everybody come to Zathras for '$AUTOLOAD'.  Zathras not mind.";}};
+do {
+    package Zathras; 
+    our $AUTOLOAD; 
+    use overload '""' => sub {"Everybody come to Zathras for '".$_[0]{data}."'.  Zathras not mind."};
+    sub AUTOLOAD {$AUTOLOAD=~s/.*:://; bless {data=>$AUTOLOAD, old => shift}}
+    sub DESTROY {}; # keep it from recursing
+    sub dd_freeze {$_[0]=\($_[0]."")}
+    };
 
 # save the old stdout, we're going to clobber it soon. STDOUT
 my $oldout;
@@ -356,6 +363,7 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
 		local $Data::Dumper::Quotekeys = 0;
 		local $Data::Dumper::Indent = 0;
 		local $Data::Dumper::Useqq = 1;
+        local $Data::Dumper::Freezer = "dd_freeze";
 
 		my $out = ref($ret) ? Dumper( $ret ) : "" . $ret;
 
