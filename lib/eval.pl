@@ -23,7 +23,23 @@ do {package Tony::Robbins; sub import {die "Tony Robbins hungry: https://www.you
 do {
     package Zathras; 
     our $AUTOLOAD; 
-    use overload '""' => sub {"Everybody come to Zathras for '".$_[0]{data}."'.  Zathras not mind."};
+    use overload '""' => sub {
+        my $data = "'".$_[0]{data}."'";
+        my $old = $_[0]{old};
+
+        my ($pack, undef, undef, $meth) = caller(1);
+
+        if ($pack eq 'Zathras' && $meth ne 'Zahtras::dd_freeze') {
+            if (ref($old) ne 'Zathras') {
+                return " and $data";
+            } else {
+                return ", $data$old";
+            }
+        } else {
+           $old = "" if (!ref($old));
+           return "Everybody come to Zathras for $data$old.  Zathras not mind."
+        }
+      };
     sub AUTOLOAD {$AUTOLOAD=~s/.*:://; bless {data=>$AUTOLOAD, old => shift}}
     sub DESTROY {}; # keep it from recursing
     sub dd_freeze {$_[0]=\($_[0]."")}
