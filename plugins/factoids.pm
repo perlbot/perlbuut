@@ -40,6 +40,10 @@ my %commandhash = (
 	"substitute"=> \&get_fact_substitute,
 	);
 
+	my $commands_re = join '|', keys %commandhash;
+		$commands_re = qr/$commands_re/;
+
+
 sub new {
 	my( $class ) = @_;
 
@@ -84,6 +88,7 @@ sub get_conf_for_channel {
 
 sub get_namespaced_factoid {
     my ($self, $pm, $body, $said, $forcechan, $forceserver) = @_;
+    my $command;
 
     my ($channel, $server) = @{$said}{qw/channel server/};
     $server =~ s/^.*?([^.]+\.(?:com|net|co.uk|org|bot|info))$/$1/; # grab just the domain and tld, will expand to more domains later
@@ -92,6 +97,11 @@ sub get_namespaced_factoid {
     $server  = $forceserver // $server;
     
 	return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
+
+    if ($body =~ /^(?:\s*(?<command>$commands_re)\s+)?(?<body>.*)$/) {
+        #my ($command, $body);
+        ($command, $body) = @+{qw/command body/};
+    }
 
     open(my $fh, ">/tmp/notwut");
 
@@ -106,7 +116,7 @@ sub get_namespaced_factoid {
 
     print $fh Dumper($realserver, $realchannel);
 
-	my $sepbody = $fsep.join($fsep, ($realserver, $realchannel, $body));
+	my $sepbody = ($command." "//'').$fsep.join($fsep, ($realserver, $realchannel, $body));
    
     print $fh $sepbody, "\n";
 
@@ -165,9 +175,6 @@ sub command {
 	print $fh Dumper($said);
 
 	my $response; #namespaced factoids have no fallback
-
-	my $commands_re = join '|', keys %commandhash;
-		$commands_re = qr/$commands_re/;
 
 	if ($conf->{namespaced} || $said->{channel} eq '*irc_msg') {
 		# Parse body here
