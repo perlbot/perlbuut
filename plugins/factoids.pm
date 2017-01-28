@@ -98,7 +98,7 @@ sub get_namespaced_factoid {
     
 	return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
 
-    if ($body =~ /^(?:\s*(?<command>$commands_re)\s+)?(?<body>.*)$/) {
+    if ($body =~ /^(?:\s*(?<command>$commands_re|macro)\s+)?(?<body>.*)$/) {
         #my ($command, $body);
         ($command, $body) = @+{qw/command body/};
     }
