@@ -812,7 +812,8 @@ sub _metaphone_matches {
 
     use Text::Levenshtein qw/distance/; # only import it in this scope
 
-	my @sorted =  map {$_->[0]} sort {$a->[1] <=> $b->[1]} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ;
+    my $threshold = 4;
+	my @sorted =  map {$_->[0]} sort {$a->[1] <=> $b->[1]} grep {$_->[1] < $threshold} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ;
 
     return [grep {$_} @sorted[0..9]];
 }
