@@ -19,7 +19,7 @@ sub new {
 	$self->{opts} = {
 		command => 1,
 	};
-	$self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval weval/ ];
+	$self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval weval wseval sweval seval/ ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -50,14 +50,19 @@ sub command {
 		'lua' => 'lua',
 		'j' => 'j',
         'w' => 'perl',
+        's' => 'perl',
+        'ws' => 'perl',
+        'sw' => 'perl',
 	);
 
 	$type = $translations{$type};
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
-    if ($command eq 'weval') {
-        $code = "use warnings; ".$code;
+    if ($command =~ /([ws]+)?eval/i) {
+        my $c=$1;
+        $code = "use warnings; ".$code if ($c =~ /w/);
+        $code = "use strict; ".$code if ($c =~ /s/);
     }
 
     $code =~ s/␤/\n/g;
