@@ -2,7 +2,7 @@ package Bot::BB3::Plugin::Factoids;
 use DBI;
 use DBD::SQLite;
 use DBD::SQLite::BundledExtensions;
-use POE::Component::IRC::Common qw/l_irc/;
+use IRC::Utils qw/lc_irc strip_color strip_formatting/;
 use Text::Metaphone;
 use strict;
 
@@ -273,7 +273,10 @@ sub handle {
 
 	my $prefix = $conf->{prefix_command};
     return unless $prefix;
-   
+
+    # TODO make this channel configurable and make it work properly to learn shit with colors later.
+    $said->{body} = strip_formatting strip_color $said->{body};
+
     if ($said->{body} =~ /^\Q$prefix\E(?<fact>[^@]*?)(?:\s@\s*(?<user>\S*)\s*)?$/ ||
         $said->{body} =~ /^\Q$prefix\E!@(?<user>\S+)\s+(?<fact>.+)$/) {
         my $fact = $+{fact};
@@ -384,7 +387,7 @@ sub _insert_factoid {
 		$subject,
 		$copula,
 		$predicate,
-		l_irc($author),
+		lc_irc($author),
 		time,
 		Metaphone($key),
 		$compose_macro || 0,
