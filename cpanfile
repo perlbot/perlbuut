@@ -94,3 +94,4 @@ requires 'Text::Levenshtein' => 0;
 requires 'Text::Metaphone' => 0;
 requires 'Math::Round' => 0;
 requires 'Twitter::API' => 0;
+requires 'Types::Standard' => 0;
