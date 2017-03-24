@@ -42,7 +42,8 @@ sub {
 	
 # TODO make this also support getting more than one tweet.
 
-    if ($said->{body} =~ /^\s*(#\S+)/) {
+    if ($said->{body} =~ /^\s*(#\S+)/ ||
+        $said->{body} =~ /^\s*search\s+(.*)/) {
         # hash tags.  omg.
         my $search = $client->search($1);
 
