@@ -1,3 +1,6 @@
 [submodule "jail"]
 	path = jail
 	url = https://github.com/simcop2387/perlbot-jail
+[submodule "wiki"]
+	path = wiki
+	url = https://github.com/perlbot/perlbuut.wiki.git

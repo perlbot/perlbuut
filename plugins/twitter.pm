@@ -23,26 +23,43 @@ my $client = Twitter::API->new_with_traits(
 my $_r = $client->oauth2_token;
 $client->access_token($_r);
 
-sub {
-	my( $said ) = @_;
-	
-# TODO make this also support getting more than one tweet.
-
-    my ($userid) = $said->{body} =~ /^\s*(\S+)/g;
-
-    my $timeline=$client->user_timeline($userid);
-
-    my $tweet = $timeline->[0];
+sub display_tweet {
+    my $tweet = shift;
 
     if ($tweet) {
         my ($time, $text, $id) = @{$tweet}{qw/created_at text id/};
         my $source = $tweet->{user}{name};
         my $url = "https://twitter.com/link/status/$id";
 
-	    print STDERR Dumper($timeline);
         print "<$source> $text $url";
     } else {
         print "No tweets found";
+    }
+}
+
+sub {
+	my( $said ) = @_;
+	
+# TODO make this also support getting more than one tweet.
+
+    if ($said->{body} =~ /^\s*(#\S+)/) {
+        # hash tags.  omg.
+        my $search = $client->search($1);
+
+        open (my $fh, ">", "/tmp/twitter");
+            print $fh Dumper($search);
+
+        my $tweets = $search->{statuses};
+        my $tweet = $tweets->@[rand() * $tweets->@*];
+
+        display_tweet $tweet;
+    } else {
+        my ($userid, $count) = $said->{body} =~ /^\s*(\S+)(?:\s+(\d+))?/g;
+
+        my $timeline=$client->user_timeline($userid);
+        my $tweet = $timeline->[$count//0];
+
+        display_tweet $tweet;
     }
 
     return ('handled', 'handled');
