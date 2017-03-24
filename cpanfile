@@ -4,6 +4,7 @@ requires  'Config::General' => 0;
 requires  'Cache::FastMmap' => 0;
 requires  'POE::Component::IRC::Common' => 0;
 requires  'POE::Component::IRC' => 0;
+requires  'Text::Handlebars' => 0;
 
 requires 'Geo::IP' => 0;
 requires 'XML::RSS::Parser' => 0;
