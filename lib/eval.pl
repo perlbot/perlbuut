@@ -56,7 +56,7 @@ $|++;
 #*STDOUT = $stdh;
 
 sub get_seccomp {
-    use Linux::Seccomp ':all';
+    use Linux::Seccomp ;
     my $seccomp = Linux::Seccomp->new(SCMP_ACT_KILL);
     ##### set seccomp
     #
@@ -74,7 +74,7 @@ sub get_seccomp {
 
     my $rule_add = sub {
         my $name = shift;
-        $seccomp->rule_add(SCMP_ACT_ALLOW, syscall_resolve_name($name), @_);
+        $seccomp->rule_add(SCMP_ACT_ALLOW, Linux::Seccomp::syscall_resolve_name($name), @_);
     };
 
     $rule_add->(write => [0, '==', 2]); # STDERR
