@@ -91,6 +91,13 @@ sub get_seccomp {
     $rule_add->(mremap => );
     $rule_add->(mprotect =>);
 
+    # Enable us to run other perl binaries
+    $rule_add->(execve => );
+    $rule_add->(access => );
+    $rule_add->(arch_prctl => );
+    $rule_add->(readlink => );
+    $rule_add->(getpid => );
+
     # Allow select, might need to have some kind of restriction on it?  probably fine
     $rule_add->(select => );
 
@@ -251,16 +258,18 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 	chroot(".") or die $!;
 
-# 	# Here's where we actually drop our root privilege
-# 	$)="$nobody_uid $nobody_uid";
-# 	$(=$nobody_uid;
-# 	$<=$>=$nobody_uid;
-# 	POSIX::setgid($nobody_uid); #We just assume the uid is the same as the gid. Hot.
+    if ($< == 0) {
+        # Here's where we actually drop our root privilege
+        $)="$nobody_uid $nobody_uid";
+        $(=$nobody_uid;
+        $<=$>=$nobody_uid;
+        POSIX::setgid($nobody_uid); #We just assume the uid is the same as the gid. Hot.
 
 
-	die "Failed to drop to nobody"
-		if $> != $nobody_uid
-		or $< != $nobody_uid;
+        die "Failed to drop to nobody"
+            if $> != $nobody_uid
+            or $< != $nobody_uid;
+    }
 
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;

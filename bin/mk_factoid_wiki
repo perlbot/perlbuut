@@ -1,0 +1,93 @@
+#!/usr/bin/env perl
+
+use 5.24.0;
+
+package Bot::BB3::Plugin::Factoids;
+use DBI;
+use DBD::SQLite;
+use strict;
+
+use Data::Dumper;
+use Text::Handlebars;
+
+#############################
+# BIG WARNING ABOUT THE DATABASE IN HERE.
+#############################
+#
+# Despite the name 'original_subject' and 'subject' are logically reversed, e.g. 'original_subject' contains the cleaned up and filtered subject rather than the other way around.
+# This should be kept in mind when working on any and all of the code below
+#   --simcop2387 (previously also discovered by buu, but not documented or fixed).
+#
+# This might be fixed later but for now its easier to just "document" it. (boy doesn't this feel enterprisy!)
+#
+#############################
+
+my $fsep = "\034"; # ASCII file seperator
+
+{my $dbh;
+    sub dbh { 
+        if( $dbh and $dbh->ping ) {
+            return $dbh;
+        }
+
+        $dbh = DBI->connect(
+            "dbi:SQLite:dbname=var/factoids.db",
+            "",
+            "",
+            { RaiseError => 1, PrintError => 0 }
+        );
+
+        return $dbh;
+    }
+}
+
+sub get_fact_iter {
+    my $sth = dbh->prepare("SELECT f.* FROM factoid f JOIN (SELECT max(factoid_id) as factoid_id FROM factoid GROUP BY original_subject) fmax USING (factoid_id) WHERE predicate IS NOT NULL and predicate <> ''");
+
+    $sth->execute();
+
+    return sub {$sth->fetchrow_hashref()};
+}
+
+my $fact_iter = get_fact_iter();
+
+my $handlebars = Text::Handlebars->new(
+    helpers =>  {
+        each_obj => sub {
+            my ($context, $object, $options) = @_;
+            return join '', map { $options->{fn}->({'@key' => $_, $object->{$_}->%*}) } keys $object->%*;
+        },
+    }
+);
+
+my $vars = {
+};
+
+while(my $factoid = $fact_iter->()) {
+    if ($factoid->{subject} =~ /^$fsep(.*?)$fsep(.*?)$fsep(.*)$/) { # namespaced
+        my ($server, $channel) = ($1, $2);
+        $factoid->{subject} = $3;
+        push $vars->{servers}{$server}{channels}{$channel}{factoids}->@*, $factoid;
+    } else { # default freenode/#perl
+        push $vars->{servers}{default}{channels}{everywhere}{factoids}->@*, $factoid;
+    }
+};
+
+my $doc_template=<<'EOF';
+# List of factoids
+
+{{#each_obj servers}}
+## {{@key}}
+
+{{#each_obj channels}}
+### {{@key}}
+
+{{#each factoids}}
+* {{#if protected}}-protected- {{/if}}{{#if compose_macro}}macro {{/if}}{{subject}} [{{copula}}] := {{predicate}}
+{{/each}}
+
+{{/each_obj}}
+{{/each_obj}}
+EOF
+
+say $handlebars->render_string($doc_template, $vars);

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 read -r -d '' CODE <<'EOC'
-perl $SIG{SEGV}="ignore"; $q=unpack "p*", 0xdeadbeef; "DEADBEEF"
+perl print "Hello"; exec('perl5/perlbrew/perls/perl-5.10.0/bin/perl', "-e", "print 1")
 EOC
 
 echo --------
