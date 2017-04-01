@@ -1,7 +1,7 @@
 #!/bin/bash
 
 read -r -d '' CODE <<'EOC'
-perl print "Hello"; exec('perl5/perlbrew/perls/perl-5.10.0/bin/perl', "-e", "print 1")
+perl5.24 print "Hello World";
 EOC
 
 echo --------

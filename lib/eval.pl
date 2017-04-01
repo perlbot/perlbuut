@@ -97,7 +97,10 @@ sub get_seccomp {
     $rule_add->(arch_prctl => );
     $rule_add->(readlink => );
     $rule_add->(getpid => );
-
+    
+    $rule_add->(set_tid_address => ); # needed for perl >= 5.20
+    $rule_add->(set_robust_list => );
+    
     # Allow select, might need to have some kind of restriction on it?  probably fine
     $rule_add->(select => );
 
