@@ -309,7 +309,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 # Setup SECCOMP for us
 get_seccomp();
 
-	$code =~ s/^\s*(\w+)\s*//
+	$code =~ s/^\s*(\S+)\s*//
 		or die "Failed to parse code type! $code";
 	my $type = $1;
 
@@ -324,6 +324,9 @@ get_seccomp();
 	elsif( $type eq 'deparse' ) {
 		deparse_perl_code($code);
 	}
+  elsif ($type =~ /perl([0-9.]+)/) { # run specific perl version
+    perl_version_code($1, $code);
+  }
 #	elsif( $type eq 'javascript' ) {
 #		javascript_code($code);
 #	}
@@ -397,7 +400,22 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
 		if( $@ ) { print "ERROR: $@" }
 	}
 
+  sub perl_version_code {
+    my ($version, $code) = @_;
+    
+    my %vmap = (
+       '5.10' => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl',
+       '5.12' => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl',
+       '5.14' => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl',
+       '5.16' => '/perl5/perlbrew/perls/perl-5.16.3/bin/perl',
+       '5.18' => '/perl5/perlbrew/perls/perl-5.18.4/bin/perl',
+       '5.20' => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl',
+       '5.22' => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl',
+       '5.24' => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl',
+    );
 
+    exec($vmap{$version}, '-e', $code);
+  }
 
 # 	sub javascript_code {
 # 		my( $code ) = @_;

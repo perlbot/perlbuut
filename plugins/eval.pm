@@ -19,7 +19,11 @@ sub new {
 	$self->{opts} = {
 		command => 1,
 	};
-	$self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval weval wseval sweval seval/ ];
+
+  my @versions = ('', qw(5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
+  my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
+
+  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -33,9 +37,12 @@ sub command {
 
     my $command = $said->{command_match};
 	my $type = $said->{command_match};
-	$type =~ s/^\s*(\w+?)eval/$1/;
+	$type =~ s/^\s*(\w+?)?eval(.*)?/$1$2/;
 	warn "Initial type: $type\n";
-	my %translations = ( 
+
+
+  my @versions = ('', qw(5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
+  my %translations = ( 
 		js => 'javascript', 
 		perl => 'perl',
 		pl => 'perl',
@@ -53,8 +60,10 @@ sub command {
         's' => 'perl',
         'ws' => 'perl',
         'sw' => 'perl',
+        map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
 	);
 
+  my $orig_type = $type;
 	$type = $translations{$type};
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
@@ -99,7 +108,7 @@ sub command {
         $resultstr .= " I'm back!"
     }
 
-	return( 'handled', $resultstr );
+	return( 'handled', $resultstr);
 }
 
 "Bot::BB3::Plugin::Eval";
