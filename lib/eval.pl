@@ -407,6 +407,9 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     my ($version, $code) = @_;
     
     my %vmap = (
+       '5.5' => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl',
+       '5.6' => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl',
+       '5.8' => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl',
        '5.10' => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl',
        '5.12' => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl',
        '5.14' => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl',

@@ -11,6 +11,8 @@ use strict;
 
 no warnings 'void';
 
+my @versions = ('', qw(5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
+
 sub new {
 	my( $class ) = @_;
 
@@ -20,7 +22,6 @@ sub new {
 		command => 1,
 	};
 
-  my @versions = ('', qw(5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
 
   $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
@@ -40,8 +41,6 @@ sub command {
 	$type =~ s/^\s*(\w+?)?eval(.*)?/$1$2/;
 	warn "Initial type: $type\n";
 
-
-  my @versions = ('', qw(5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
   my %translations = ( 
 		js => 'javascript', 
 		perl => 'perl',
@@ -114,4 +113,4 @@ sub command {
 "Bot::BB3::Plugin::Eval";
 
 __DATA__
-The eval plugin. Evaluates various different languages. Syntax, eval: code; also pleval deparse rbeval jseval pyeval phpeval k20eval luaeval jeval.
+The eval plugin. Evaluates various different languages. Syntax, eval: code; also pleval deparse.  You can use different perl versions by doing eval5.X, e.g. eval5.5: print "$]";  You can also add s or w to the eval to quickly add strict or warnings.  sweval: print $foo;
