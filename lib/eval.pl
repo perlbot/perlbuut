@@ -55,6 +55,20 @@ select($stdh);
 $|++;
 #*STDOUT = $stdh;
 
+my %version_map = (
+   '5.5' => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl',
+   '5.6' => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl',
+   '5.8' => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl',
+   '5.10' => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl',
+   '5.12' => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl',
+   '5.14' => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl',
+   '5.16' => '/perl5/perlbrew/perls/perl-5.16.3/bin/perl',
+   '5.18' => '/perl5/perlbrew/perls/perl-5.18.4/bin/perl',
+   '5.20' => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl',
+   '5.22' => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl',
+   '5.24' => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl',
+);
+
 sub get_seccomp {
     use Linux::Seccomp ;
     my $seccomp = Linux::Seccomp->new(SCMP_ACT_KILL);
@@ -77,6 +91,8 @@ sub get_seccomp {
         $seccomp->rule_add(SCMP_ACT_ALLOW, Linux::Seccomp::syscall_resolve_name($name), @_);
     };
 
+    my $strptr = sub {unpack "Q", pack("p", $_[0])};
+
     $rule_add->(write => [0, '==', 2]); # STDERR
     $rule_add->(write => [0, '==', 1]); # STDOUT
 
@@ -92,7 +108,9 @@ sub get_seccomp {
     $rule_add->(mprotect =>);
 
     # Enable us to run other perl binaries
-    $rule_add->(execve => );
+    for my $version (keys %version_map) {
+      $rule_add->(execve => [0, '==', $strptr->($version_map{$version})]);
+    }
     $rule_add->(access => );
     $rule_add->(arch_prctl => );
     $rule_add->(readlink => );
@@ -405,22 +423,8 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
 
   sub perl_version_code {
     my ($version, $code) = @_;
-    
-    my %vmap = (
-       '5.5' => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl',
-       '5.6' => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl',
-       '5.8' => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl',
-       '5.10' => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl',
-       '5.12' => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl',
-       '5.14' => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl',
-       '5.16' => '/perl5/perlbrew/perls/perl-5.16.3/bin/perl',
-       '5.18' => '/perl5/perlbrew/perls/perl-5.18.4/bin/perl',
-       '5.20' => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl',
-       '5.22' => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl',
-       '5.24' => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl',
-    );
 
-    exec($vmap{$version}, '-e', $code);
+    exec($version_map{$version}, '-e', $code);
   }
 
 # 	sub javascript_code {
