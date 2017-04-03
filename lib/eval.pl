@@ -118,6 +118,7 @@ sub get_seccomp {
     
     $rule_add->(set_tid_address => ); # needed for perl >= 5.20
     $rule_add->(set_robust_list => );
+    $rule_add->(futex => );
     
     # Allow select, might need to have some kind of restriction on it?  probably fine
     $rule_add->(select => );
@@ -424,7 +425,26 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
   sub perl_version_code {
     my ($version, $code) = @_;
 
-    exec($version_map{$version}, '-e', $code);
+    my $qcode = quotemeta $code;
+
+    my $wrapper = 'use Data::Dumper; 
+    
+		local $Data::Dumper::Terse = 1;
+		local $Data::Dumper::Quotekeys = 0;
+		local $Data::Dumper::Indent = 0;
+		local $Data::Dumper::Useqq = 1;
+
+    my $val = eval "#line 1 \"(IRC)\"\n'.$qcode.'";
+
+    if ($@) {
+      print $@;
+    } else {
+      $val = ref($val) ? Dumper ($val) : "".$val;
+      print " ",$val;
+    }
+    ';
+
+    exec($version_map{$version}, '-e', $wrapper);
   }
 
 # 	sub javascript_code {
