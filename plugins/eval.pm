@@ -87,6 +87,7 @@ sub command {
         my $torun = $version eq '' ? 'blead' : $version;
         next if $version eq 'all';
         next if $version eq '4';
+        next if $version eq '5.5' && $command =~ /w/; # no warnings in 5.5
 
         push @outs, "[[$torun]]", $self->do_eval('perl'.$version, $code);
       }
