@@ -11,7 +11,7 @@ use strict;
 
 no warnings 'void';
 
-my @versions = ('', qw(4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
+my @versions = ('', qw(4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 all));
 
 sub new {
 	my( $class ) = @_;
@@ -34,9 +34,8 @@ sub command {
 	my( $self, $said, $pm ) = @_;
 
 	my $code = $said->{"body"};
-    my $dbh = $self->{dbh};
 
-    my $command = $said->{command_match};
+  my $command = $said->{command_match};
 	my $type = $said->{command_match};
 	$type =~ s/^\s*(\w+?)?eval(.*)?/$1$2/;
 	warn "Initial type: $type\n";
@@ -55,11 +54,11 @@ sub command {
 		'python' => 'python',
 		'lua' => 'lua',
 		'j' => 'j',
-        'w' => 'perl',
-        's' => 'perl',
-        'ws' => 'perl',
-        'sw' => 'perl',
-        map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
+    'w' => 'perl',
+    's' => 'perl',
+    'ws' => 'perl',
+    'sw' => 'perl',
+    map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
 	);
 
   my $orig_type = $type;
@@ -67,15 +66,53 @@ sub command {
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
-    if ($command =~ /([ws]+)?eval/i) {
-        my $c=$1;
-        $code = "use warnings; ".$code if ($c =~ /w/);
-        $code = "use strict; ".$code if ($c =~ /s/);
+  if ($command =~ /([ws]+)?eval/i) {
+    my $c=$1;
+    $code = "use warnings; ".$code if ($c =~ /w/);
+    $code = "use strict; ".$code if ($c =~ /s/);
+  }
+
+  $code =~ s/␤/\n/g;
+  
+  my $resultstr='';
+  
+  unless ($type =~ /perlall/) {
+    $resultstr = $self->do_eval($type, $code);
+  } else {
+    my @outs;
+
+    # TODO use channel config for this
+    if ($said->{channel} eq '#perlbot' || $said->{channel} eq '*irc_msg') {
+      for my $version (@versions) {
+        my $torun = $version eq '' ? 'blead' : $version;
+        next if $version eq 'all';
+        next if $version eq '4';
+
+        push @outs, "[[$torun]]", $self->do_eval('perl'.$version, $code);
+      }
+      $resultstr = join " ", @outs;
+    } else {
+      $resultstr = "evalall only works in /msg or in #perlbot";
     }
+  }
+  
 
-    $code =~ s/␤/\n/g;
+  if (!$said->{captured} && $resultstr !~ /\S/) {
+		$resultstr = "No output.";
+	}
+  
+  if ($type eq 'perl') {
+      $self->{dbh}->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
+  }
 
-	my $filter = POE::Filter::Reference->new();
+
+	return( 'handled', $resultstr);
+}
+
+sub do_eval {
+  my ($self, $type, $code) = @_;
+	
+  my $filter = POE::Filter::Reference->new();
 	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14400' )
 		or die "error: cannot connect to eval server";
 	my $refs = $filter->put( [ { code => "$type $code" } ] );
@@ -89,25 +126,17 @@ sub command {
 	my $result = $filter->get( [ $output ] );
 	my $resultstr = $result->[0]->[0];
 
-    if ($type eq 'perl') {
-        $dbh->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
-    }
-
-	if (!$said->{captured} && $resultstr !~ /\S/) {
-		$resultstr = "No output.";
-	}
-
 	$resultstr =~ s/\x0a?\x0d//g; # Prevent sending messages to the IRC server..
 
-    $resultstr = decode("utf8", $resultstr);
-    $resultstr =~ s/\0//g;
-    chomp $resultstr;
+  $resultstr = decode("utf8", $resultstr);
+  $resultstr =~ s/\0//g;
+  chomp $resultstr;
 
-    if (lc $resultstr eq "hello world" || lc $resultstr eq "hello, world!" ) {
-        $resultstr .= " I'm back!"
-    }
+  if (lc $resultstr eq "hello world" || lc $resultstr eq "hello, world!" ) {
+      $resultstr .= " I'm back!"
+  }
 
-	return( 'handled', $resultstr);
+  return $resultstr;
 }
 
 "Bot::BB3::Plugin::Eval";
