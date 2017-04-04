@@ -401,11 +401,16 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
         my @os = qw/aix bsdos darwin dynixptx freebsd haiku linux hpux irix next openbsd dec_osf svr4 sco_sv unicos unicosmk solaris sunos MSWin32 MSWin16 MSWin63 dos os2 cygwin VMS vos os390 os400 posix-bc riscos amigaos xenix/;
 
         {
-        local $^O = $os[rand()*@os];
-        no strict; no warnings; package main;
+          local $^O = $os[rand()*@os];
+          no strict; no warnings; package main;
 #        my $oldout;
-		$code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs';\n#line 1 \"(IRC)\"\n$code";
-		$ret = eval $code;
+          do {
+            local $/;
+            local $\;
+            local $,;
+            $code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs';\n#line 1 \"(IRC)\"\n$code";
+            $ret = eval $code;
+          }
         }
         select STDOUT;
 
