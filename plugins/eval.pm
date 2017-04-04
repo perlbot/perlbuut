@@ -11,7 +11,7 @@ use strict;
 
 no warnings 'void';
 
-my @versions = ('', qw(5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
+my @versions = ('', qw(4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24));
 
 sub new {
 	my( $class ) = @_;

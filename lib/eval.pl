@@ -56,6 +56,7 @@ $|++;
 #*STDOUT = $stdh;
 
 my %version_map = (
+   '4' => '/perl5/perlbrew/perls/perl-4.036/bin/perl',
    '5.5' => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl',
    '5.6' => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl',
    '5.8' => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl',
@@ -247,7 +248,30 @@ use Tie::Hash::NamedCapture;
 use Carp::Heavy;
 use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on demand
 
-	my $code = do { local $/; <STDIN> };
+	my $type = do { local $/=" ";
+
+    # have to do this with sysread in order to keep it from destroying STDIN for exec later.
+
+    my $q;
+    my $c;
+
+    while (sysread STDIN, $c, 1) {
+      $q .= $c;
+      last if $c eq $/;
+    }
+
+    chomp $q; $q 
+  };
+  
+  my $code;
+  if ($type ne 'perl4') { # Perl 4 has special needs.  It rides on the short bus.
+    $code = do {local $/; <STDIN>};
+    # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
+    # we have to leave this open for perl4, so only do this for other systems
+    open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
+  }
+
+#  print Dumper({type => $type, code => $code});
 
 	# Close every other filehandle we may have open
 	# this is probably legacy code at this point since it was used
@@ -275,8 +299,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	# The chroot section
 	chdir($FindBin::Bin."/../jail") or die "Jail not made, see bin/makejail.sh";
 
-    # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
-    open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
 
 	chroot(".") or die $!;
 
@@ -331,9 +353,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 # Setup SECCOMP for us
 get_seccomp();
 
-	$code =~ s/^\s*(\S+)\s*//
-		or die "Failed to parse code type! $code";
-	my $type = $1;
 
 	# Chomp code..
 	$code =~ s/\s*$//;
@@ -449,7 +468,12 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     }
     ';
 
-    exec($version_map{$version}, '-e', $wrapper);
+
+    unless ($version eq '4') {
+      exec($version_map{$version}, '-e', $wrapper);
+    } else {
+      exec($version_map{$version}, '-'); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
+    }
   }
 
 # 	sub javascript_code {
