@@ -583,25 +583,28 @@ sub plugin_output {
 				# Try to avoid sending too many lines, since it may be annoying
 				# and it tends to prevent the bot from sending other messages.
 
-				last MESSAGES if $messages_sent++ > 5;
+				last MESSAGES if $messages_sent++ > 30;
 			}
 		}
 	}
 	elsif ( $said->{channel} eq '*dcc_chat' ) { 
         $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 		$pci->yield( dcc_chat => $said->{dcc_id} => $text );
-	}
-	else {
-		$text =~ s/\r?\n/ /g;
-        if ($text =~ /^\x00/) {
-            $text =~ s/^\x00//;
+	}	else {
+    # TODO make this use the config
+		$text =~ s/\r?\n/ /g unless $said->{channel} eq '#perlbot';
 
-            $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
-		    $pci->yield( privmsg => $said->{channel} => $text );
-        } else {
-            $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
-		    $pci->yield( privmsg => $said->{channel} => "$said->{name}: $text" );
-        }
+
+    for my $line (split /\r?\n/, $text) {
+      unless ($text =~ /^\x00/) {
+        $line = "$said->{name}: $line";
+      } else {
+        $line =~ s/^\x00//;
+      }
+
+      my $rawtext = Encode::encode( "utf8", $line ); # set it up for raw bytes now
+      $pci->yield( privmsg => $said->{channel} => $rawtext );
+    }
 	}
 
 }
