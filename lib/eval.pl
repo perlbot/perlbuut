@@ -169,25 +169,47 @@ no warnings;
 # deparse output being much longer than it should be.
 	sub deparse_perl_code {
 		my( $code ) = @_;
-        my $sub;
-        {
-            no strict; no warnings; no charnames;
-	    	$sub = eval "use $]; sub{ $code\n }";
-        }
-		if( $@ ) { print STDOUT "Error: $@"; return }
+      my $sub;
+      {
+          no strict; no warnings; no charnames;
+          $sub = eval "use $]; package botdeparse; sub{ $code\n }";
+      }
 
-		my $dp = B::Deparse->new("-p", "-q", "-x7");
-		my $ret = $dp->coderef2text($sub);
+      my %methods = (map {$_ => botdeparse->can($_)} grep {botdeparse->can($_)} keys {%botdeparse::}->%*);
 
-			$ret =~ s/\{//;
-			$ret =~ s/package (?:\w+(?:::)?)+;//;
-			$ret =~ s/ no warnings;//;
-			$ret =~ s/\s+/ /g;
-			$ret =~ s/\s*\}\s*$//;
-            $ret =~ s/\s*\$\^H\{[^}]+\}(\s+=\s+[^;]+;?)?\s*//g;
-            $ret =~ s/\s*BEGIN\s*\{\s*[^}]*\s*\}\s*/ /;
+      if( $@ ) { print STDOUT "Error: $@"; return }
 
-		print STDOUT $ret;
+      my $dp = B::Deparse->new("-p", "-q", "-x7");
+
+      my @out;
+
+      my $clean_out = sub {
+        my $ret = shift;
+        $ret =~ s/\{//;
+        $ret =~ s/package (?:\w+(?:::)?)+;//;
+        $ret =~ s/no warnings;//;
+        $ret =~ s/\s+/ /g;
+        $ret =~ s/\s*\}\s*$//;
+        $ret =~ s/\s*\$\^H\{[^}]+\}(\s+=\s+[^;]+;?)?\s*//g;
+        $ret =~ s/\s*BEGIN\s*\{\s*[^}]*\s*\}\s*/ /;
+        $ret =~ s/package botdeparse;//;
+        $ret =~ s/no feature ':all';//;
+        $ret =~ s/use feature [^;]+;//;
+        $ret =~ s/^\s+|\s+$//g;
+        return $ret;
+      };
+
+      for my $sub (keys %methods) {
+        my $ret = $clean_out->($dp->coderef2text($methods{$sub}));
+
+        push @out, "sub $sub {$ret} ";
+      }
+      
+      my $ret = $dp->coderef2text($sub);
+      $ret = $clean_out->($ret);
+      push @out, $ret;
+
+      print STDOUT join(' ', @out);
 	}
 
 eval "use utf8; \$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
@@ -201,7 +223,7 @@ use Text::ParseWords;
 eval {"\N{SPARKLE}"}; # force loading of some of the charnames stuff
 
 # Required for perl_deparse
-use B::Deparse;
+use B::RecDeparse;
 
 ## Javascript Libs
 #BEGIN{ eval "use JavaScript::V8; require JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
