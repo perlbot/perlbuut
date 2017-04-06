@@ -84,14 +84,14 @@ sub command {
     # TODO use channel config for this
     if ($said->{channel} eq '#perlbot' || $said->{channel} eq '*irc_msg') {
       for my $version (@versions) {
-        my $torun = $version eq '' ? 'blead' : $version;
+        my $torun = $version eq '' ? 'blead' : sprintf "%5s", $version;
         next if $version eq 'all';
         next if $version eq '4';
         next if $version eq '5.5' && $command =~ /w/; # no warnings in 5.5
 
         push @outs, "[[$torun]]", $self->do_eval('perl'.$version, $code);
       }
-      $resultstr = join " ", @outs;
+      $resultstr = join "\n", @outs;
     } else {
       $resultstr = "evalall only works in /msg or in #perlbot";
     }
