@@ -65,7 +65,7 @@ sub command {
 
 sub handle {
 	my ( $self, $said, $pm ) = @_;
-
+  eval {
 	my $count = $self->dbh->do( "UPDATE seen SET user = ?, message = ?, seen_date = ? WHERE lc_user = ?", 
 		undef,
 		$said->{name},
@@ -83,6 +83,7 @@ sub handle {
 			time(),
 		);
 	}
+  }; # ignore errors from database during non-addressed writes.
 
 	return;
 }
