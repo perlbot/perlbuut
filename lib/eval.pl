@@ -179,7 +179,7 @@ no warnings;
 
       if( $@ ) { print STDOUT "Error: $@"; return }
 
-      my $dp = B::Deparse->new("-p", "-q", "-x7");
+      my $dp = B::Deparse->new("-p", "-q", "-x7", "-d");
 
       my @out;
 
