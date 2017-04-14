@@ -639,7 +639,7 @@ sub child_err {
 
 	return unless $err_output =~ /\S/;
 
-	# warn "\n\tChild $child_id: $err_output\n";
+	warn "\n\tChild $child_id: $err_output\n";
 }
 
 sub child_fail {

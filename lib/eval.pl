@@ -223,7 +223,7 @@ use Text::ParseWords;
 eval {"\N{SPARKLE}"}; # force loading of some of the charnames stuff
 
 # Required for perl_deparse
-use B::RecDeparse;
+use B::Deparse;
 
 ## Javascript Libs
 #BEGIN{ eval "use JavaScript::V8; require JSON::XS; JavaScript::V8::Context->new()->eval('1')"; }
