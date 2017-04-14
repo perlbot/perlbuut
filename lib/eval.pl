@@ -180,7 +180,7 @@ no warnings;
       if( $@ ) { print STDOUT "Error: $@"; return }
 
       my $dp = B::Deparse->new("-p", "-q", "-x7", "-d");
-
+      local *B::Deparse::declare_hints = sub { '' };
       my @out;
 
       my $clean_out = sub {
@@ -190,11 +190,9 @@ no warnings;
         $ret =~ s/no warnings;//;
         $ret =~ s/\s+/ /g;
         $ret =~ s/\s*\}\s*$//;
-        $ret =~ s/\s*\$\^H\{[^}]+\}(\s+=\s+[^;]+;?)?\s*//g;
-        $ret =~ s/\s*BEGIN\s*\{\s*[^}]*\s*\}\s*/ /;
-        $ret =~ s/package botdeparse;//;
         $ret =~ s/no feature ':all';//;
         $ret =~ s/use feature [^;]+;//;
+        $ret =~ s/^\(\)//g;
         $ret =~ s/^\s+|\s+$//g;
         return $ret;
       };
