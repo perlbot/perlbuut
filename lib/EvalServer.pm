@@ -40,7 +40,31 @@ sub spawn_eval {
 	}
 warn "Spawning Eval: $args->{code}\n";
 	my $wheel = POE::Wheel::Run->new(
-		Program => sub { system($^X, $filename); print "[Died $?]" if $? },
+		Program => sub { system($^X, $filename); 
+                     my ($exit, $signal) = (($?&0xFF00)>>8, $?&0xFF);
+
+                     if ($exit) {
+                       print "[Exited $exit]";
+                     } elsif ($signal) {
+                       my $signame = {
+                           1 => "SIGHUP",
+                           2 => "SIGINT",
+                           3 => "SIGQUIT",
+                           4 => "SIGILL",
+                           5 => "SIGTRAP",
+                           6 => "SIGABRT",
+                           7 => "SIGBUS",
+                           8 => "SIGFPE",
+                           9 => "SIGKILL",
+                           11 => "SIGSEGV",
+                           13 => "SIGPIPE",
+                           14 => "SIGALRM",
+                           15 => "SIGTERM",
+                           31 => "SIGSYS (Illegal Syscall)",
+                         }->{$signal} // $signal;
+                       print "[Died $signame]";
+                     }
+                   },
 		ProgramArgs => [ ],
 
 		CloseOnCall => 1, #Make sure all of the filehandles are closed.
