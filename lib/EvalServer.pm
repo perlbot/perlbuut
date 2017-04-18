@@ -8,6 +8,17 @@ use POE::Filter::Line;
 use POE::Filter::Stream;
 use POE::Wheel::Run;
 use strict;
+use Config;
+
+my %sig_map;
+
+do {
+  my @sig_names = split ' ', $Config{sig_name}; 
+  my @sig_nums = split ' ', $Config{sig_num}; 
+  @sig_map{@sig_nums} = map {'SIG' . $_} @sig_names;
+  $sig_map{31} = "SIGSYS (Illegal Syscall)";
+};
+
 
 sub start {
 	my( $class ) = @_;
@@ -46,22 +57,7 @@ warn "Spawning Eval: $args->{code}\n";
                      if ($exit) {
                        print "[Exited $exit]";
                      } elsif ($signal) {
-                       my $signame = {
-                           1 => "SIGHUP",
-                           2 => "SIGINT",
-                           3 => "SIGQUIT",
-                           4 => "SIGILL",
-                           5 => "SIGTRAP",
-                           6 => "SIGABRT",
-                           7 => "SIGBUS",
-                           8 => "SIGFPE",
-                           9 => "SIGKILL",
-                           11 => "SIGSEGV",
-                           13 => "SIGPIPE",
-                           14 => "SIGALRM",
-                           15 => "SIGTERM",
-                           31 => "SIGSYS (Illegal Syscall)",
-                         }->{$signal} // $signal;
+                       my $signame = $sig_map{$signal} // $signal;
                        print "[Died $signame]";
                      }
                    },
