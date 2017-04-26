@@ -55,19 +55,20 @@ select($stdh);
 $|++;
 #*STDOUT = $stdh;
 
-my %version_map = (
-   '4' => '/perl5/perlbrew/perls/perl-4.036/bin/perl',
-   '5.5' => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl',
-   '5.6' => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl',
-   '5.8' => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl',
-   '5.10' => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl',
-   '5.12' => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl',
-   '5.14' => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl',
-   '5.16' => '/perl5/perlbrew/perls/perl-5.16.3/bin/perl',
-   '5.18' => '/perl5/perlbrew/perls/perl-5.18.4/bin/perl',
-   '5.20' => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl',
-   '5.22' => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl',
-   '5.24' => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl',
+my %exec_map = (
+   'perl4' =>    {bin => '/perl5/perlbrew/perls/perl-4.036/bin/perl'},
+   'perl5.5' =>  {bin => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl'},
+   'perl5.6' =>  {bin => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl'},
+   'perl5.8' =>  {bin => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl'},
+   'perl5.10' => {bin => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl'},
+   'perl5.12' => {bin => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl'},
+   'perl5.14' => {bin => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl'},
+   'perl5.16' => {bin => '/perl5/perlbrew/perls/perl-5.16.3/bin/perl'},
+   'perl5.18' => {bin => '/perl5/perlbrew/perls/perl-5.18.4/bin/perl'},
+   'perl5.20' => {bin => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl'},
+   'perl5.22' => {bin => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl'},
+   'perl5.24' => {bin => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl'},
+   'ruby'     => {bin => '/usr/bin/ruby2.1'},
 );
 
 sub get_seccomp {
@@ -109,8 +110,8 @@ sub get_seccomp {
     $rule_add->(mprotect =>);
 
     # Enable us to run other perl binaries
-    for my $version (keys %version_map) {
-      $rule_add->(execve => [0, '==', $strptr->($version_map{$version})]);
+    for my $version (keys %exec_map) {
+      $rule_add->(execve => [0, '==', $strptr->($exec_map{$version}{bin})]);
     }
     $rule_add->(access => );
     $rule_add->(arch_prctl => );
@@ -153,7 +154,28 @@ sub get_seccomp {
     # 4352  ioctl(4, TCGETS, 0x7ffd10963820)  = -1 ENOTTY (Inappropriate ioctl for device)
     $rule_add->(ioctl => [1, '==', 0x5401]); # This happens on opened files for some reason? wtf
 
-    my @blind_syscalls = qw/read exit exit_group brk lseek fstat fcntl stat rt_sigaction rt_sigprocmask geteuid getuid getcwd close getdents getgid getegid getgroups lstat nanosleep getrlimit/;
+
+    # Added for Ruby.  Not sure if keeping
+    # clone(child_stack=0x7ff62036cff0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7ff62036d9d0, tls=0x7ff62036d700, child_tidptr=0x7ff62036d9d0) = 8055
+
+    # magic number extracted via
+    ## #include <stdio.h>
+    ## #include <linux/sched.h>
+    ## 
+    ## int main(char **argv, int argc) {
+    ##     printf("%08X\n", CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID);
+    ## }
+
+    my $thread_mode = 0x003D0F00; 
+    $rule_add->(clone => [0, '==', $thread_mode]);
+
+    # Only allow a new signal stack context to be created, and only with a size of 8192 bytes.  exactly what ruby does
+    # Have to allow it to be blind since i can't inspect inside the struct passed to it :(  I'm not sure how i feel about this one
+    $rule_add->(sigaltstack =>);# [1, '==', 0], [2, '==', 8192]);
+    $rule_add->(pipe2 =>);
+
+
+    my @blind_syscalls = qw/read exit exit_group brk lseek fstat fcntl stat rt_sigaction rt_sigprocmask geteuid getuid getcwd close getdents getgid getegid getgroups lstat nanosleep getrlimit clock_gettime clock_getres/;
 
     for my $syscall (@blind_syscalls) {
         $rule_add->($syscall);
@@ -346,7 +368,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		and
 	setrlimit(RLIMIT_STACK, $limit, $limit )
 		and
-	setrlimit(RLIMIT_NPROC, 1,1)
+	setrlimit(RLIMIT_NPROC, 3,3) # CHANGED to 3 for Ruby.  Might take it away.
 		and
 	setrlimit(RLIMIT_NOFILE, 20,20)
 		and
@@ -397,9 +419,9 @@ get_seccomp();
 #	elsif( $type eq 'k20' ) {
 #		k20_code($code);
 #	}
-#	elsif( $type eq 'rb' or $type eq 'ruby' ) {
-#		ruby_code($code);
-#	}
+	elsif( $type eq 'ruby' ) {
+		ruby_code($code);
+	}
 #	elsif( $type eq 'py' or $type eq 'python' ) {
 #		python_code($code);
 #	}
@@ -444,8 +466,8 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
           no strict; no warnings; package main;
 #        my $oldout;
           do {
-            local $/;
-            local $\;
+            local $/="\n";
+            local $\="\n";
             local $,;
             $code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs';\n#line 1 \"(IRC)\"\n$code";
             $ret = eval $code;
@@ -490,10 +512,16 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
 
 
     unless ($version eq '4') {
-      exec($version_map{$version}, '-e', $wrapper);
+      exec($exec_map{'perl'.$version}{bin}, '-e', $wrapper);
     } else {
-      exec($version_map{$version}, '-'); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
+      exec($exec_map{'perl'.$version}{bin}, '-'); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
     }
+  }
+  
+  sub ruby_code {
+    my ($code) = @_;
+
+    exec($exec_map{'ruby'}{bin}, '-e', $code);
   }
 
 # 	sub javascript_code {

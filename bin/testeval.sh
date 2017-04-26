@@ -1,7 +1,7 @@
 #!/bin/bash
 
 read -r -d '' CODE <<'EOC'
-perl4 print "Hello World";
+ruby print "Hello World"
 EOC
 
 echo --------
