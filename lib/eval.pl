@@ -72,6 +72,7 @@ my %exec_map = (
 );
 
 sub get_seccomp {
+    my $lang = shift;
     use Linux::Seccomp ;
     my $seccomp = Linux::Seccomp->new(SCMP_ACT_KILL);
     ##### set seccomp
@@ -97,6 +98,30 @@ sub get_seccomp {
 
     $rule_add->(write => [0, '==', 2]); # STDERR
     $rule_add->(write => [0, '==', 1]); # STDOUT
+
+    # Added for Ruby.  Not sure if keeping
+    if ($lang eq 'ruby') { # ruby opens up some pipes to communicate between threads that it must have
+      $rule_add->(write => [0, '==', 5]);
+      $rule_add->(write => [0, '==', 7]);
+
+      # clone(child_stack=0x7ff62036cff0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7ff62036d9d0, tls=0x7ff62036d700, child_tidptr=0x7ff62036d9d0) = 8055
+
+      # magic number extracted via
+      ## #include <stdio.h>
+      ## #include <linux/sched.h>
+      ## 
+      ## int main(char **argv, int argc) {
+      ##     printf("%08X\n", CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID);
+      ## }
+
+      my $thread_mode = 0x003D0F00; 
+      $rule_add->(clone => [0, '==', $thread_mode]);
+
+      # Only allow a new signal stack context to be created, and only with a size of 8192 bytes.  exactly what ruby does
+      # Have to allow it to be blind since i can't inspect inside the struct passed to it :(  I'm not sure how i feel about this one
+      $rule_add->(sigaltstack =>);# [1, '==', 0], [2, '==', 8192]);
+      $rule_add->(pipe2 =>);
+    }
 
     #mmap(NULL, 2112544, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 7, 0) = 0x7efedad0e000
     #mprotect(0x7efedad12000, 2093056, PROT_NONE) = 0
@@ -154,25 +179,6 @@ sub get_seccomp {
     # 4352  ioctl(4, TCGETS, 0x7ffd10963820)  = -1 ENOTTY (Inappropriate ioctl for device)
     $rule_add->(ioctl => [1, '==', 0x5401]); # This happens on opened files for some reason? wtf
 
-
-    # Added for Ruby.  Not sure if keeping
-    # clone(child_stack=0x7ff62036cff0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7ff62036d9d0, tls=0x7ff62036d700, child_tidptr=0x7ff62036d9d0) = 8055
-
-    # magic number extracted via
-    ## #include <stdio.h>
-    ## #include <linux/sched.h>
-    ## 
-    ## int main(char **argv, int argc) {
-    ##     printf("%08X\n", CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID);
-    ## }
-
-    my $thread_mode = 0x003D0F00; 
-    $rule_add->(clone => [0, '==', $thread_mode]);
-
-    # Only allow a new signal stack context to be created, and only with a size of 8192 bytes.  exactly what ruby does
-    # Have to allow it to be blind since i can't inspect inside the struct passed to it :(  I'm not sure how i feel about this one
-    $rule_add->(sigaltstack =>);# [1, '==', 0], [2, '==', 8192]);
-    $rule_add->(pipe2 =>);
 
 
     my @blind_syscalls = qw/read exit exit_group brk lseek fstat fcntl stat rt_sigaction rt_sigprocmask geteuid getuid getcwd close getdents getgid getegid getgroups lstat nanosleep getrlimit clock_gettime clock_getres/;
@@ -368,7 +374,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		and
 	setrlimit(RLIMIT_STACK, $limit, $limit )
 		and
-	setrlimit(RLIMIT_NPROC, 3,3) # CHANGED to 3 for Ruby.  Might take it away.
+	setrlimit(RLIMIT_NPROC, 4,4) # CHANGED to 3 for Ruby.  Might take it away.
 		and
 	setrlimit(RLIMIT_NOFILE, 20,20)
 		and
@@ -393,7 +399,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	# close STDIN;
 
 # Setup SECCOMP for us
-get_seccomp();
+get_seccomp($type);
 
 
 	# Chomp code..
