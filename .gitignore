@@ -7,5 +7,4 @@ MYMETA.yml
 Makefile
 modules.lst
 *.log
-jail/
 jail.ext4
