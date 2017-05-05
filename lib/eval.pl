@@ -366,6 +366,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 
 	chroot(".") or die $!;
+  chdir("/eval") or die $!;
 
     if ($< == 0) {
         # Here's where we actually drop our root privilege
