@@ -328,24 +328,13 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
     chomp $q; $q 
   };
   
-  my $code;
-#  if ($type ne 'perl4') { # Perl 4 has special needs.  It rides on the short bus.
-    $code = do {local $/; <STDIN>};
-    # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
-    # we have to leave this open for perl4, so only do this for other systems
-    open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
-#  }
-
-#  print Dumper({type => $type, code => $code});
-
-	# Close every other filehandle we may have open
-	# this is probably legacy code at this point since it was used
-	# inside the original bb2 which forked to execute this code.
-	opendir my $dh, "/proc/self/fd" or die $!;
-	while(my $fd = readdir($dh)) { next unless $fd > 2; POSIX::close($fd) }
+  my $code = do {local $/; <STDIN>};
+  # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
+  # we have to leave this open for perl4, so only do this for other systems
+  open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
 
 	# Get the nobody uid before we chroot.
-	my $nobody_uid = getpwnam("nobody");
+	my $nobody_uid = 65534; #getpwnam("nobody");
 	die "Error, can't find a uid for 'nobody'. Replace with someone who exists" unless $nobody_uid;
 
 	# Set the CPU LIMIT.
@@ -362,27 +351,23 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 # 	}
 
 	# The chroot section
-	chdir($FindBin::Bin."/../jail") or die "Jail not made, see bin/makejail.sh";
-
-
-	chroot(".") or die $!;
   chdir("/eval") or die $!;
 
   # It's now safe for us to do this so that we can load modules and files provided by the user
   push @INC, "/eval/lib";
 
-    if ($< == 0) {
-        # Here's where we actually drop our root privilege
-        $)="$nobody_uid $nobody_uid";
-        $(=$nobody_uid;
-        $<=$>=$nobody_uid;
-        POSIX::setgid($nobody_uid); #We just assume the uid is the same as the gid. Hot.
+  if ($< == 0) {
+      # Here's where we actually drop our root privilege
+      $)="$nobody_uid $nobody_uid";
+      $(=$nobody_uid;
+      $<=$>=$nobody_uid;
+      POSIX::setgid($nobody_uid); #We just assume the uid is the same as the gid. Hot.
 
 
-        die "Failed to drop to nobody"
-            if $> != $nobody_uid
-            or $< != $nobody_uid;
-    }
+      die "Failed to drop to nobody"
+          if $> != $nobody_uid
+          or $< != $nobody_uid;
+  }
 
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
@@ -413,16 +398,14 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	)
 		or die "Failed to set rlimit: $!";
 
-        %ENV=(TZ=>'Asia/Pyongyang');
+  %ENV=(TZ=>'Asia/Pyongyang');
 	#setrlimit(RLIMIT_MSGQUEUE,100,100);
 
 	die "Failed to drop root: $<" if $< == 0;
 	# close STDIN;
 
-# Setup SECCOMP for us
-get_seccomp($type);
-
-
+  # Setup SECCOMP for us
+  get_seccomp($type);
 	# Chomp code..
 	$code =~ s/\s*$//;
 
