@@ -56,6 +56,7 @@ warn "Spawning Eval: $args->{code}\n";
 	my $wheel = POE::Wheel::Run->new(
 		Program => sub { 
                      $namespace->run(code => sub {
+                       mount($FindBin::Bin."/../jail_root", $FindBin::Bin."/../jail", undef, MS_BIND|MS_RDONLY, undef);
                        mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", 0, {size => "16m"});
                        mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", MS_PRIVATE, {size => "16m"});
                        mount("/lib64", $FindBin::Bin."/../jail/lib64", undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
