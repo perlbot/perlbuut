@@ -58,11 +58,14 @@ warn "Spawning Eval: $args->{code}\n";
                      $namespace->run(code => sub {
                        mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", 0, {size => "16m"});
                        mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", MS_PRIVATE, {size => "16m"});
-                       mount("/lib64", $FindBin::Bin."/../jail/lib64", undef, MS_PRIVATE|MS_BIND|MS_RDONLY, undef);
-                       mount("/usr", $FindBin::Bin."/../jail/usr", undef, MS_PRIVATE|MS_BIND|MS_RDONLY, undef);
-                       mount("/home/ryan/perl5", $FindBin::Bin."/../jail/perl5", undef, MS_PRIVATE|MS_BIND|MS_RDONLY, undef);
-                       mount("jail", $FindBin::Bin."/../jail", undef, MS_REMOUNT|MS_RDONLY, undef);
-                  
+                       mount("/lib64", $FindBin::Bin."/../jail/lib64", undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
+                       mount("/lib", $FindBin::Bin."/../jail/lib", undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
+                       mount("/usr/bin", $FindBin::Bin."/../jail/usr/bin", undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
+                       mount("/usr/lib", $FindBin::Bin."/../jail/usr/lib", undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
+                       mount("/home/ryan/perl5", $FindBin::Bin."/../jail/perl5", undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
+                       #my $q = qx|ls -lh /home/ryan/bots/perlbuut/jail/perl5/perlbrew/perls/perl-5.18*/bin|;
+                       #print $q;
+
                        system($^X, $filename); 
                        my ($exit, $signal) = (($?&0xFF00)>>8, $?&0xFF);
 

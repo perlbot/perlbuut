@@ -533,9 +533,9 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     }
     ';
 
-
+    print STDERR "About to exec: ", $exec_map{'perl'.$version}{bin}, "\n";
     unless ($version eq '4') {
-      exec($exec_map{'perl'.$version}{bin}, '-e', $wrapper);
+      exec($exec_map{'perl'.$version}{bin}, '-e', $wrapper) or die "Exec failed $!";
     } else {
       exec($exec_map{'perl'.$version}{bin}, '-'); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
     }
