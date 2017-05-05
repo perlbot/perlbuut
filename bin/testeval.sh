@@ -1,7 +1,7 @@
 #!/bin/bash
 
 read -r -d '' CODE <<'EOC'
-ruby print "Hello World"
+perl BEGIN {$ENV{TMPDIR}="/tmp"}; use File::Temp; File::Temp->new()."";
 EOC
 
 echo --------

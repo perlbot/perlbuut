@@ -24,25 +24,26 @@ do {
     package Zathras; 
     our $AUTOLOAD; 
     use overload '""' => sub {
-        my $data = "'".$_[0]{data}."'";
+        my $data = @{$_[0]{args}}? qq{$_[0]{data}(}.join(', ', map {"".$_} @{$_[0]{args}}).qq{)} : qq{$_[0]{data}};
         my $old = $_[0]{old};
 
         my ($pack, undef, undef, $meth) = caller(1);
 
         if ($pack eq 'Zathras' && $meth ne 'Zahtras::dd_freeze') {
             if (ref($old) ne 'Zathras') {
-                return " and $data";
+                return "Zathras->$data";
             } else {
-                return ", $data$old";
+                return "${old}->$data";
             }
         } else {
            $old = "" if (!ref($old));
-           return "Everybody come to Zathras for $data$old.  Zathras not mind."
+           return "$old->$data"
         }
       };
-    sub AUTOLOAD {$AUTOLOAD=~s/.*:://; bless {data=>$AUTOLOAD, old => shift}}
+    sub AUTOLOAD {$AUTOLOAD=~s/.*:://; bless {data=>$AUTOLOAD, args => \@_, old => shift}}
     sub DESTROY {}; # keep it from recursing
     sub dd_freeze {$_[0]=\($_[0]."")}
+    sub can {my ($self, $meth) = @_; return sub{$self->$meth(@_)}}
     };
 
 # save the old stdout, we're going to clobber it soon. STDOUT
@@ -235,7 +236,19 @@ no warnings;
       $ret = $clean_out->($ret);
       push @out, $ret;
 
-      print STDOUT join(' ', @out);
+      my $fullout = join(' ', @out);
+
+       use Perl::Tidy; 
+       my $hide = do {package hiderr; sub print{}; bless {}}; 
+       my $tidy_out="";
+       eval {
+         my $foo = "$fullout";
+         Perl::Tidy::perltidy(source => \$foo, destination => \$tidy_out, errorfile => $hide, logfile => $hide);
+       };
+
+      $tidy_out = $fullout if ($@);
+
+      print STDOUT $tidy_out;
 	}
 
 eval "use utf8; \$\343\201\257 = 42; 'ש' =~ /([\p{Bidi_Class:L}\p{Bidi_Class:R}])/";  # attempt to automatically load the utf8 libraries.
@@ -465,15 +478,15 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
 
         my $ret;
 
-        my @os = qw/aix bsdos darwin dynixptx freebsd haiku linux hpux irix next openbsd dec_osf svr4 sco_sv unicos unicosmk solaris sunos MSWin32 MSWin16 MSWin63 dos os2 cygwin VMS vos os390 os400 posix-bc riscos amigaos xenix/;
+        my @os = qw/aix bsdos darwin dynixptx freebsd haiku linux hpux irix next openbsd dec_osf svr4 sco_sv unicos unicosmk solaris sunos MSWin32 MSWin16 MSWin63 dos os2 cygwin vos os390 os400 posix-bc riscos amigaos xenix/;
 
         {
-          local $^O = $os[rand()*@os];
+#          local $^O = $os[rand()*@os];
           no strict; no warnings; package main;
 #        my $oldout;
           do {
             local $/="\n";
-            local $\="\n";
+            local $\;
             local $,;
             $code = "use $]; use feature qw/postderef refaliasing lexical_subs postderef_qq signatures/; use experimental 'declared_refs';\n#line 1 \"(IRC)\"\n$code";
             $ret = eval $code;
