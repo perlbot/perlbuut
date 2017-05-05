@@ -329,12 +329,12 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
   };
   
   my $code;
-  if ($type ne 'perl4') { # Perl 4 has special needs.  It rides on the short bus.
+#  if ($type ne 'perl4') { # Perl 4 has special needs.  It rides on the short bus.
     $code = do {local $/; <STDIN>};
     # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
     # we have to leave this open for perl4, so only do this for other systems
     open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
-  }
+#  }
 
 #  print Dumper({type => $type, code => $code});
 
@@ -533,11 +533,10 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     }
     ';
 
-    print STDERR "About to exec: ", $exec_map{'perl'.$version}{bin}, "\n";
     unless ($version eq '4') {
       exec($exec_map{'perl'.$version}{bin}, '-e', $wrapper) or die "Exec failed $!";
     } else {
-      exec($exec_map{'perl'.$version}{bin}, '-'); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
+      exec($exec_map{'perl'.$version}{bin}, '-e', $code); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
     }
   }
   
