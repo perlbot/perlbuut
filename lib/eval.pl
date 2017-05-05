@@ -96,6 +96,7 @@ sub get_seccomp {
 
     my $strptr = sub {unpack "Q", pack("p", $_[0])};
 
+    $rule_add->(write =>); # TBD!
     $rule_add->(write => [0, '==', 2]); # STDERR
     $rule_add->(write => [0, '==', 1]); # STDOUT
 
@@ -150,9 +151,12 @@ sub get_seccomp {
     # Allow select, might need to have some kind of restriction on it?  probably fine
     $rule_add->(select => );
 
+    $rule_add->(chmod => [1, '==', 0600]);
+    $rule_add->(unlink => );
+
     # These are the allowed modes on open, allow that to work in any combo
-    my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY) = (00200000, 02000000, 00000400);
-    my @allowed_open_modes = (&POSIX::O_RDONLY, &POSIX::O_NONBLOCK, $O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY);
+    my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 00000400, 00400000);
+    my @allowed_open_modes = (&POSIX::O_RDONLY, &POSIX::O_NONBLOCK, $O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, &POSIX::O_CREAT, &POSIX::O_EXCL, &POSIX::O_WRONLY, &POSIX::O_TRUNC, $O_NOFOLLOW, &POSIX::O_RDWR);
 
     # this annoying bitch of code is because Algorithm::Permute doesn't work with newer perls
     # Also this ends up more efficient.  We skip 0 because it's redundant
@@ -452,7 +456,7 @@ get_seccomp($type);
 		my( $code ) = @_;
 		local $@;
 		local @INC = map {s|/home/ryan||r} @INC;
-        local $$=24601;
+#        local $$=24601;
         close STDIN;
         my $stdin = q{Biqsip bo'degh cha'par hu jev lev lir loghqam lotlhmoq nay' petaq qaryoq qeylis qul tuq qaq roswi' say'qu'moh tangqa' targh tiq 'ab. Chegh chevwi' tlhoy' da'vi' ghet ghuy'cha' jaghla' mevyap mu'qad ves naq pach qew qul tuq rach tagh tal tey'. Denibya' dugh ghaytanha' homwi' huchqed mara marwi' namtun qevas qay' tiqnagh lemdu' veqlargh 'em 'e'mam 'orghenya' rojmab. Baqa' chuy da'nal dilyum ghitlhwi' ghubdaq ghuy' hong boq chuydah hutvagh jorneb law' mil nadqa'ghach pujwi' qa'ri' ting toq yem yur yuvtlhe' 'e'mamnal 'iqnah qad 'orghenya' rojmab 'orghengan. Beb biqsip 'ugh denibya' ghal ghobchuq lodni'pu' ghochwi' huh jij lol nanwi' ngech pujwi' qawhaq qeng qo'qad qovpatlh ron ros say'qu'moh soq tugh tlhej tlhot verengan ha'dibah waqboch 'er'in 'irneh.
 Cha'par denib qatlh denibya' ghiq jim megh'an nahjej naq nay' podmoh qanwi' qevas qin rilwi' ros sila' tey'lod tus vad vay' vem'eq yas cha'dich 'entepray' 'irnehnal 'urwi'. Baqa' be'joy' bi'res chegh chob'a' dah hos chohwi' piq pivlob qa'ri' qa'rol qewwi' qo'qad qi'tu' qu'vatlh say'qu'moh sa'hut sosbor'a' tlhach mu'mey vid'ir yas cha'dich yergho. Chegh denibya'ngan jajvam jij jim lev lo'lahbe'ghach ngun nguq pa' beb pivlob pujwi' qab qid sosbor'a' tlhepqe' tlhov va 'o'megh 'ud haqtaj. Bor cha'nas denibya' qatlh duran lung dir ghogh habli' homwi' hoq je' notqa' pegh per pitlh qarghan qawhaq qen red tey'lod valqis vid'ir wab yer yintagh 'edjen. Bi'rel tlharghduj cheb ghal lorlod ne' ngij pipyus pivlob qutluch red sila' tuqnigh.

@@ -9,8 +9,10 @@ use POE::Filter::Stream;
 use POE::Wheel::Run;
 use strict;
 use Config;
-
+use Sys::Linux::Namespace;
+use Sys::Linux::Mount qw/:all/;
 my %sig_map;
+use FindBin;
 
 do {
   my @sig_names = split ' ', $Config{sig_name}; 
@@ -19,6 +21,7 @@ do {
   $sig_map{31} = "SIGSYS (Illegal Syscall)";
 };
 
+my $namespace = Sys::Linux::Namespace->new(private_pid => 1, no_proc => 1, private_mount => 1, private_uts => 1,  private_ipc => 1, private_sysvsem => 1);
 
 sub start {
 	my( $class ) = @_;
@@ -47,19 +50,29 @@ sub spawn_eval {
 
 	my $filename = 'eval.pl';
 	if( not -e $filename ) {
-		$filename = "/home/ryan/bots/perlbuut/lib/$filename";
+		$filename = $FindBin::Bin . "/../lib/$filename";
 	}
 warn "Spawning Eval: $args->{code}\n";
 	my $wheel = POE::Wheel::Run->new(
-		Program => sub { system($^X, $filename); 
-                     my ($exit, $signal) = (($?&0xFF00)>>8, $?&0xFF);
+		Program => sub { 
+                     $namespace->run(code => sub {
+                       mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", 0, {size => "16m"});
+                       mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", MS_PRIVATE, {size => "16m"});
+                       mount("/lib64", $FindBin::Bin."/../jail/lib64", undef, MS_PRIVATE|MS_BIND|MS_RDONLY, undef);
+                       mount("/usr", $FindBin::Bin."/../jail/usr", undef, MS_PRIVATE|MS_BIND|MS_RDONLY, undef);
+                       mount("/home/ryan/perl5", $FindBin::Bin."/../jail/perl5", undef, MS_PRIVATE|MS_BIND|MS_RDONLY, undef);
+                       mount("jail", $FindBin::Bin."/../jail", undef, MS_REMOUNT|MS_RDONLY, undef);
+                  
+                       system($^X, $filename); 
+                       my ($exit, $signal) = (($?&0xFF00)>>8, $?&0xFF);
 
-                     if ($exit) {
-                       print "[Exited $exit]";
-                     } elsif ($signal) {
-                       my $signame = $sig_map{$signal} // $signal;
-                       print "[Died $signame]";
-                     }
+                       if ($exit) {
+                         print "[Exited $exit]";
+                       } elsif ($signal) {
+                         my $signame = $sig_map{$signal} // $signal;
+                         print "[Died $signame]";
+                       }
+                     });
                    },
 		ProgramArgs => [ ],
 

@@ -1,3 +1,4 @@
+requires 'Sys::Linux::Namespace' => 0.012;
 requires  'POE' => 0;
 requires  'Parse::RecDescent' => 0;
 requires  'Config::General' => 0;
@@ -55,7 +56,6 @@ requires 'JSON::XS' => 0;
 requires 'JSON::MaybeXS' => 0;
 requires 'Cpanel::JSON::XS' => 0;
 
-requires 'JavaScript::V8::Context' => 0;
 requires 'LWP::Protocol::https' => 0;
 requires 'Mojo::DOM' => 0;
 requires 'Mojo::DOM::CSS' => 0;
