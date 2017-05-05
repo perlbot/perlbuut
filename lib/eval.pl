@@ -368,6 +368,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	chroot(".") or die $!;
   chdir("/eval") or die $!;
 
+  # It's now safe for us to do this so that we can load modules and files provided by the user
+  push @INC, "/eval/lib";
+
     if ($< == 0) {
         # Here's where we actually drop our root privilege
         $)="$nobody_uid $nobody_uid";
