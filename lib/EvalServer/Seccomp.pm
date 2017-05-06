@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use List::Util qw/reduce/;
+use List::Util qw/reduce uniq/;
 use Moo;
 use Sys::Linux::Unshare qw/:consts/;
 use POSIX;
@@ -35,6 +35,10 @@ has profiles => (is => 'ro'); # aref
 has _rules => (is => 'rw');
 
 has seccomp => (is => 'ro', default => sub {Linux::Seccomp->new(SCMP_ACT_KILL)});
+has _permutes => (is => 'ro', default => sub {+{}});
+has _used_sets => (is => 'ro', default => sub {+{}});
+
+has _finalized => (is => 'rw', default => 0); # TODO make this set once
 
 # Define some more open modes that POSIX doesn't have for us.
 my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 00000400, 00400000);
@@ -42,7 +46,7 @@ my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 000
 # TODO this needs some accessors to make it easier to define rulesets
 our %rule_sets = (
   default => {
-    include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper'],
+    include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper', 'file_write', 'file_tty'],
     rules => [{syscall => 'mmap'},
               {syscall => 'munmap'},
               {syscall => 'mremap'},
@@ -73,16 +77,21 @@ our %rule_sets = (
     ],
   },
 
+  perm_test => {
+    permute => {foo => [1, 2, 3], bar => [4, 5, 6]},
+    rules => [{syscall => 'permme', permute_rules => [[0, '==', \'foo'], [1, '==', \'bar']]}]
+  },
+
   # File related stuff
   stdio => {
-    rules => [{syscall => 'read', args => [[qw|0 == 0|]]},  # STDIN
-              {syscall => 'write', args => [[qw|0 == 1|]]}, # STDOUT
-              {syscall => 'write', args => [[qw|0 == 2|]]},
+    rules => [{syscall => 'read', rules => [[qw|0 == 0|]]},  # STDIN
+              {syscall => 'write', rules => [[qw|0 == 1|]]}, # STDOUT
+              {syscall => 'write', rules => [[qw|0 == 2|]]},
               ],
   },
   file_open => {
-    rules => [{syscall => 'open',   permute_args => [['1', '==', \'open_modes']]}, 
-              {syscall => 'openat', permute_args => [['2', '==', \'open_modes']]},
+    rules => [{syscall => 'open',   permute_rules => [['1', '==', \'open_modes']]}, 
+              {syscall => 'openat', permute_rules => [['2', '==', \'open_modes']]},
               {syscall => 'close'},
               {syscall => 'select'},
               {syscall => 'read'},
@@ -159,14 +168,14 @@ our %rule_sets = (
           push @rules, {syscall => 'execve', rules => [[0, '==', $strptr->($exec_map->{$version}{bin})]]};
         }
 
-        return \@rules;
+        return @rules;
       }, # sub returns a valid arrayref.  given our $self as first arg.
   },
 
   # language master rules
   lang_perl => {
     rules => [],
-    include => ['default'],
+    include => ['default', 'perlmod_file_temp'],
   },
 
   lang_ruby => {
@@ -190,15 +199,15 @@ sub _process_rule {
 }
 
 sub _rec_get_rules {
-  my ($self, $profile, $used_sets, $permutes) = @_;
+  my ($self, $profile) = @_;
 
-  return () if ($used_sets->{$profile});
-  $used_sets->{$profile} = 1;
+  return () if ($self->_used_sets->{$profile});
+  $self->_used_sets->{$profile} = 1;
 
   croak "Rule set $profile not found" unless exists $rule_sets{$profile};
 
   my @rules;
-  print "getting profile $profile\n";
+  #print "getting profile $profile\n";
 
   if (ref $rule_sets{$profile}{rules} eq 'ARRAY') {
     push @rules, @{$rule_sets{$profile}{rules}};
@@ -211,11 +220,11 @@ sub _rec_get_rules {
   }
   
   for my $perm (keys %{$rule_sets{$profile}{permute} // +{}}) {
-    push @{$permutes->{$perm}}, @{$rule_sets{$profile}{permute}{$perm}};
+    push @{$self->_permutes->{$perm}}, @{$rule_sets{$profile}{permute}{$perm}};
   }
 
   for my $include (@{$rule_sets{$profile}{include}//[]}) {
-    push @rules, $self->_rec_get_rules($include, $used_sets);
+    push @rules, $self->_rec_get_rules($include);
   }
 
   return @rules;
@@ -224,16 +233,93 @@ sub _rec_get_rules {
 sub build_seccomp {
   my ($self) = @_;
 
-  my %used_sets = (); # keep track of which sets we've seen so we don't include multiple times
-
-  my %comp_rules; # computed rules
-  my %permutes;
+  my %gathered_rules; # computed rules
 
   for my $profile (@{$self->profiles}) {
-    
-    my @rules = $self->_rec_get_rules($profile, \%used_sets, \%permutes);
-    print Dumper({profile => $profile, rules=>\@rules, used_sets => \%used_sets, permutes => \%permutes});
+    my @rules = $self->_rec_get_rules($profile);
+
+    for my $rule (@rules) {
+      my $syscall = $rule->{syscall};
+      push @{$gathered_rules{$syscall}}, $rule;
+    }
   }
+
+  # optimize phase
+  my %full_permute;
+  for my $permute (keys %{$self->_permutes}) {
+    my @modes = @{$self->_permutes->{$permute}} = sort {$a <=> $b} uniq @{$self->_permutes->{$permute}};
+
+    # Produce every bitpattern for this permutation
+    for my $b (1..(2**@modes) - 1) {
+      my $q = 1;
+      my $mode = 0;
+      #printf "%04b: ", $b;
+      do {
+        if ($q & $b) {
+          my $r = int(log($q)/log(2)+0.5); # get the thing
+
+          $mode |= $modes[$r];
+
+          #print "$r";
+        }
+        $q <<= 1;
+      } while ($q <= $b);
+
+      push @{$full_permute{$permute}}, $mode;
+    }
+  }
+
+  for my $k (keys %full_permute) {
+  @{$full_permute{$k}} = sort {$a <=> $b} uniq @{$full_permute{$k}} 
+  }
+
+  # TODO optimize for permissive rules
+  # e.g. write => OR write => [0, '==', 1] OR write => [0, '==', 2] becomes write =>
+
+
+  my %comp_rules;
+
+  for my $syscall (keys %gathered_rules) {
+    my @rules = @{$gathered_rules{$syscall}};
+    for my $rule (@rules) {
+      print Dumper($rule);
+      my $syscall = $rule->{syscall};
+
+      if (exists ($rule->{permute_rules})) {
+        my @perm_on = ();
+        for my $prule (@{$rule->{permute_rules}}) {
+          if (ref $prule->[2]) {
+            push @perm_on, ${$prule->[2]};
+          }
+          if (ref $prule->[0]) {
+            croak "Permuation on argument number not supported using $syscall";
+          }
+        }
+
+        croak "Permutation on syscall rule without actual permutation specified" if (!@perm_on);
+
+        my $glob_string = join '__', map { "{".join(",", @{$full_permute{$_}})."}" } @perm_on;
+        for my $g_value (glob $glob_string) {
+          my %pvals;
+          @pvals{@perm_on} = split /__/, $g_value;
+
+
+          push @{$comp_rules{$syscall}}, 
+            [map {
+              my @r = @$_;
+              $r[2] = $pvals{${$r[2]}};
+              \@r;
+            } @{$rule->{permute_rules}}];
+        }
+      } elsif (exists ($rule->{rules})) {
+        push @{$comp_rules{$syscall}}, $rule->{rules};
+      } else {
+        push @{$comp_rules{$syscall}}, [];
+      }
+    }
+  }
+
+  print Dumper({comp_rules=>\%comp_rules, used_sets => $self->_used_sets, permutes => $self->_permutes});
 }
 
 # sub get_seccomp {
