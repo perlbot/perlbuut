@@ -11,25 +11,7 @@ use POSIX;
 use Linux::Seccomp;
 use Carp qw/croak/;
 
-has exec_map => (is => 'ro', default => sub {
-  # TODO this should actually end up in eval.pl specifically.
-    return {
-     'perl4' =>    {bin => '/perl5/perlbrew/perls/perl-4.036/bin/perl'},
-     'perl5.5' =>  {bin => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl'},
-     'perl5.6' =>  {bin => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl'},
-     'perl5.8' =>  {bin => '/perl5/perlbrew/perls/perl-5.8.9/bin/perl'},
-     'perl5.10' => {bin => '/perl5/perlbrew/perls/perl-5.10.1/bin/perl'},
-     'perl5.12' => {bin => '/perl5/perlbrew/perls/perl-5.12.5/bin/perl'},
-     'perl5.14' => {bin => '/perl5/perlbrew/perls/perl-5.14.4/bin/perl'},
-     'perl5.16' => {bin => '/perl5/perlbrew/perls/perl-5.16.3/bin/perl'},
-     'perl5.18' => {bin => '/perl5/perlbrew/perls/perl-5.18.4/bin/perl'},
-     'perl5.20' => {bin => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl'},
-     'perl5.22' => {bin => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl'},
-     'perl5.24' => {bin => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl'},
-     'ruby'     => {bin => '/usr/bin/ruby2.1'},
-    };
-  });
-
+has exec_map => (is => 'ro', default => sub {+{}});
 has profiles => (is => 'ro'); # aref
 
 has _rules => (is => 'rw');
