@@ -19,6 +19,7 @@ use Encode qw/encode decode/;
 use IO::String;
 use File::Slurper qw/read_text/;
 use EvalServer::Seccomp;
+use File::Temp;
 
 # Easter eggs
 do {package Tony::Robbins; sub import {die "Tony Robbins hungry: https://www.youtube.com/watch?v=GZXp7r_PP-w\n"}; $INC{"Tony/Robbins.pm"}=1};
@@ -72,6 +73,7 @@ my %exec_map = (
    'perl5.22' => {bin => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl'},
    'perl5.24' => {bin => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl'},
    'ruby'     => {bin => '/usr/bin/ruby2.1'},
+   'node'     => {bin => '/langs/node-v7.10.0-linux-x64/bin/node'},
 );
 
 no warnings;
@@ -232,6 +234,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 # 		die "Not root, can't chroot or take other precautions, dying\n";
 # 	}
 
+
 	# The chroot section
   chdir("/eval") or die $!;
 
@@ -253,15 +256,15 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 
 	my $kilo = 1024;
 	my $meg = $kilo * $kilo;
-	my $limit = 300 * $meg;
+	my $limit = 500 * $meg;
 
 	(
-	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
-		and
-	setrlimit(RLIMIT_DATA, $limit, $limit )
-		and
-	setrlimit(RLIMIT_STACK, $limit, $limit )
-		and
+#	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
+#		and
+#	setrlimit(RLIMIT_DATA, $limit, $limit )
+#		and
+#	setrlimit(RLIMIT_STACK, $limit, $limit )
+#		and
 	setrlimit(RLIMIT_NPROC, 10,10) # CHANGED to 3 for Ruby.  Might take it away.
 		and
 	setrlimit(RLIMIT_NOFILE, 30,30)
@@ -272,8 +275,8 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		and
 	setrlimit(RLIMIT_LOCKS, 5,5)
 		and
-	setrlimit(RLIMIT_AS,$limit,$limit)
-		and
+#	setrlimit(RLIMIT_AS,$limit,$limit)
+#		and
 	setrlimit(RLIMIT_MEMLOCK,100,100)
 		and
 	setrlimit(RLIMIT_CPU, 10, 10)
@@ -302,9 +305,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
   elsif ($type =~ /perl([0-9.]+)/) { # run specific perl version
     perl_version_code($1, $code);
   }
-#	elsif( $type eq 'javascript' ) {
-#		javascript_code($code);
-#	}
+	elsif( $type eq 'javascript' ) {
+		javascript_code($code);
+	}
 #	elsif( $type eq 'php' ) {
 #		php_code($code);
 #	}
@@ -323,7 +326,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 #	elsif( $type eq 'j' ) {
 #		j_code($code);
 #	}
-
+  else {
+    die "Failed to find language $type";
+  }
 #        *STDOUT = $oldout;
         close($stdh);
         select(STDOUT);
@@ -413,6 +418,16 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     my ($code) = @_;
 
     exec($exec_map{'ruby'}{bin}, '-e', $code);
+  }
+
+  sub javascript_code {
+    my ($code) = @_;
+
+    my $ft = File::Temp->new();
+    print $ft $code;
+    $ft->flush();
+    STDOUT->flush();
+    exec($exec_map{'node'}{bin}, qw/--max_old_space_size=64 --max_semi_space_size=64 --optimize_for_size/, "$ft");
   }
 
 # 	sub javascript_code {

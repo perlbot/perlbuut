@@ -28,7 +28,7 @@ my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 000
 # TODO this needs some accessors to make it easier to define rulesets
 our %rule_sets = (
   default => {
-    include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper', 'file_write', 'file_tty', 'file_opendir'],
+    include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper', 'file_write', 'file_tty', 'file_opendir', 'perlmod_file_temp'],
     rules => [{syscall => 'mmap'},
               {syscall => 'munmap'},
               {syscall => 'mremap'},
@@ -57,6 +57,10 @@ our %rule_sets = (
               {syscall => 'set_robust_list'},
               {syscall => 'futex'},
               {syscall => 'getrlimit'},
+      # TODO these should be defaults? locked down more?
+      {syscall => 'prctl',},
+      {syscall => 'poll',},
+      {syscall => 'uname',},
     ],
   },
 
@@ -159,7 +163,24 @@ our %rule_sets = (
   # language master rules
   lang_perl => {
     rules => [],
-    include => ['default', 'perlmod_file_temp'],
+    include => ['default'],
+  },
+
+  lang_javascript => {
+    rules => [{syscall => 'pipe2'},
+              {syscall => 'epoll_create1'},
+              {syscall => 'eventfd2'},
+              {syscall => 'epoll_ctl'},
+              {syscall => 'epoll_wait'},
+              {syscall => 'ioctl', rules => [[1, '==', 0x5451]]}, # ioctl(0, FIOCLEX)
+              {syscall => 'clone', rules => [[0, '==', CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID]]},
+              {syscall => 'ioctl', rules => [[1, '==', 0x80045430]]},  #19348 ioctl(1, TIOCGPTN <unfinished ...>) = ?
+              {syscall => 'ioctl', rules => [[1, '==', 0x5421]]},  #ioctl(0, FIONBIO)
+              {syscall => 'ioctl', rules => [[0, '==', 1]]}, # just fucking let node do any ioctl to STDOUT
+              {syscall => 'ioctl', rules => [[0, '==', 2]]}, # just fucking let node do any ioctl to STDERR
+
+    ],
+    include => ['default'],
   },
 
   lang_ruby => {
@@ -167,9 +188,6 @@ our %rule_sets = (
       # Thread IPC writes, these might not be fixed but I don't know how to detect them otherwise 
       {syscall => 'write', rules => [[0, '==', 5]]},
       {syscall => 'write', rules => [[0, '==', 7]]},
-      # TODO these should be defaults? locked down more?
-      {syscall => 'prctl',},
-      {syscall => 'poll',},
     ],
     include => ['default', 'ruby_timer_thread'],
   },

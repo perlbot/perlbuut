@@ -44,10 +44,10 @@ sub run_eval {
       {src => "/home/ryan/perl5", target => "/perl5"},
       {src => "/home/ryan/perl5", target => "/home/ryan/perl5"},
       {src => $FindBin::Bin."/../lib", target => "/eval/elib"},
+      {src => $FindBin::Bin."/../langs", target => "/langs"},
     );
 
     for my $bind (@binds) {
-  #    printf "mount: %s => %s\n", $bind->{src}, $jail_path . $bind->{target};
       mount($bind->{src}, $jail_path . $bind->{target}, undef, MS_BIND|MS_PRIVATE|MS_RDONLY, undef);
     }
 

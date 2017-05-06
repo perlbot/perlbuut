@@ -97,3 +97,4 @@ requires 'Math::Round' => 0;
 requires 'Twitter::API' => 0;
 requires 'Types::Standard' => 0;
 requires 'Perl::Tidy' => 0;
+requiers 'File::Temp' => 0;

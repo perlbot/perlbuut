@@ -1,7 +1,7 @@
 #!/bin/bash
 
 read -r -d '' CODE <<'EOC'
-ruby print "Hello World";
+javascript console.log("Hello World");
 EOC
 
 echo --------
