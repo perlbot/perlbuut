@@ -40,7 +40,7 @@ has seccomp => (is => 'ro', default => sub {Linux::Seccomp->new(SCMP_ACT_KILL)})
 my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 00000400, 00400000);
 
 # TODO this needs some accessors to make it easier to define rulesets
-our %rule_sets = {
+our %rule_sets = (
   default => {
     include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper'],
     rules => [{syscall => 'mmap'},
@@ -177,7 +177,7 @@ our %rule_sets = {
     ],
     include => ['default', 'ruby_timer_thread'],
   },
-};
+);
 
 sub rule_add {
   my ($self, $name, @rules) = @_;
@@ -185,13 +185,40 @@ sub rule_add {
   $self->seccomp->rule_add(SCMP_ACT_ALLOW, Linux::Seccomp::syscall_resolve_name($name), @rules);
 }
 
+sub _process_rule {
+  my ($self, $rule) = @_;
+}
+
 sub _rec_get_rules {
-  my ($self, $profile, $used_sets) = @_;
+  my ($self, $profile, $used_sets, $permutes) = @_;
+
+  return () if ($used_sets->{$profile});
+  $used_sets->{$profile} = 1;
 
   croak "Rule set $profile not found" unless exists $rule_sets{$profile};
 
-  for my $rules (@{$rule_sets{$profile}}) {
+  my @rules;
+  print "getting profile $profile\n";
+
+  if (ref $rule_sets{$profile}{rules} eq 'ARRAY') {
+    push @rules, @{$rule_sets{$profile}{rules}};
+  } elsif (ref $rule_sets{$profile}{rules} eq 'CODE') {
+    my @sub_rules = $rule_sets{$profile}{rules}->($self);
+    push @rules, @sub_rules;
+  } elsif (!exists $rule_sets{$profile}{rules}) { # ignore it if missing
+  } else {
+    croak "Rule set $profile defines an invalid set of rules";
   }
+  
+  for my $perm (keys %{$rule_sets{$profile}{permute} // +{}}) {
+    push @{$permutes->{$perm}}, @{$rule_sets{$profile}{permute}{$perm}};
+  }
+
+  for my $include (@{$rule_sets{$profile}{include}//[]}) {
+    push @rules, $self->_rec_get_rules($include, $used_sets);
+  }
+
+  return @rules;
 }
 
 sub build_seccomp {
@@ -200,13 +227,12 @@ sub build_seccomp {
   my %used_sets = (); # keep track of which sets we've seen so we don't include multiple times
 
   my %comp_rules; # computed rules
+  my %permutes;
 
   for my $profile (@{$self->profiles}) {
-    next if ($used_sets{$profile});
-    $used_sets{$profile} = 1;
     
-    my @rules = $self->_rec_get_rules($profile, \%used_sets);
-    print Dumper({profile => $profile, rules=>\@rules});
+    my @rules = $self->_rec_get_rules($profile, \%used_sets, \%permutes);
+    print Dumper({profile => $profile, rules=>\@rules, used_sets => \%used_sets, permutes => \%permutes});
   }
 }
 
