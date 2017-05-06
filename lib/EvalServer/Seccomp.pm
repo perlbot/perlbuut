@@ -72,7 +72,7 @@ our %rule_sets = (
               {syscall => 'arch_prctl'},
               {syscall => 'set_tid_address'},
               {syscall => 'set_robust_list'},
-              {syscall => 'futext'},
+              {syscall => 'futex'},
               {syscall => 'getrlimit'},
     ],
   },
@@ -194,10 +194,6 @@ sub rule_add {
   $self->seccomp->rule_add(SCMP_ACT_ALLOW, Linux::Seccomp::syscall_resolve_name($name), @rules);
 }
 
-sub _process_rule {
-  my ($self, $rule) = @_;
-}
-
 sub _rec_get_rules {
   my ($self, $profile) = @_;
 
@@ -232,6 +228,8 @@ sub _rec_get_rules {
 
 sub build_seccomp {
   my ($self) = @_;
+
+  croak "build_seccomp called more than once" if ($self->_finalized);
 
   my %gathered_rules; # computed rules
 
@@ -273,16 +271,12 @@ sub build_seccomp {
   @{$full_permute{$k}} = sort {$a <=> $b} uniq @{$full_permute{$k}} 
   }
 
-  # TODO optimize for permissive rules
-  # e.g. write => OR write => [0, '==', 1] OR write => [0, '==', 2] becomes write =>
-
 
   my %comp_rules;
 
   for my $syscall (keys %gathered_rules) {
     my @rules = @{$gathered_rules{$syscall}};
     for my $rule (@rules) {
-      print Dumper($rule);
       my $syscall = $rule->{syscall};
 
       if (exists ($rule->{permute_rules})) {
@@ -319,41 +313,26 @@ sub build_seccomp {
     }
   }
 
-  print Dumper({comp_rules=>\%comp_rules, used_sets => $self->_used_sets, permutes => $self->_permutes});
+  # TODO optimize for permissive rules
+  # e.g. write => OR write => [0, '==', 1] OR write => [0, '==', 2] becomes write =>
+  for my $syscall (keys %comp_rules) {
+    for my $rule (@{$comp_rules{$syscall}}) {
+      $self->rule_add($syscall, @$rule);
+    }
+  }
+
+  $self->_finalized(1);
 }
 
-# sub get_seccomp {
-#     my $lang = shift;
-# 
-# 
-#     
-# 
-#     # this annoying bitch of code is because Algorithm::Permute doesn't work with newer perls
-#     # Also this ends up more efficient.  We skip 0 because it's redundant
-#     for my $b (1..(2**@allowed_open_modes) - 1) {
-#       my $q = 1;
-#       my $mode = 0;
-#       #printf "%04b: ", $b;
-#       do {
-#         if ($q & $b) {
-#           my $r = int(log($q)/log(2)+0.5); # get the thing
-# 
-#           $mode |= $allowed_open_modes[$r];
-# 
-#           #print "$r";
-#         }
-#         $q <<= 1;
-#       } while ($q <= $b);
-# 
-#       $rule_add->(open => [1, '==', $mode]);
-#       $rule_add->(openat => [2, '==', $mode]);
-#       #print " => $mode\n";
-#     }
-# 
-# 
-# 
-# 
-# 
-#     $seccomp->load unless -e './noseccomp';
-# }
+sub apply_seccomp {
+  my $self = shift;
+  $self->seccomp->load;
+}
+
+sub engage {
+  my $self = shift;
+  $self->build_seccomp();
+  $self->apply_seccomp();
+}
+
 1;

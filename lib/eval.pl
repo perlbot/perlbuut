@@ -2,6 +2,7 @@
 
 #use lib '/home/ryan/perl5/lib/perl5/i686-linux';
 #use lib '/home/ryan/perl5/lib/perl5';
+use lib '/eval/elib';
 
 use strict;
 use Data::Dumper;
@@ -17,6 +18,7 @@ use FindBin;
 use Encode qw/encode decode/;
 use IO::String;
 use File::Slurper qw/read_text/;
+use EvalServer::Seccomp;
 
 # Easter eggs
 do {package Tony::Robbins; sub import {die "Tony Robbins hungry: https://www.youtube.com/watch?v=GZXp7r_PP-w\n"}; $INC{"Tony/Robbins.pm"}=1};
@@ -71,129 +73,6 @@ my %exec_map = (
    'perl5.24' => {bin => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl'},
    'ruby'     => {bin => '/usr/bin/ruby2.1'},
 );
-
-sub get_seccomp {
-    my $lang = shift;
-    use Linux::Seccomp ;
-    my $seccomp = Linux::Seccomp->new(SCMP_ACT_KILL);
-    ##### set seccomp
-    #
-    # Rules should only allow:
-    # 1. open as read
-    # 2. write to stderr/stdout
-    # 3. exit
-    # 4. close file handle
-    # 5. random syscall
-    # 6. read
-    # 7. seek
-# 8. fstat/fcntl
-# 9. brk
-# 10.
-
-    my $rule_add = sub {
-        my $name = shift;
-        $seccomp->rule_add(SCMP_ACT_ALLOW, Linux::Seccomp::syscall_resolve_name($name), @_);
-    };
-
-    my $strptr = sub {unpack "Q", pack("p", $_[0])};
-
-    $rule_add->(write =>); # TBD!
-    $rule_add->(write => [0, '==', 2]); # STDERR
-    $rule_add->(write => [0, '==', 1]); # STDOUT
-
-    # Added for Ruby.  Not sure if keeping
-    if ($lang eq 'ruby') { # ruby opens up some pipes to communicate between threads that it must have
-      $rule_add->(write => [0, '==', 5]);
-      $rule_add->(write => [0, '==', 7]);
-
-      # clone(child_stack=0x7ff62036cff0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7ff62036d9d0, tls=0x7ff62036d700, child_tidptr=0x7ff62036d9d0) = 8055
-
-      # magic number extracted via
-      ## #include <stdio.h>
-      ## #include <linux/sched.h>
-      ## 
-      ## int main(char **argv, int argc) {
-      ##     printf("%08X\n", CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID);
-      ## }
-
-      my $thread_mode = 0x003D0F00; 
-      $rule_add->(clone => [0, '==', $thread_mode]);
-
-      # Only allow a new signal stack context to be created, and only with a size of 8192 bytes.  exactly what ruby does
-      # Have to allow it to be blind since i can't inspect inside the struct passed to it :(  I'm not sure how i feel about this one
-      $rule_add->(sigaltstack =>);# [1, '==', 0], [2, '==', 8192]);
-      $rule_add->(pipe2 =>);
-    }
-
-    #mmap(NULL, 2112544, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 7, 0) = 0x7efedad0e000
-    #mprotect(0x7efedad12000, 2093056, PROT_NONE) = 0
-    #mmap(0x7efedaf11000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 7, 0x3000) = 0x7efedaf11000
-    ## MMAP? I don't know what it's being used for exactly.  I'll leave it out and see what happens
-    # Used when loading executable code.  Might need to figure out what to do to make it more secure?
-    # also seems to be used when freeing/allocating large blocks of memory, as you'd expect
-    $rule_add->(mmap => );
-    $rule_add->(munmap => );
-    $rule_add->(mremap => );
-    $rule_add->(mprotect =>);
-
-    # Enable us to run other perl binaries
-    for my $version (keys %exec_map) {
-      $rule_add->(execve => [0, '==', $strptr->($exec_map{$version}{bin})]);
-    }
-    $rule_add->(access => );
-    $rule_add->(arch_prctl => );
-    $rule_add->(readlink => );
-    $rule_add->(getpid => );
-    
-    $rule_add->(set_tid_address => ); # needed for perl >= 5.20
-    $rule_add->(set_robust_list => );
-    $rule_add->(futex => );
-    
-    # Allow select, might need to have some kind of restriction on it?  probably fine
-    $rule_add->(select => );
-
-    $rule_add->(chmod => [1, '==', 0600]);
-    $rule_add->(unlink => );
-
-    # These are the allowed modes on open, allow that to work in any combo
-    my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 00000400, 00400000);
-    my @allowed_open_modes = (&POSIX::O_RDONLY, &POSIX::O_NONBLOCK, $O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, &POSIX::O_CREAT, &POSIX::O_EXCL, &POSIX::O_WRONLY, &POSIX::O_TRUNC, $O_NOFOLLOW, &POSIX::O_RDWR);
-
-    # this annoying bitch of code is because Algorithm::Permute doesn't work with newer perls
-    # Also this ends up more efficient.  We skip 0 because it's redundant
-    for my $b (1..(2**@allowed_open_modes) - 1) {
-      my $q = 1;
-      my $mode = 0;
-      #printf "%04b: ", $b;
-      do {
-        if ($q & $b) {
-          my $r = int(log($q)/log(2)+0.5); # get the thing
-
-          $mode |= $allowed_open_modes[$r];
-
-          #print "$r";
-        }
-        $q <<= 1;
-      } while ($q <= $b);
-
-      $rule_add->(open => [1, '==', $mode]);
-      $rule_add->(openat => [2, '==', $mode]);
-      #print " => $mode\n";
-    }
-
-    # 4352  ioctl(4, TCGETS, 0x7ffd10963820)  = -1 ENOTTY (Inappropriate ioctl for device)
-    $rule_add->(ioctl => [1, '==', 0x5401]); # This happens on opened files for some reason? wtf
-
-
-
-    my @blind_syscalls = qw/read exit exit_group brk lseek fstat fcntl stat rt_sigaction rt_sigprocmask geteuid getuid getcwd close getdents getgid getegid getgroups lstat nanosleep getrlimit clock_gettime clock_getres/;
-
-    for my $syscall (@blind_syscalls) {
-        $rule_add->($syscall);
-    }
-
-    $seccomp->load unless -e './noseccomp';
-}
 
 no warnings;
 
@@ -329,6 +208,9 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
   };
   
   my $code = do {local $/; <STDIN>};
+  # Chomp code..
+	$code =~ s/\s*$//;
+
   # redirect STDIN to /dev/null, to avoid warnings in convoluted cases.
   # we have to leave this open for perl4, so only do this for other systems
   open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $!";
@@ -405,10 +287,10 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	# close STDIN;
 
   # Setup SECCOMP for us
-  get_seccomp($type);
-	# Chomp code..
-	$code =~ s/\s*$//;
-
+  my ($profile) = ($type =~ /^(\w+)/g);
+  my $esc = EvalServer::Seccomp->new(profiles => ["lang_$profile"]);
+  $esc->engage();
+	
 	# Choose which type of evaluation to perform
 	# will probably be a dispatch table soon.
 	if( $type eq 'perl' or $type eq 'pl' ) {
