@@ -54,7 +54,6 @@ sub run_eval {
     mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", 0, {size => "16m"});
     mount("tmpfs", $FindBin::Bin."/../jail/tmp", "tmpfs", MS_PRIVATE, {size => "16m"});
 
-
     chdir($jail_path) or die "Jail not made, see bin/makejail.sh";
     chroot($jail_path) or die $!;
 
