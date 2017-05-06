@@ -287,7 +287,7 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	# close STDIN;
 
   # Setup SECCOMP for us
-  my ($profile) = ($type =~ /^(\w+)/g);
+  my ($profile) = ($type =~ /^([a-z]+)/ig);
   my $esc = EvalServer::Seccomp->new(profiles => ["lang_$profile"]);
   $esc->engage();
 	
