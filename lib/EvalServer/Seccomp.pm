@@ -28,7 +28,7 @@ my ($O_DIRECTORY, $O_CLOEXEC, $O_NOCTTY, $O_NOFOLLOW) = (00200000, 02000000, 000
 # TODO this needs some accessors to make it easier to define rulesets
 our %rule_sets = (
   default => {
-    include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper', 'file_write', 'file_tty'],
+    include => ['time_calls', 'file_readonly', 'stdio', 'exec_wrapper', 'file_write', 'file_tty', 'file_opendir'],
     rules => [{syscall => 'mmap'},
               {syscall => 'munmap'},
               {syscall => 'mremap'},
@@ -89,12 +89,13 @@ our %rule_sets = (
               ],
   },
   file_opendir => {
-    permute => {open_modes => [$O_DIRECTORY]},
-    rules => [{syscall => 'getdents'}],
+    rules => [{syscall => 'getdents'},
+              {syscall => 'open', rules => [['1', '==', $O_DIRECTORY|&POSIX::O_RDONLY|&POSIX::O_NONBLOCK|$O_CLOEXEC]]}, 
+             ],
     include => ['file_open'],
   },
   file_tty => {
-    permute => {open_modes => [$O_NOCTTY, ]},
+    permute => {open_modes => [$O_NOCTTY]},
     include => ['file_open'],
   },
   file_readonly => { 
@@ -279,10 +280,12 @@ sub build_seccomp {
         croak "Permutation on syscall rule without actual permutation specified" if (!@perm_on);
 
         my $glob_string = join '__', map { "{".join(",", @{$full_permute{$_}})."}" } @perm_on;
+        my @globs = grep {defined $_ && $_ ne ''} glob $glob_string;
+        die "Too many permute options for syscall $syscall" unless (@globs >= 1);
+
         for my $g_value (glob $glob_string) {
           my %pvals;
           @pvals{@perm_on} = split /__/, $g_value;
-
 
           push @{$comp_rules{$syscall}}, 
             [map {
