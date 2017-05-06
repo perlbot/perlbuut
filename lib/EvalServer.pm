@@ -75,7 +75,9 @@ sub timeout {
 	
 	warn "Trying to kill: ", $wheel->PID;
 
-	kill( 9, $wheel->PID );
+	kill( 'TERM', $wheel->PID ); # Try to avoid orphaning any sub processes first
+  sleep(3);
+  kill( 'KILL', $wheel->PID );
 }
 
 sub _append_output {

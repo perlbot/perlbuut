@@ -39,6 +39,7 @@ our %rule_sets = (
               {syscall => 'exit_group'},
               {syscall => 'rt_sigaction'},
               {syscall => 'rt_sigprocmask'},
+              {syscall => 'rt_sigreturn'},
 
               {syscall => 'getuid'},
               {syscall => 'geteuid'},
@@ -165,6 +166,9 @@ our %rule_sets = (
       # Thread IPC writes, these might not be fixed but I don't know how to detect them otherwise 
       {syscall => 'write', rules => [[0, '==', 5]]},
       {syscall => 'write', rules => [[0, '==', 7]]},
+      # TODO these should be defaults? locked down more?
+      {syscall => 'prctl',},
+      {syscall => 'poll',},
     ],
     include => ['default', 'ruby_timer_thread'],
   },

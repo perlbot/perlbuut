@@ -262,15 +262,15 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		and
 	setrlimit(RLIMIT_STACK, $limit, $limit )
 		and
-	setrlimit(RLIMIT_NPROC, 4,4) # CHANGED to 3 for Ruby.  Might take it away.
+	setrlimit(RLIMIT_NPROC, 10,10) # CHANGED to 3 for Ruby.  Might take it away.
 		and
-	setrlimit(RLIMIT_NOFILE, 20,20)
+	setrlimit(RLIMIT_NOFILE, 30,30)
 		and
-	setrlimit(RLIMIT_OFILE, 20,20)
+	setrlimit(RLIMIT_OFILE, 30,30)
 		and
-	setrlimit(RLIMIT_OPEN_MAX,20,20)
+	setrlimit(RLIMIT_OPEN_MAX,30,30)
 		and
-	setrlimit(RLIMIT_LOCKS, 0,0)
+	setrlimit(RLIMIT_LOCKS, 5,5)
 		and
 	setrlimit(RLIMIT_AS,$limit,$limit)
 		and
