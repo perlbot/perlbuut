@@ -16,7 +16,7 @@ do {
   $sig_map{31} = "SIGSYS (Illegal Syscall)";
 };
 
-my $namespace = Sys::Linux::Namespace->new(private_pid => 1, no_proc => 1, private_mount => 1, private_uts => 1,  private_ipc => 1, private_sysvsem => 1);
+my $namespace = Sys::Linux::Namespace->new(private_pid => 1, no_proc => 1, private_mount => 1, private_uts => 1,  private_ipc => 0, private_sysvsem => 1);
 
 # {files => [
 #      {filename => '...',
