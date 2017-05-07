@@ -73,7 +73,7 @@ my %exec_map = (
    'perl5.22' => {bin => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl'},
    'perl5.24' => {bin => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl'},
    'ruby'     => {bin => '/usr/bin/ruby2.1'},
-   'node'     => {bin => '/langs/node-v7.10.0-linux-x64/bin/node'},
+   'node'     => {bin => '/langs/node-custom/bin/node'},
 );
 
 no warnings;
@@ -259,13 +259,15 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 	my $limit = 500 * $meg;
 
 	(
-#	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
-#		and
-#	setrlimit(RLIMIT_DATA, $limit, $limit )
-#		and
-#	setrlimit(RLIMIT_STACK, $limit, $limit )
-#		and
-	setrlimit(RLIMIT_NPROC, 10,10) # CHANGED to 3 for Ruby.  Might take it away.
+	setrlimit(RLIMIT_VMEM, 1.5*$limit, 1.5*$limit)
+		and
+	setrlimit(RLIMIT_AS,1.5*$limit,1.5*$limit)
+		and
+	setrlimit(RLIMIT_DATA, $limit, $limit )
+		and
+	setrlimit(RLIMIT_STACK, 30 * $meg, 30*$meg )
+		and
+	setrlimit(RLIMIT_NPROC, 20,20) # CHANGED to 3 for Ruby.  Might take it away.
 		and
 	setrlimit(RLIMIT_NOFILE, 30,30)
 		and
@@ -275,8 +277,6 @@ use Storable qw/nfreeze/; nfreeze([]); #Preload Nfreeze since it's loaded on dem
 		and
 	setrlimit(RLIMIT_LOCKS, 5,5)
 		and
-#	setrlimit(RLIMIT_AS,$limit,$limit)
-#		and
 	setrlimit(RLIMIT_MEMLOCK,100,100)
 		and
 	setrlimit(RLIMIT_CPU, 10, 10)
@@ -423,11 +423,11 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
   sub javascript_code {
     my ($code) = @_;
 
-    my $ft = File::Temp->new();
+    my $ft = File::Temp->new(SUFFIX=>'.js');
     print $ft $code;
     $ft->flush();
     STDOUT->flush();
-    exec($exec_map{'node'}{bin}, qw/--max_old_space_size=64 --max_semi_space_size=64 --optimize_for_size/, "$ft");
+    exec($exec_map{'node'}{bin}, "--v8-pool-size=1", "$ft");
   }
 
 # 	sub javascript_code {

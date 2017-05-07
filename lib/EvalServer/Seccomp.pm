@@ -33,6 +33,7 @@ our %rule_sets = (
               {syscall => 'munmap'},
               {syscall => 'mremap'},
               {syscall => 'mprotect'},
+              {syscall => 'madvise'},
               {syscall => 'brk'},
 
               {syscall => 'exit'},
@@ -45,6 +46,7 @@ our %rule_sets = (
               {syscall => 'geteuid'},
               {syscall => 'getcwd'},
               {syscall => 'getpid'},
+              {syscall => 'gettid'},
               {syscall => 'getgid'},
               {syscall => 'getegid'},
               {syscall => 'getgroups'},

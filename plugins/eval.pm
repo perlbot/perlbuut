@@ -66,7 +66,7 @@ sub command {
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
-  if ($command =~ /([ws]+)?eval/i) {
+  if ($command =~ /^([ws]+)?eval/i) {
     my $c=$1;
     $code = "use warnings; ".$code if ($c =~ /w/);
     $code = "use strict; ".$code if ($c =~ /s/);
