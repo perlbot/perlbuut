@@ -109,7 +109,7 @@ sub command {
   } elsif ($command eq 'banuser') {
     my $paste = $args[0];
     
-    if (my ($id) = ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)perlbot.pl/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g)) {
+    if (my ($id) = ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)?perlbot.pl/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g)) {
       my $response = $self->ban_user_paste($env, $id, $who, $where);
       return ("handled", $response);
     } else {
@@ -118,7 +118,7 @@ sub command {
   } elsif ($command eq 'banasn') {
     my $paste = $args[0];
     
-    if (my ($id) = ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)perlbot.pl/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g)) {
+    if (my ($id) = ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)?perlbot.pl/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g)) {
       my $response = $self->ban_asn_paste($env, $id, $who, $where);
       return ("handled", $response);
     } else {
