@@ -57,7 +57,9 @@ sub run_eval {
     chdir($jail_path) or die "Jail not made, see bin/makejail.sh";
     chroot($jail_path) or die $!;
 
-    system("/perl5/perlbrew/perls/perlbot-inuse/bin/perl", $filename); 
+    
+    #system("/perl5/perlbrew/perls/perlbot-inuse/bin/perl", $filename); 
+    system($^X, $filename); 
     my ($exit, $signal) = (($?&0xFF00)>>8, $?&0xFF);
 
     if ($exit) {

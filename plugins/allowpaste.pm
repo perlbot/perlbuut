@@ -34,9 +34,7 @@ sub postload {
         value INTEGER NOT NULL,
         setby VARCHAR(255) NOT NULL,
         set_date INTEGER NOT NULL
-	);
-    
-    ";
+	);";
 
 	$pm->create_table( $self->dbh, "allowpaste", $sql );
 
@@ -65,26 +63,34 @@ sub set_status {
 
 sub command {
 	my( $self, $said, $pm ) = @_;
-	my( $set_to ) = @{ $said->{recommended_args} };
+	my( $cmd ) = join ' ', @{ $said->{recommended_args} };
 
-    my $server_conf = $pm->{bb3}{'Bot::BB3::Roles::IRC'}{bot_confs}{$said->{pci_id}};
-    my ($botname, $servername) = @{$server_conf}{qw/botname server/};
-    my $channel = $said->{channel};
+  my ($global, $set_to);
+  if ($cmd =~ /^\s*(?<global>global)?\s*(?<set_to>on|off)?\s*$/i) {
+    $global = $+{global} // "channel";
+    $set_to = $+{set_to};
+  }
+  
+  my $server_conf = $pm->{bb3}{'Bot::BB3::Roles::IRC'}{bot_confs}{$said->{pci_id}};
+  my ($botname, $servername) = @{$server_conf}{qw/botname server/};
+  my $channel = $said->{channel};
 
-    my $chanconstruct = "$servername:$botname:$channel";
+  my $chanconstruct = "$servername:$botname:$channel";
 
-    if ($set_to && (lc($set_to) eq 'on' || lc($set_to) eq 'off')) {
-        $self->set_status($chanconstruct, $set_to, $said->{name});
-        return('handled', "This channel has pastebin set [$set_to]"); 
-    } else {
-        my $status = $self->get_status($chanconstruct)//1 ? 'on' : 'off';
-        return('handled', "This channel has pastebin set to [$status] :: $chanconstruct");
-    }
+  $chanconstruct = "GLOBAL" if $global eq 'global';
+
+  if ($set_to && (lc($set_to) eq 'on' || lc($set_to) eq 'off')) {
+    $self->set_status($chanconstruct, $set_to, $said->{name});
+    return('handled', "This $global has pastebin set [$set_to]"); 
+  } else {
+    my $status = $self->get_status($chanconstruct)//1 ? 'on' : 'off';
+    return('handled', "This $global has pastebin set to [$status] :: $chanconstruct");
+  }
 }
 
 no warnings 'void';
 "Bot::BB3::Plugin::Allowpaste";
 
 __DATA__
-The allowpaste plugin.  Lets operators disable pastes being announced in the channel.  allowpaste [on|off] => Tell you the state, or turn it on or off.
-
+The allowpaste plugin.  Lets operators disable pastes being announced in the channel.  allowpaste [global] [on|off] => Tell you the state, or turn it on or off.
+See https://github.com/perlbot/perlbuut-pastebin/wiki/Op-Tools for more documentation

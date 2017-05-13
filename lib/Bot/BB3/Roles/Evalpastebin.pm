@@ -37,8 +37,10 @@ sub get_status {
     my ($chancon) = @_;
 
     my $status = dbh()->selectrow_hashref('SELECT value FROM allowpaste WHERE channel = ?', {}, $chancon);
+    my $global_status = dbh()->selectrow_hashref('SELECT value FROM allowpaste WHERE channel = ?', {}, 'GLOBAL');
+    warn "GET_STATUS $chancon\n";
 
-    return ($status // {})->{value};
+    return ($global_status // {value => 1})->{value} && ($status // {})->{value};
 }
 
 sub _start {

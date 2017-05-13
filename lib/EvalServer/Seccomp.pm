@@ -6,10 +6,35 @@ use warnings;
 use Data::Dumper;
 use List::Util qw/reduce uniq/;
 use Moo;
-use Sys::Linux::Unshare qw/:consts/;
+use Linux::Clone;
 use POSIX;
 use Linux::Seccomp;
 use Carp qw/croak/;
+
+use constant {
+  CLONE_FILES => Linux::Clone::FILES,
+  CLONE_FS => Linux::Clone::FS,
+  CLONE_NEWNS => Linux::Clone::NEWNS,
+  CLONE_VM => Linux::Clone::VM,
+  CLONE_THREAD => Linux::Clone::THREAD,
+  CLONE_SIGHAND => Linux::Clone::SIGHAND,
+  CLONE_SYSVSEM => Linux::Clone::SYSVSEM,
+  CLONE_NEWUSER => Linux::Clone::NEWUSER,
+  CLONE_NEWPID => Linux::Clone::NEWPID,
+  CLONE_NEWUTS => Linux::Clone::NEWUTS,
+  CLONE_NEWIPC => Linux::Clone::NEWIPC,
+  CLONE_NEWNET => Linux::Clone::NEWNET,
+  CLONE_NEWCGROUP => Linux::Clone::NEWCGROUP,
+  CLONE_PTRACE => Linux::Clone::PTRACE,
+  CLONE_VFORK => Linux::Clone::VFORK,
+  CLONE_SETTLS => Linux::Clone::SETTLS,
+  CLONE_PARENT_SETTID => Linux::Clone::PARENT_SETTID,
+  CLONE_CHILD_SETTID => Linux::Clone::CHILD_SETTID,
+  CLONE_CHILD_CLEARTID => Linux::Clone::CHILD_CLEARTID,
+  CLONE_DETACHED => Linux::Clone::DETACHED,
+  CLONE_UNTRACED => Linux::Clone::UNTRACED,
+  CLONE_IO => Linux::Clone::IO,
+};
 
 has exec_map => (is => 'ro', default => sub {+{}});
 has profiles => (is => 'ro'); # aref
@@ -84,6 +109,7 @@ our %rule_sets = (
               {syscall => 'close'},
               {syscall => 'select'},
               {syscall => 'read'},
+              {syscall => 'pread64'},
               {syscall => 'lseek'},
               {syscall => 'fstat'}, # default? not file_open?
               {syscall => 'stat'},
@@ -110,7 +136,9 @@ our %rule_sets = (
   },
   file_write => {
     permute => {open_modes => [&POSIX::O_CREAT,&POSIX::O_WRONLY, &POSIX::O_TRUNC, &POSIX::O_RDWR]},
-    rules => [{syscall => 'write'}],
+    rules => [{syscall => 'write'},
+              {syscall => 'pwrite64'},
+    ],
     include => ['file_open', 'file_readonly'],
   },
 
