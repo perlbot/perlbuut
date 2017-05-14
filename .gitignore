@@ -8,3 +8,4 @@ Makefile
 modules.lst
 *.log
 jail.ext4
+var/asn.db
