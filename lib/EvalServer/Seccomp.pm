@@ -10,6 +10,7 @@ use Linux::Clone;
 use POSIX;
 use Linux::Seccomp;
 use Carp qw/croak/;
+use Permute::Named::Iter qw/permute_named_iter/;
 
 use constant {
   CLONE_FILES => Linux::Clone::FILES,
@@ -327,18 +328,15 @@ sub build_seccomp {
 
         croak "Permutation on syscall rule without actual permutation specified" if (!@perm_on);
 
-        my $glob_string = join '__', map { "{".join(",", @{$full_permute{$_}})."}" } @perm_on;
-        my @globs = grep {defined $_ && $_ ne ''} glob $glob_string;
-        die "Too many permute options for syscall $syscall" unless (@globs >= 1);
+        my %perm_hash = map {$_ => $full_permute{$_}} @perm_on;
+        my $iter = permute_named_iter(%perm_hash);
 
-        for my $g_value (glob $glob_string) {
-          my %pvals;
-          @pvals{@perm_on} = split /__/, $g_value;
+        while (my $pvals = $iter->()) {
 
           push @{$comp_rules{$syscall}}, 
             [map {
               my @r = @$_;
-              $r[2] = $pvals{${$r[2]}};
+              $r[2] = $pvals->{${$r[2]}};
               \@r;
             } @{$rule->{permute_rules}}];
         }
