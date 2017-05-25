@@ -60,6 +60,7 @@ $|++;
 #*STDOUT = $stdh;
 
 my %exec_map = (
+   'perl1' =>    {bin => '/langs/perl-1.0.16/bin/perl'},
    'perl4' =>    {bin => '/perl5/perlbrew/perls/perl-4.036/bin/perl'},
    'perl5.5' =>  {bin => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl'},
    'perl5.6' =>  {bin => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl'},
@@ -86,7 +87,7 @@ no warnings;
       my $sub;
       {
           no strict; no warnings; no charnames;
-          $sub = eval "use $]; package botdeparse; sub{ $code\n }";
+          $sub = eval "use $]; package botdeparse; sub{ $code\n }; use namespace::autoclean;";
       }
 
       my %methods = (map {$_ => botdeparse->can($_)} grep {botdeparse->can($_)} keys {%botdeparse::}->%*);
@@ -111,7 +112,7 @@ no warnings;
         return $ret;
       };
 
-      for my $sub (keys %methods) {
+      for my $sub (grep {!/^(can|DOES|isa)$/} keys %methods) {
         my $ret = $clean_out->($dp->coderef2text($methods{$sub}));
 
         push @out, "sub $sub {$ret} ";
@@ -408,7 +409,7 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     }
     ';
 
-    unless ($version eq '4') {
+    unless ($version eq '4' || $version eq '1') {
       exec($exec_map{'perl'.$version}{bin}, '-e', $wrapper) or die "Exec failed $!";
     } else {
       exec($exec_map{'perl'.$version}{bin}, '-e', $code); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files

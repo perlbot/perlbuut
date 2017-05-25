@@ -575,8 +575,8 @@ sub plugin_output {
 			# Send multiple messages if we're talking in a private chat
 			# Note that in the future we'll probably want to generalize channels
 			# that receive multiple lines and those that don't..
-			while( length $text ) {
                 $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
+			while( length $text ) {
 				my $substr = substr( $text, 0, 400, '' );
 				$pci->yield( privmsg => $said->{name} => $substr );
 
