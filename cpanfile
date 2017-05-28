@@ -99,3 +99,7 @@ requires 'Types::Standard' => 0;
 requires 'Perl::Tidy' => 0;
 requires 'File::Temp' => 0;
 requires 'Permute::Named::Iter' => 0;
+requires 'Marpa::R2' => 0;
+requires 'Syntax::Keyword::Try' => 0;
+requires 'File::Open' => 0;
+requires 'App::EvalServerAdvanced' => 0;

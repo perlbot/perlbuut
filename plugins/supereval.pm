@@ -16,14 +16,14 @@ sub new {
 	my( $class ) = @_;
 
 	my $self = bless {}, $class;
-	$self->{name} = 'supereval';
+	$self->{name} = 'eval';
 	$self->{opts} = {
 		command => 1,
 	};
 
-  my @perl_aliases = map {("Xeval$_", "wXeval$_", "sXeval$_", "wsXeval$_", "swXeval$_")} @versions;
+  my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
 
-  $self->{aliases} = [ qw/Xpleval Xperleval Xdeparse/, @perl_aliases ];
+  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -36,7 +36,7 @@ sub command {
 
   my $command = $said->{command_match};
 	my $type = $said->{command_match};
-	$type =~ s/^\s*(\w+?)?Xeval(.*)?/$1$2/;
+	$type =~ s/^\s*(\w+?)?eval(.*)?/$1$2/;
 	warn "Initial type: $type\n";
 
   my %translations = ( 
@@ -65,7 +65,7 @@ sub command {
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
-  if ($command =~ /^([ws]+)?Xeval/i) {
+  if ($command =~ /^([ws]+)?eval/i) {
     my $c=$1;
     $code = "use warnings; ".$code if ($c =~ /w/);
     $code = "use strict; ".$code if ($c =~ /s/);
