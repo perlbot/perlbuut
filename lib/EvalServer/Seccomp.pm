@@ -193,7 +193,9 @@ our %rule_sets = (
 
   # language master rules
   lang_perl => {
-    rules => [],
+    rules => [
+      {syscall => 'dup'}
+    ],
     include => ['default'],
   },
 

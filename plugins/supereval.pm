@@ -1,11 +1,10 @@
 # eval plugin for buubot3
-package Bot::BB3::Plugin::Eval;
-
-package Bot::BB3::Plugin::Eval;
+package Bot::BB3::Plugin::Supereval;
 
 use POE::Filter::Reference;
 use IO::Socket::INET;
 use Data::Dumper;
+use App::EvalServerAdvanced::Protocol;
 use Encode;
 use strict;
 
@@ -17,14 +16,14 @@ sub new {
 	my( $class ) = @_;
 
 	my $self = bless {}, $class;
-	$self->{name} = 'eval';
+	$self->{name} = 'supereval';
 	$self->{opts} = {
 		command => 1,
 	};
 
-  my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
+  my @perl_aliases = map {("Xeval$_", "wXeval$_", "sXeval$_", "wsXeval$_", "swXeval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
+  $self->{aliases} = [ qw/Xpleval Xperleval Xdeparse/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -37,7 +36,7 @@ sub command {
 
   my $command = $said->{command_match};
 	my $type = $said->{command_match};
-	$type =~ s/^\s*(\w+?)?eval(.*)?/$1$2/;
+	$type =~ s/^\s*(\w+?)?Xeval(.*)?/$1$2/;
 	warn "Initial type: $type\n";
 
   my %translations = ( 
@@ -66,7 +65,7 @@ sub command {
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
-  if ($command =~ /^([ws]+)?eval/i) {
+  if ($command =~ /^([ws]+)?Xeval/i) {
     my $c=$1;
     $code = "use warnings; ".$code if ($c =~ /w/);
     $code = "use strict; ".$code if ($c =~ /s/);
@@ -77,21 +76,11 @@ sub command {
   my $resultstr='';
   
   unless ($type =~ /perlall/) {
-    $resultstr = $self->do_eval($type, $code);
+    $resultstr = $self->do_singleeval($type, $code);
   } else {
-    my @outs;
-
     # TODO use channel config for this
     if ($said->{channel} eq '#perlbot' || $said->{channel} eq '*irc_msg') {
-      for my $version (@versions) {
-        my $torun = $version eq '' ? 'blead' : sprintf "%5s", $version;
-        next if $version eq 'all';
-        next if $version eq '4';
-        next if $version eq '5.5' && $command =~ /w/; # no warnings in 5.5
-
-        push @outs, "[[$torun]]", $self->do_eval('perl'.$version, $code);
-      }
-      $resultstr = join "\n", @outs;
+      $resultstr = $self->do_multieval([map {"perl".$_} @versions], $code);
     } else {
       $resultstr = "evalall only works in /msg or in #perlbot";
     }
@@ -110,37 +99,70 @@ sub command {
 	return( 'handled', $resultstr);
 }
 
-sub do_eval {
-  my ($self, $type, $code) = @_;
-	
-  my $filter = POE::Filter::Reference->new();
-	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14400' )
+sub do_multieval {
+  my ($self, $types, $code) = @_;
+
+
+	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14401' )
 		or die "error: cannot connect to eval server";
-	my $refs = $filter->put( [ { code => "$type $code" } ] );
 
-	print $socket $refs->[0];
+  my $seq = 1;
+  my $output = '';
 
-	local $/;
-	my $output = <$socket>;
-	$socket->close;
-
-	my $result = $filter->get( [ $output ] );
-	my $resultstr = $result->[0]->[0];
-
-	$resultstr =~ s/\x0a?\x0d//g; # Prevent sending messages to the IRC server..
-
-  $resultstr = decode("utf8", $resultstr);
-  $resultstr =~ s/\0//g;
-  chomp $resultstr;
-
-  if (lc $resultstr eq "hello world" || lc $resultstr eq "hello, world!" ) {
-      $resultstr .= " I'm back!"
+  for my $type (@$types) {
+    my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code}], prio => {pr_batch=>{}}, sequence => $seq++};
+    print $socket encode_message(eval => $eval_obj); 
+    my $message = $self->read_message($socket);
+    $output .= sprintf "[[ %s ]]\n%s\n", $type, $message->contents;
   }
 
-  return $resultstr;
+
+  return $output;
 }
 
-"Bot::BB3::Plugin::Eval";
+sub do_singleeval {
+  my ($self, $type, $code) = @_;
+	
+	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14401' )
+		or die "error: cannot connect to eval server";
+
+  my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code}], prio => {pr_realtime=>{}}, sequence => 1};
+
+  $socket->autoflush();
+  print $socket encode_message(eval => $eval_obj); 
+
+  my $buf = '';
+  my $data = '';
+  my $resultstr = "Failed to read a message";
+
+  my $message = $self->read_message($socket);
+
+  return $message->contents;
+}
+
+sub read_message {
+  my ($self, $socket) = @_;
+
+  my $header;
+  $socket->read($header, 8) or die "Couldn't read from socket";
+
+  my ($reserved, $length) = unpack "NN", $header;
+
+  die "Invalid packet" unless $reserved == 0;
+
+  my $buffer;
+  $socket->read($buffer, $length) or die "Couldn't read from socket2";
+
+  my ($res, $message, $nbuf) = decode_message($header . $buffer);
+
+
+  die "Data left over in buffer" unless $nbuf eq '';
+  die "Couldn't decode packet" unless $res;
+
+  return $message;
+}
+
+"Bot::BB3::Plugin::Supereval";
 
 __DATA__
 The eval plugin. Evaluates various different languages. Syntax, eval: code; also pleval deparse.  You can use different perl versions by doing eval5.X, e.g. eval5.5: print "$]";  You can also add s or w to the eval to quickly add strict or warnings.  sweval: print $foo;

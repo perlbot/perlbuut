@@ -61,6 +61,8 @@ $|++;
 
 my %exec_map = (
    'perl1' =>    {bin => '/langs/perl-1.0.16/bin/perl'},
+   'perl2' =>    {bin => '/langs/perl2/bin/perl'},
+   'perl3' =>    {bin => '/langs/perl3/bin/perl'},
    'perl4' =>    {bin => '/perl5/perlbrew/perls/perl-4.036/bin/perl'},
    'perl5.5' =>  {bin => '/perl5/perlbrew/perls/perl-5.005_04/bin/perl'},
    'perl5.6' =>  {bin => '/perl5/perlbrew/perls/perl-5.6.2/bin/perl'},
@@ -409,7 +411,7 @@ Biqsip biqsip 'ugh chan ghitlh lursa' nuh bey' ngun petaq qeng soj tlhej waqboch
     }
     ';
 
-    unless ($version eq '4' || $version eq '1') {
+    unless ($version eq '4' || $version eq '1' || $version eq '2' || $version eq '3') {
       exec($exec_map{'perl'.$version}{bin}, '-e', $wrapper) or die "Exec failed $!";
     } else {
       exec($exec_map{'perl'.$version}{bin}, '-e', $code); # the code for perl4 is actually still in STDIN, if we try to -e it needs to write files
