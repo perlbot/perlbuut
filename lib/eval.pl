@@ -75,6 +75,7 @@ my %exec_map = (
    'perl5.20' => {bin => '/perl5/perlbrew/perls/perl-5.20.3/bin/perl'},
    'perl5.22' => {bin => '/perl5/perlbrew/perls/perl-5.22.3/bin/perl'},
    'perl5.24' => {bin => '/perl5/perlbrew/perls/perl-5.24.0/bin/perl'},
+   'perl5.26' => {bin => '/perl5/perlbrew/perls/perl-5.26.0/bin/perl'},
    'ruby'     => {bin => '/usr/bin/ruby2.1'},
    'node'     => {bin => '/langs/node-custom/bin/node'},
 );
