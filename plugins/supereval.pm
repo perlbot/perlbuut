@@ -10,7 +10,7 @@ use strict;
 
 no warnings 'void';
 
-my @versions = ('', qw(1 2 3 4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 all));
+my @versions = ('', qw(1 2 3 4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 all));
 
 sub new {
 	my( $class ) = @_;
@@ -110,10 +110,11 @@ sub do_multieval {
   my $output = '';
 
   for my $type (@$types) {
-    my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code}], prio => {pr_batch=>{}}, sequence => $seq++};
+    my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code, encoding => "utf8"}], prio => {pr_batch=>{}}, sequence => $seq++, encoding => "utf8"};
     print $socket encode_message(eval => $eval_obj); 
     my $message = $self->read_message($socket);
-    $output .= sprintf "[[ %s ]]\n%s\n", $type, $message->contents;
+    # TODO error checking here
+    $output .= sprintf "[[ %s ]]\n%s\n", $type, $message->get_contents;
   }
 
 
@@ -126,7 +127,7 @@ sub do_singleeval {
 	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14401' )
 		or die "error: cannot connect to eval server";
 
-  my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code}], prio => {pr_realtime=>{}}, sequence => 1};
+  my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code, encoding => "utf8"}], prio => {pr_realtime=>{}}, sequence => 1, encoding => "utf8"};
 
   $socket->autoflush();
   print $socket encode_message(eval => $eval_obj); 
@@ -137,7 +138,11 @@ sub do_singleeval {
 
   my $message = $self->read_message($socket);
 
-  return $message->contents;
+  if (ref($message) =~ /Warning$/) {
+    return $message->message;
+  } else {
+    return $message->get_contents;
+  }
 }
 
 sub read_message {
@@ -148,7 +153,7 @@ sub read_message {
 
   my ($reserved, $length) = unpack "NN", $header;
 
-  die "Invalid packet" unless $reserved == 0;
+  die "Invalid packet" unless $reserved == 1;
 
   my $buffer;
   $socket->read($buffer, $length) or die "Couldn't read from socket2";
