@@ -7,6 +7,7 @@ use Data::Dumper;
 use App::EvalServerAdvanced::Protocol;
 use Encode;
 use strict;
+use utf8;
 
 no warnings 'void';
 
@@ -65,11 +66,15 @@ sub command {
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
+  $code = eval {Encode::decode("utf8", $code)} // $code;
+
   if ($command =~ /^([ws]+)?eval/i) {
     my $c=$1;
     $code = "use warnings; ".$code if ($c =~ /w/);
     $code = "use strict; ".$code if ($c =~ /s/);
   }
+
+  $code = "use utf8; ". $code if ($type =~ /^perl(5.(8|10|12|14|16|18|20|22|24|26))?4/);
 
   $code =~ s/␤/\n/g;
   
