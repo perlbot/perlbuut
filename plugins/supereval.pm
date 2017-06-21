@@ -74,7 +74,7 @@ sub command {
     $code = "use strict; ".$code if ($c =~ /s/);
   }
 
-  $code = "use utf8; ". $code if ($type =~ /^perl(5.(8|10|12|14|16|18|20|22|24|26))?4/);
+  $code = "use utf8; ". $code if ($type =~ /^perl(5.(8|10|12|14|16|18|20|22|24|26))?$/);
 
   $code =~ s/␤/\n/g;
   
