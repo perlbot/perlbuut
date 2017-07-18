@@ -85,7 +85,7 @@ sub command {
   } else {
     # TODO use channel config for this
     if ($said->{channel} eq '#perlbot' || $said->{channel} eq '*irc_msg') {
-      $resultstr = $self->do_multieval([map {"perl".$_} @versions], $code);
+      $resultstr = $self->do_multieval([map {"perl".$_} grep {!/^(all|1|2|3|4|5\.5)$/} @versions], $code);
     } else {
       $resultstr = "evalall only works in /msg or in #perlbot";
     }

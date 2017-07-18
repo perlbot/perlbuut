@@ -575,7 +575,7 @@ sub plugin_output {
 			# Send multiple messages if we're talking in a private chat
 			# Note that in the future we'll probably want to generalize channels
 			# that receive multiple lines and those that don't..
-                $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
+      $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 			while( length $text ) {
 				my $substr = substr( $text, 0, 400, '' );
 				$pci->yield( privmsg => $said->{name} => $substr );
@@ -583,7 +583,7 @@ sub plugin_output {
 				# Try to avoid sending too many lines, since it may be annoying
 				# and it tends to prevent the bot from sending other messages.
 
-				last MESSAGES if $messages_sent++ > 30;
+				last MESSAGES if $messages_sent++ > 60;
 			}
 		}
 	}

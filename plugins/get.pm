@@ -2,6 +2,19 @@ use Net::INET6Glue::INET_is_INET6;
 use LWP::UserAgent;
 use HTML::TreeBuilder::XPath;
 
+package 
+  XML::XPathEngine::Function {
+  sub string_join {
+    my $self = shift;
+    my ($node, @params) = @_;
+    die "concat: Too few parameters\n" if @params < 2;
+    my $joiner = pop @params;
+    my $string = join($joiner->string_value, map {$_->string_values} @params);
+    return XML::XPathEngine::Literal->new($string);
+  }
+};
+
+
 sub {
 	my( $said ) = @_;
 
