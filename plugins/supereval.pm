@@ -11,7 +11,7 @@ use utf8;
 
 no warnings 'void';
 
-my @versions = ('', qw(1 2 3 4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 all));
+my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 all));
 
 sub new {
 	my( $class ) = @_;
@@ -24,7 +24,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
+  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -46,6 +46,10 @@ sub command {
 		pl => 'perl',
 		php => 'php',
 		deparse => 'deparse',
+		swdeparse => 'deparse',
+		wsdeparse => 'deparse',
+		wdeparse => 'deparse',
+		sdeparse => 'deparse',
 		'k20' => 'k20',
 		'k' => 'k20',
 		'rb' => 'ruby',
@@ -58,6 +62,11 @@ sub command {
     's' => 'perl',
     'ws' => 'perl',
     'sw' => 'perl',
+    'cp' => 'cperl',
+    'swcp' => 'cperl',
+    'wscp' => 'cperl',
+    'wcp' => 'cperl',
+    'scp' => 'cperl',
     map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
 	);
 
@@ -68,7 +77,7 @@ sub command {
 
   $code = eval {Encode::decode("utf8", $code)} // $code;
 
-  if ($command =~ /^([ws]+)?eval/i) {
+  if ($command =~ /^([ws]+)?(?:eval|deparse)/i) {
     my $c=$1;
     $code = "use warnings; ".$code if ($c =~ /w/);
     $code = "use strict; ".$code if ($c =~ /s/);
@@ -108,7 +117,7 @@ sub do_multieval {
   my ($self, $types, $code) = @_;
 
 
-	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14401' )
+	my $socket = IO::Socket::INET->new(  PeerAddr => '192.168.32.1', PeerPort => '14401' )
 		or die "error: cannot connect to eval server";
 
   my $seq = 1;
@@ -129,7 +138,7 @@ sub do_multieval {
 sub do_singleeval {
   my ($self, $type, $code) = @_;
 	
-	my $socket = IO::Socket::INET->new(  PeerAddr => 'localhost', PeerPort => '14401' )
+	my $socket = IO::Socket::INET->new(  PeerAddr => '192.168.32.1', PeerPort => '14401' )
 		or die "error: cannot connect to eval server";
 
   my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code, encoding => "utf8"}], prio => {pr_realtime=>{}}, sequence => 1, encoding => "utf8"};

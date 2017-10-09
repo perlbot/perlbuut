@@ -4,8 +4,8 @@ no warnings 'void';
 sub {
 	my( $said, $pm ) = @_;
 
-    my $url = "";
-    
+  my $url = "";
+
 	if ($said->{body} =~ /-q\s+(.*)/i) #faq questions
 	{#http://perldoc.perl.org/search.html?q=foo+bar
 	  my $trimmed = $1;
