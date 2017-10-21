@@ -106,4 +106,23 @@ requires 'App::EvalServerAdvanced';
 requires 'Dir::ls';
 requires 'Object::Tap';
 requires 'XML::LibXML';
-requires 'Sereal';
+# requires 'Sereal'; # comment out temporarily
+
+requires 'Email::Sender::Transport::Test';
+requires 'Task::Kensho::Async';
+requires 'Task::Kensho::Config';
+#requires 'Task::Kensho::Date';
+#requires 'Task::Kensho::DBDev';
+requires 'Task::Kensho::Email';
+requires 'Task::Kensho::Logging';
+requires 'Task::Kensho::ModuleDev';
+requires 'Task::Kensho::OOP';
+#requires 'Task::Kensho::Testing';
+requires 'Task::Kensho::XML';
+requires 'Text::Unidecode';
+requires 'experimental';
+
+requires 'Math::Calc::Parser';
+
+requires 'ReadonlyX';
+requires 'Const::Fast';
