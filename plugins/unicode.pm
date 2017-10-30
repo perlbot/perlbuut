@@ -34,6 +34,7 @@ sub unip {
 		}
     my $comb = "";
     $comb = " " if $x->{name} =~ /^COMBINING /;
+    $chr = chr(0x2400 + ord($chr)) if ord($chr) < 0x20;
 		push @out, "U+$x->{code} ($utf8): $x->{name} [$comb$chr]";
 	}
 
