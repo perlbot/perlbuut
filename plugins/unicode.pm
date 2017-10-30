@@ -32,7 +32,9 @@ sub unip {
 			push @err, sprintf "U+%X (%s): no match found", $_, $utf8;
 			next;
 		}
-		push @out, "U+$x->{code} ($utf8): $x->{name} [$chr]";
+    my $comb = "";
+    $comb = " " if $x->{name} =~ /^COMBINING /;
+		push @out, "U+$x->{code} ($utf8): $x->{name} [$comb$chr]";
 	}
 
 	\@err, \@out

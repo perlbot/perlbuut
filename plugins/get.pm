@@ -21,7 +21,7 @@ sub {
 	my $ua = LWP::UserAgent->new( agent => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36" );
 	my $url;
 
-	if( $said->{body} =~ s{(http://\S+)\s*}{} ) {
+	if( $said->{body} =~ s{(https?://\S+)\s*}{} ) {
 		$url = $1;
 	}
 	elsif( $said->{body} =~ s/(\S+)\s*// ) {
