@@ -33,8 +33,9 @@ sub unip {
 			next;
 		}
     my $comb = "";
-    $comb = " " if $x->{name} =~ /^COMBINING /;
-    $chr = chr(0x2400 + ord($chr)) if ord($chr) < 0x20;
+    $comb = " " if $x->{name} =~ /^COMBINING /; # add a space for combining chars
+    $chr = chr(0x2400 + ord($chr)) if ord($chr) < 0x20; # lower control chars
+    $chr = "\x{2421}" if ord($chr) == 0x7f; # DEL
 		push @out, "U+$x->{code} ($utf8): $x->{name} [$comb$chr]";
 	}
 

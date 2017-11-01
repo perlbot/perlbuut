@@ -126,3 +126,4 @@ requires 'Math::Calc::Parser';
 
 requires 'ReadonlyX';
 requires 'Const::Fast';
+requires 'DateTime::Event::Holiday::US';

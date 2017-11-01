@@ -6,6 +6,7 @@ use IO::Socket::INET;
 use Data::Dumper;
 use App::EvalServerAdvanced::Protocol;
 use Encode;
+use DateTime::Event::Holiday::US;
 use strict;
 use utf8;
 
@@ -109,8 +110,46 @@ sub command {
       $self->{dbh}->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
   }
 
+  my $holiday=get_holiday();
+
+  my %special = (
+    'Halloween' => {prob => 0.75, chars => ["\x{1F383}", "\x{1F47B}", "\x{1F480}", "\x{1F577}"]},
+    'Christmas Eve' => {prob => 0.1, chars => ["\x{1F384}", "\x{1F385}"]},
+    'Christmas' => {prob => 0.5, chars => ["\x{1F384}", "\x{1F385}"]},
+  );
+
+  if ($special{$holiday}) {
+    if (rand() < $special{$holiday}{prob}) {
+      my $char = $special{$holiday}{chars}[rand()*@{$special{$holiday}{chars}}];
+
+      $resultstr .= " ".$char;
+    }
+  }
 
 	return( 'handled', $resultstr);
+}
+
+sub get_holiday {
+  my $dt = DateTime->now(time_zone=>"PST8PDT")->truncate(to => 'day');
+
+  my @known = DateTime::Event::Holiday::US::known();
+  my $holidays = DateTime::Event::Holiday::US::holidays(@known);
+  my $mass_set = DateTime::Event::Holiday::US::holidays_as_set(@known); # mass set of all of them
+  if ($mass_set->contains($dt)) {
+    # We're a holiday. do shit
+
+    my $name = "";
+    for my $key (@known) {
+      if ($holidays->{$key}->contains($dt)) {
+        $name = $key;
+        last; # don't iterate more.
+      }
+    }
+
+    return $name;
+  }
+
+  return "";
 }
 
 sub do_multieval {
