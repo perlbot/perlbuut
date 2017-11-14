@@ -25,7 +25,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval/, @perl_aliases ];
+  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -102,9 +102,13 @@ sub command {
   }
   
 
-  if (!$said->{captured} && $resultstr !~ /\S/) {
+  $resultstr =~ s/^(\x00)+//g;
+
+  if (!$said->{captured} && length($resultstr) == 0) {
 		$resultstr = "No output.";
-	}
+	} elsif (!$said->{captured} && $resultstr !~ /\S/) {
+    $resultstr = "\x{FEFF}$resultstr";
+  }
   
   if ($type eq 'perl') {
       $self->{dbh}->do("INSERT INTO evals (input, output) VALUES (?, ?)", {}, $code, $resultstr);
@@ -149,9 +153,9 @@ sub command {
         "St. Patricks Day" => {prob => 0.00, chars => []},
        "Super Bowl Sunday" => {prob => 0.00, chars => []},
     "Susan B. Anthony Day" => {prob => 0.00, chars => []},
-            "Thanksgiving" => {prob => 0.00, chars => []},
-        "Thanksgiving Day" => {prob => 0.00, chars => []},
-          "Valentines Day" => {prob => 0.00, chars => []},
+            "Thanksgiving" => {prob => 1.00, chars => ["\x{1F983}"]},
+        "Thanksgiving Day" => {prob => 1.00, chars => ["\x{1F983}"]},
+          "Valentines Day" => {prob => 0.25, chars => ["\x{1F491}"]},
             "Veterans Day" => {prob => 0.00, chars => []},
     "Washingtons Birthday" => {prob => 0.00, chars => []},
     "Washingtons Birthday (observed)" => {prob => 0.00, chars => []},
