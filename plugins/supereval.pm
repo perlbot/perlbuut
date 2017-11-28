@@ -25,7 +25,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval/, @perl_aliases ];
+  $self->{aliases} = [ qw/jseval rkeval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -68,11 +68,15 @@ sub command {
     'wscp' => 'cperl',
     'wcp' => 'cperl',
     'scp' => 'cperl',
+    'rk' => 'perl6',
+    'bl' => 'perl',
     map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
 	);
 
   my $orig_type = $type;
 	$type = $translations{$type};
+  $type = "perl6" if ($orig_type =~ /^[ws]*$/i && $said->{channel} eq '#perl6');
+
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
