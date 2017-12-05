@@ -67,7 +67,7 @@ sub post_process {
 
       my $new_text = substr( $$output_ref, 0, 350, '' );
 
-      $$output_ref = $new_text
+      $$output_ref = $new_text;
       $$output_ref .= "... [Output truncated. ".$data->{url}." ]";
     } else {
       my $new_text = substr( $$output_ref, 0, 350, '' );
