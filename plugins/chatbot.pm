@@ -6,6 +6,16 @@ use JSON;
 use Paws;
 use Paws::Credential::Explicit;
 
+my $seed = sprintf "%04d", rand()*10000;
+
+return sub {
+	my( $said ) = @_;
+
+  my $body = $said->{body};
+  my $userid = $said->{server}.$said->{channel}.$said->{nick}.$seed;
+  $userid =~ s/\W/_/g; # hide any non word chars
+
+
 my $creds = Paws::Credential::Explicit->new(access_key => '', secret_key => '');
 my $paws = Paws->new(config => {credentials => $creds, region => 'us-east-1'});
 my $cognito = $paws->service("CognitoIdentity");
@@ -20,18 +30,11 @@ my $realcreds = Paws::Credential::Explicit->new(access_key=>$cresp->AccessKeyId,
 my $service_obj = $paws->service('LexRuntime', credentials => $realcreds, region=>'us-east-1');
 
 
-return sub {
-	my( $said ) = @_;
-
-  my $body = $said->{body};
-  my $userid = $said->{server}.$said->{channel}.$said->{nick};
-  $userid =~ s/\W/_/g; # hide any non word chars
-
   my $resp = $service_obj->PostText(BotName=>'BookTrip', BotAlias=>'perlbot',InputText=>$body,UserId=>$userid);
 
   use JSON::MaybeXS;
   my $json = JSON->new();
-  printf "%s : %s\n", $resp->Message, $json->encode(\%{$resp->Slots->Map});
+  printf "%s : %s\n", $resp->Message, eval{$json->encode(\%{$resp->Slots->Map})};
 };
 
 

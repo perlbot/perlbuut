@@ -1,6 +1,9 @@
 package Bot::BB3::Plugin::More;
 use strict;
 
+use LWP::UserAgent;
+use JSON::MaybeXS;
+
 sub new {
 	my( $class ) = @_;
 	my $self = bless {}, $class;
@@ -49,12 +52,32 @@ sub post_process {
 #			warn "Sanity checking, new length: ", length $$output_ref;
 #		}
 
-		my $new_text = substr( $$output_ref, 0, 350, '' );
+    my $ua = LWP::UserAgent->new();
 
-		$self->{cache}->set( "pager_$said->{name}", $$output_ref, "10 minutes" ); #Remainder
+    my $res = $ua->post("https://perl.bot/api/v1/paste", {
+      paste => $$output_ref,
+      description => 'More text for '.$said->{body},
+      username => $said->{nick},
+      language => 'text'
+    });
 
-		$$output_ref = $new_text;
-		$$output_ref .= "... [Output truncated. Use `more` to read more]";
+    if ($res->is_success()) {
+      my $content = $res->decoded_content;
+      my $data = decode_json $content;
+
+      my $new_text = substr( $$output_ref, 0, 350, '' );
+
+      $$output_ref = $new_text
+      $$output_ref .= "... [Output truncated. ".$data->{url}." ]";
+    } else {
+      my $new_text = substr( $$output_ref, 0, 350, '' );
+
+      $self->{cache}->set( "pager_$said->{name}", $$output_ref, "10 minutes" ); #Remainder
+
+      $$output_ref = $new_text;
+      $$output_ref .= "... [Output truncated. Use `more` to read more]";
+    }
+
 	}
 }
 

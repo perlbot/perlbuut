@@ -75,7 +75,17 @@ sub command {
 
   my $orig_type = $type;
 	$type = $translations{$type};
-  $type = "perl6" if ($orig_type =~ /^[ws]*$/i && $said->{channel} eq '#perl6');
+#  $type = "perl6" if ($orig_type =~ /^[ws]*$/i && $said->{channel} eq '#perl6');
+
+  # We're in #perl6 and we weren't nested or addressed
+  if ($said->{channel} eq "#perl6" && (!$said->{addressed} && !$said->{nested}) && $orig_type =~ /^[ws]*$/) {
+    return ("handled", "");
+  }
+
+  # we were addressed, but not nested, in #perl6.  Switch to perl6, otherwise use perl5
+  if ($said->{channel} eq '#perl6' && $said->{addressed} && !$said->{nested} && $orig_type =~ /^[ws]*$/) {
+    $type = "perl6"
+  }
 
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
