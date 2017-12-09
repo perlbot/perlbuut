@@ -631,7 +631,7 @@ sub get_fact_learn {
 sub get_fact_search {
 	my( $self, $body, $name ) = @_;
 
-  my $namespace = $self
+  #my $namespace = $self
 
 	$body =~ s/^\s*for\s*//; #remove the for from searches
 

@@ -7,10 +7,36 @@ use Data::Dumper;
 use App::EvalServerAdvanced::Protocol;
 use Encode;
 use DateTime::Event::Holiday::US;
+use LWP::UserAgent;
+use JSON::MaybeXS;
 use strict;
 use utf8;
 
 no warnings 'void';
+
+sub make_pastebin {
+  my ($who, $input) = @_;
+
+  my $ua = LWP::UserAgent->new();
+
+  my $res = $ua->post("https://perl.bot/api/v1/paste", {
+    paste => $input,
+    description => 'Evalall output for '.$who,
+    username => $who,
+    language => 'evalall'
+  });
+
+  if ($res->is_success()) {
+      my $content = $res->decoded_content;
+      my $data = decode_json $content;
+
+      return $data->{url};
+  } else {
+    return "Couldn't pastebin output";
+  }
+}
+
+
 
 my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 all));
 
@@ -92,11 +118,12 @@ sub command {
 
   $code = eval {Encode::decode("utf8", $code)} // $code;
 
-  if ($command =~ /^([ws]+)?(?:eval|deparse)(?:5\.(\d+))?/i) {
+  if ($command =~ /^([ws]+)?(?:eval|deparse)(?:5\.(\d+))?(all)?/i) {
     my $c=$1;
     my $v=$2;
-    $code = "use warnings; ".$code if ($c =~ /w/ && $v>=6);
-    $code = '$^W=1;'.$code if ($c =~ /w/ && $v < 6);
+    my $all = $3;
+    $code = "use warnings; ".$code if ($c =~ /w/ && ($v>=6 || $all));
+    $code = '$^W=1;'.$code if ($c =~ /w/ && ($v < 6 && !$all));
     $code = "use strict; ".$code if ($c =~ /s/);
   }
 
@@ -109,12 +136,7 @@ sub command {
   unless ($type =~ /perlall/) {
     $resultstr = $self->do_singleeval($type, $code);
   } else {
-    # TODO use channel config for this
-    if ($said->{channel} eq '#perlbot' || $said->{channel} eq '*irc_msg') {
-      $resultstr = $self->do_multieval([map {"perl".$_} grep {!/^(all|1|2|3|4|5\.5)$/} @versions], $code);
-    } else {
-      $resultstr = "evalall only works in /msg or in #perlbot";
-    }
+    $resultstr = make_pastebin($said->{channel}, $code);
   }
   
 
@@ -211,28 +233,6 @@ sub get_holiday {
   }
 
   return "";
-}
-
-sub do_multieval {
-  my ($self, $types, $code) = @_;
-
-
-	my $socket = IO::Socket::INET->new(  PeerAddr => '192.168.32.1', PeerPort => '14401' )
-		or die "error: cannot connect to eval server";
-
-  my $seq = 1;
-  my $output = '';
-
-  for my $type (@$types) {
-    my $eval_obj = {language => $type, files => [{filename => '__code', contents => $code, encoding => "utf8"}], prio => {pr_batch=>{}}, sequence => $seq++, encoding => "utf8"};
-    print $socket encode_message(eval => $eval_obj); 
-    my $message = $self->read_message($socket);
-    # TODO error checking here
-    $output .= sprintf "[[ %s ]]\n%s\n", $type, $message->get_contents;
-  }
-
-
-  return $output;
 }
 
 sub do_singleeval {
