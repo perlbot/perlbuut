@@ -96,7 +96,7 @@ sub get_namespaced_factoid {
     $channel = $forcechan   // $channel;
     $server  = $forceserver // $server;
     
-	return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
+	  return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
 
     if ($body =~ /^(?:\s*(?<command>$commands_re|macro)\s+)?(?<body>.*)$/) {
         #my ($command, $body);
@@ -631,6 +631,8 @@ sub get_fact_learn {
 sub get_fact_search {
 	my( $self, $body, $name ) = @_;
 
+  my $namespace = $self
+
 	$body =~ s/^\s*for\s*//; #remove the for from searches
 
     my $results;
@@ -665,7 +667,7 @@ sub get_fact_search {
 		my $ret_string;
 		for( @$results ) {
 			#i want a better string here, i'll probably go with just the subject, XXX TODO
-			$ret_string .= "[" . _fact_literal_format($_) . "] " if ($_->{predicate} !~ /^\s*$/);
+			$ret_string .= "[" . _fact_literal_format($_) . "]\n" if ($_->{predicate} !~ /^\s*$/);
 		}
 
 		return $ret_string;

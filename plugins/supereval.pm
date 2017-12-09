@@ -92,9 +92,11 @@ sub command {
 
   $code = eval {Encode::decode("utf8", $code)} // $code;
 
-  if ($command =~ /^([ws]+)?(?:eval|deparse)/i) {
+  if ($command =~ /^([ws]+)?(?:eval|deparse)(?:5\.(\d+))?/i) {
     my $c=$1;
-    $code = "use warnings; ".$code if ($c =~ /w/);
+    my $v=$2;
+    $code = "use warnings; ".$code if ($c =~ /w/ && $v>=6);
+    $code = '$^W=1;'.$code if ($c =~ /w/ && $v < 6);
     $code = "use strict; ".$code if ($c =~ /s/);
   }
 
