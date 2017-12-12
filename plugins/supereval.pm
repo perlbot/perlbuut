@@ -122,8 +122,8 @@ sub command {
     my $c=$1;
     my $v=$2;
     my $all = $3;
-    $code = "use warnings; ".$code if ($c =~ /w/ && ($v>=6 || $all));
-    $code = '$^W=1;'.$code if ($c =~ /w/ && ($v < 6 && !$all));
+    $code = "use warnings; ".$code if ($c =~ /w/ && ($v>=6 || !defined $v || $all));
+    $code = '$^W=1;'.$code if ($c =~ /w/ && (defined $v && $v < 6 && !$all));
     $code = "use strict; ".$code if ($c =~ /s/);
   }
 
