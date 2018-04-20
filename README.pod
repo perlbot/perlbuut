@@ -22,4 +22,10 @@ There is a docs/ directory but it's woefully outdated and doesn't reflect a numb
 Good question - what is the license?
 This is a semi-complicated situation as while the code is obstensibly open source there have been several authors involved.  Notably myself (simcop2387), buu, and b_jonas.  Buu started the original project (see https://github.com/simcop2387/buutbot ) but then disappeared not long after i forked it (with permission) to make a new version of perlbot.  b_jonas was involved in the creation of some of a few plugins, if not more, that made the framework incredibly flexible.
 
+buu has agreed to put his code under the GPL version 3 ( L<https://en.wikipedia.org/wiki/GNU_General_Public_License#Version_3> ) or at your option any later version.
+
+Shlomi Fish licences his changes under buu has agreed to put his code under the GPLv3 ( L<https://en.wikipedia.org/wiki/GNU_General_Public_License#Version_3> ) .
+
+Shlomi Fish licences his changes under any and all of the Expat license, the
+CC0, the same terms as perl 5, and the Artistic 2.0 license.
 =cut
