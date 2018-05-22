@@ -118,7 +118,7 @@ requires 'Task::Kensho::Logging';
 requires 'Task::Kensho::ModuleDev';
 requires 'Task::Kensho::OOP';
 #requires 'Task::Kensho::Testing';
-requires 'Task::Kensho::XML';
+#requires 'Task::Kensho::XML';
 requires 'Text::Unidecode';
 requires 'experimental';
 
@@ -127,3 +127,18 @@ requires 'Math::Calc::Parser';
 requires 'ReadonlyX';
 requires 'Const::Fast';
 requires 'DateTime::Event::Holiday::US';
+requires 'App::EvalServerAdvanced::ConstantCalc';
+
+requires 'Crypt::OpenSSL::X509';
+
+requires 'Math::Random::Secure'; # undeclared dep of Data::Random::Flexible
+requires 'Data::Random::Flexible';
+requires 'Acme::AsciiEmoji';
+requires 'PadWalker';
+requires 'Encode::Simple';
+requires 'PPR';
+requires 'Keyword::Simple';
+requires 'Unicode::UTF8';
+requires 'List::Gather';
+requires 'Lingua::EN::Inflexion';
+requires 'local::lib';

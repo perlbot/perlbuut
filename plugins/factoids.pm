@@ -276,6 +276,9 @@ sub handle {
     my ($self, $said, $pm) = @_;
     my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
 
+
+    $said->{body} =~ s/^\s*(what|who|where|how|when|why)\s+($COPULA_RE)\s+(?<fact>.*?)\??\s*$/$+{fact}/i;
+
 	my $prefix = $conf->{prefix_command};
     return unless $prefix;
 

@@ -36,9 +36,7 @@ sub make_pastebin {
   }
 }
 
-
-
-my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 all));
+my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.6t 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.26t all));
 
 sub new {
 	my( $class ) = @_;
@@ -205,7 +203,9 @@ sub command {
     if (rand() < $special{$holiday}{prob}) {
       my $char = $special{$holiday}{chars}[rand()*@{$special{$holiday}{chars}}];
 
-      $resultstr .= " ".$char;
+      unless ($said->{nested}) { # if we're called in compose don't do this
+        $resultstr .= " ".$char; # disabled until i make it magic-erer
+      }
     }
   }
 
