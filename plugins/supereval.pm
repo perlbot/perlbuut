@@ -49,7 +49,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval rkeval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval/, @perl_aliases ];
+  $self->{aliases} = [ qw/jseval rkeval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -94,6 +94,8 @@ sub command {
     'scp' => 'cperl',
     'rk' => 'perl6',
     'bl' => 'perl',
+    'cb' => 'cobol',
+    'cobol' => 'cobol',
     map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
 	);
 

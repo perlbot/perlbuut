@@ -142,3 +142,4 @@ requires 'Unicode::UTF8';
 requires 'List::Gather';
 requires 'Lingua::EN::Inflexion';
 requires 'local::lib';
+requires 'Array::Utils';
