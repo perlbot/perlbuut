@@ -231,27 +231,27 @@ sub sub_command {
 
 	my $subject = $said->{body};
 
-        my $commands_re = join '|', keys %commandhash;
-           $commands_re = qr/$commands_re/;
-        
-        my $fact_string; # used to capture return values
+  my $commands_re = join '|', keys %commandhash;
+     $commands_re = qr/$commands_re/;
+  
+  my $fact_string; # used to capture return values
 
-        if( !$call_only && $subject =~ s/^\s*($commands_re)\s+// ) {
-          #i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
-          $fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
-        }
-        elsif (
-            ($subject =~ m{\w\s*=~\s*s /.+ /  .* /[gi]*\s*$}ix) ||
-            ($subject =~ m{\w\s*=~\s*s\|.+\|  .*\|[gi]*\s*$}ix) ||
-            ($subject =~ m{\w\s*=~\s*s\{.+\}\{.*\}[gi]*\s*$}ix) ||
-            ($subject =~ m{\w\s*=~\s*s <.+ > <.* >[gi]*\s*$}ix) ||
-            ($subject =~ m{\w\s*=~\s*s\(.+\)\(.*\)[gi]*\s*$}ix)
-          )
-        {
-          $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
-        }
+  if( !$call_only && $subject =~ s/^\s*($commands_re)\s+// ) {
+    #i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
+    $fact_string = $commandhash{$1}->($self,$subject, $said->{name}, $said);
+  }
+  elsif (
+      ($subject =~ m{\w\s*=~\s*s /.+ /  .* /[gi]*\s*$}ix) ||
+      ($subject =~ m{\w\s*=~\s*s\|.+\|  .*\|[gi]*\s*$}ix) ||
+      ($subject =~ m{\w\s*=~\s*s\{.+\}\{.*\}[gi]*\s*$}ix) ||
+      ($subject =~ m{\w\s*=~\s*s <.+ > <.* >[gi]*\s*$}ix) ||
+      ($subject =~ m{\w\s*=~\s*s\(.+\)\(.*\)[gi]*\s*$}ix)
+    )
+  {
+    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
+  }
 	elsif( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
-                return if $said->{nolearn};
+    return if $said->{nolearn};
 		my @ret = $self->store_factoid( $said ); 
 
 		$fact_string = "Failed to store $said->{body}" unless @ret;
@@ -279,7 +279,7 @@ sub handle {
 
     $said->{body} =~ s/^\s*(what|who|where|how|when|why)\s+($COPULA_RE)\s+(?<fact>.*?)\??\s*$/$+{fact}/i;
 
-	my $prefix = $conf->{prefix_command};
+	  my $prefix = $conf->{prefix_command};
     return unless $prefix;
 
     # TODO make this channel configurable and make it work properly to learn shit with colors later.
@@ -287,26 +287,27 @@ sub handle {
 
     if ($said->{body} =~ /^\Q$prefix\E(?<fact>[^@]*?)(?:\s@\s*(?<user>\S*)\s*)?$/ ||
         $said->{body} =~ /^\Q$prefix\E!@(?<user>\S+)\s+(?<fact>.+)$/) {
-        my $fact = $+{fact};
-        my $user = $+{user};
+      my $fact = $+{fact};
+      my $user = $+{user};
 
-		my $newsaid = +{$said->%*};
-		$newsaid->{body} = $fact;
+		  my $newsaid = +{$said->%*};
+		  $newsaid->{body} = $fact;
 
-		if ($fact =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
-			my ($fact, $channel) = @+{qw/fact channel/};
-			$newsaid->{body} = $fact;
-			$newsaid->{channel} = $channel;
-		}
+		  if ($fact =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
+			  my ($fact, $channel) = @+{qw/fact channel/};
+			  $newsaid->{body} = $fact;
+			  $newsaid->{channel} = $channel;
+		  }
 
-		$newsaid->{addressed} = 1;
+		  $newsaid->{addressed} = 1;
+      $newsaid->{nolearn} = 1;
 
-        my ($s, $r) = $self->command($newsaid, $pm);
-        if ($s) {
-            $r = "$user: $r" if $user;
-            $r = "\0".$r;
-            return ($r, 'handled');
-        }
+      my ($s, $r) = $self->command($newsaid, $pm);
+      if ($s) {
+        $r = "$user: $r" if $user;
+        $r = "\0".$r;
+        return ($r, 'handled');
+      }
     }
 
     return;
