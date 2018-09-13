@@ -28,6 +28,7 @@ requires 'Scalar::Util'; #Required by Data::Dumper
 requires 'BSD::Resource';
 requires 'File::Glob';
 requires 'POSIX';
+requires 'POSIX::strptime';
 
 requires 'List::Util';
 requires 'List::MoreUtils';
@@ -143,3 +144,6 @@ requires 'List::Gather';
 requires 'Lingua::EN::Inflexion';
 requires 'local::lib';
 requires 'Array::Utils';
+requires 'DBD::SQLite';
+requires 'Mojo::SQLite';
+requires 'FFI::Platypus';
