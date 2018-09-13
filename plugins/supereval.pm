@@ -36,7 +36,7 @@ sub make_pastebin {
   }
 }
 
-my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.6t 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.26t all));
+my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.6t 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.26t 5.28 all));
 
 sub new {
 	my( $class ) = @_;
@@ -47,9 +47,9 @@ sub new {
 		command => 1,
 	};
 
-  my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_")} @versions;
+  my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_", "meval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval rkeval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval/, @perl_aliases ];
+  $self->{aliases} = [ qw/jseval rkeval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -87,6 +87,7 @@ sub command {
     's' => 'perl',
     'ws' => 'perl',
     'sw' => 'perl',
+    'm' => 'perl',
     'cp' => 'cperl',
     'swcp' => 'cperl',
     'wscp' => 'cperl',
@@ -96,7 +97,8 @@ sub command {
     'bl' => 'perl',
     'cb' => 'cobol',
     'cobol' => 'cobol',
-    map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_")} @versions
+    'bash' => 'bash',
+    map {($_=>"perl$_", "w$_"=>"perl$_", "s$_" => "perl$_", "ws$_"=>"perl$_", "sw$_"=>"perl$_", "m$_"=>"perl$_")} @versions
 	);
 
   my $orig_type = $type;
@@ -118,13 +120,14 @@ sub command {
 
   $code = eval {Encode::decode("utf8", $code)} // $code;
 
-  if ($command =~ /^([ws]+)?(?:eval|deparse)(?:5\.(\d+))?(all)?/i) {
+  if ($command =~ /^([wsm]+)?(?:eval|deparse)(?:5\.(\d+))?(all)?/i) {
     my $c=$1;
     my $v=$2;
     my $all = $3;
     $code = "use warnings; ".$code if ($c =~ /w/ && ($v>=6 || !defined $v || $all));
     $code = '$^W=1;'.$code if ($c =~ /w/ && (defined $v && $v < 6 && !$all));
     $code = "use strict; ".$code if ($c =~ /s/);
+    $code = "use ojo; ".$code if ($c =~ /m/);
   }
 
   $code = "use utf8; ". $code if ($type =~ /^perl(5.(8|10|12|14|16|18|20|22|24|26))?$/);
