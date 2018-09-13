@@ -146,7 +146,7 @@ sub _load_plugins {
 		local $@;
 		local *DATA; # Prevent previous file's __DATA__ 
 		             # sections being read for this new file.
-		my $plugin_return = do "$plugin_dir/$file";
+		my $plugin_return = do "./$plugin_dir/$file";
 		if( not $plugin_return or $@ ) {
 			error "Failed to load plugin: $plugin_dir/$file $@\n";
 			next;
