@@ -4,13 +4,16 @@ use strict;
 use warnings;
 use autodie;
 use DBI;
+use Net::CIDR;
+use Data::Dumper;
 
 sub fmtip($) {
   my $ip = shift;
   sprintf "%03d.%03d.%03d.%03d", split(/\./, $ip);
 }
 
-open(my $tsv, "<", "ip2asn-v4.tsv");
+open(my $tsv, "<", "GeoLite2-ASN-Blocks-IPv4.csv");
+
 
 my $dbh = DBI->connect("dbi:SQLite:dbname=../var/asn.db", "", "", {RaiseError => 1});
 
@@ -31,7 +34,11 @@ my $insert_sth = $dbh->prepare("INSERT INTO asn (start, end, asn, country, desc)
 
 while (my $line = <$tsv>) {
   chomp $line;
-  my ($start, $end, $asn, $country, $desc) = split /\t/, $line;
+  my ($cidr, $asn, $desc) = split /,/, $line, 3;
+  my ($range) = Net::CIDR::cidr2range($cidr);
+  my ($start, $end) = split('-', $range);
+  my $country = "UNK";
+#  print Dumper({cidr => $cidr, asn => $asn, range => $range, start => $start, end => $end});
   next if $asn eq 0;
   printf "%s - %s\n", fmtip($start), fmtip($end);
   $insert_sth->execute(fmtip $start, fmtip $end, $asn, $country, $desc);
