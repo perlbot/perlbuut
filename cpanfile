@@ -49,7 +49,7 @@ requires 'MooseX::Declare';
 requires 'Function::Parameters';
 
 requires 'Rand::MersenneTwister';
-requires 'arybase';
+# requires 'arybase'; # removed in 5.29
 requires 'Errno';
 requires 'JSON';
 requires 'JSON::PP';
@@ -147,3 +147,6 @@ requires 'Array::Utils';
 requires 'DBD::SQLite';
 requires 'Mojo::SQLite';
 requires 'FFI::Platypus';
+requires 'Perl6::Take';
+requires 'List::AllUtils';
+requires 'IRC::FromANSI::Tiny';

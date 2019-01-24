@@ -52,13 +52,18 @@ sub command {
 
   my $url = "";
 
-	if ($said->{body} =~ /-q\s+(.*?)\s*(?:#.*)?/i) #faq questions
+	if ($said->{body} =~ /-(q|s)\s+(.*?)\s*(?:#.*)?\s*$/i) #faq questions
 	{#http://perldoc.perl.org/search.html?q=foo+bar
-	  my $trimmed = $1;
+	  my ($oper, $trimmed) = ($1, $2);
 	  $trimmed =~ s/^\s*(\S+)\s*$/$1/;
-	  my $query = uri_encode($trimmed);
+	  my $query = uri_encode($trimmed, {"encode_reserved" => 1});
 	  $query =~ s/%20/+/g;
-	  $url = "https://perldoc.pl/search?q=".$query;
+
+    if ($oper eq 'q') {
+  	  $url = "https://perldoc.pl/search?no_redirect=1&q=".$query."#FAQ";
+    } else {
+  	  $url = "https://perldoc.pl/search?q=".$query;
+    }
 #	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /-f\s+(\S+)\s*/i) #functions, only use the first part of a multiword expression
@@ -67,7 +72,7 @@ sub command {
 		my $func = $1;
 
 		$func =~ s/^\s*(.*)\s*$/$1/; #trim whitespace
-		$func = lc($func); #all functions are lowercase, except the exception below
+		#$func = lc($func); #all functions are lowercase, except the exception below
 		
 		$func = "-X" if ($func eq "-x"); #only case where it isn't lowercase, its easier to test at this point
 		

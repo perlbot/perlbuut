@@ -36,7 +36,7 @@ sub make_pastebin {
   }
 }
 
-my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.6t 5.8 5.10 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.26t 5.28 all));
+my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.6t 5.8 5.8.8 5.10 5.10.0 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.28 5.8t 5.10t 5.12t 5.14t 5.16t 5.18t 5.20t 5.22t 5.24t 5.26t 5.28 tall all));
 
 sub new {
 	my( $class ) = @_;
@@ -141,7 +141,18 @@ sub command {
   } else {
     $resultstr = make_pastebin($said->{channel}, $code);
   }
-  
+
+  # clean up the output of @INC and friends.
+  $resultstr =~ s|/home/ryan/perl5/perlbrew/perls/perlbot-blead-[^/]+|\$BLEAD|g;
+  $resultstr =~ s|/perl5/perlbrew/perls/perlbot-blead-[^/]+|\$BLEAD|g;
+  $resultstr =~ s|/home/ryan/perl5/perlbrew/perls|\$PERLS|g;
+  $resultstr =~ s|/perl5/perlbrew/perls|\$PERLS|g;
+
+  if ($type eq 'perl6' || $type eq 'bash') {
+    use IRC::FromANSI::Tiny;
+    $resultstr = IRC::FromANSI::Tiny::convert($resultstr);
+  }
+
 
   $resultstr =~ s/^(\x00)+//g;
 
