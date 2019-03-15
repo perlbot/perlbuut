@@ -1,6 +1,7 @@
 package Bot::BB3::Plugin::Compose;
 use strict;
 no warnings 'void';
+use Encode qw/encode decode/;
 sub new {
 	my( $class ) = @_;
 	my $self = bless {}, $class;
@@ -26,7 +27,7 @@ sub command {
 
 sub compose {
 	my($said, $pm) = @_;
-	my $str = $said->{body};
+	my $str = decode 'utf8', $said->{body};
 	$said->{recursion} = 50 unless defined $said->{recursion};
 
 	$str =~ /\A\s*((\S).*(\S))\s*\z/s or
@@ -93,7 +94,7 @@ sub runplugin {
 	my $plugin = $pm->get_plugin( $cmd, $said )
 		or return( 0, "Compose failed to find a plugin named: $cmd" );
 
-	local $said->{body} = $body;
+	local $said->{body} = encode 'utf8', $body;
 	local $said->{recommended_args} = [ split /\s+/, $body ];
 	local $said->{command_match} = $cmd;
 
