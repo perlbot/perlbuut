@@ -150,3 +150,7 @@ requires 'FFI::Platypus';
 requires 'Perl6::Take';
 requires 'List::AllUtils';
 requires 'IRC::FromANSI::Tiny';
+requires 'Unicode::GCString';
+requires 'Unicode::Util';
+requires 'Unicode::Collate';
+requires 'more';
