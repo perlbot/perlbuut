@@ -5,6 +5,7 @@ use DBD::SQLite::BundledExtensions;
 use IRC::Utils qw/lc_irc strip_color strip_formatting/;
 use Text::Metaphone;
 use strict;
+use Encode qw/decode/;
 
 use Data::Dumper;
 
@@ -760,7 +761,7 @@ sub _db_get_fact {
 sub basic_get_fact {
 	my( $self, $pm, $said, $subject, $name, $call_only ) = @_;
 
- #   open(my $fh, ">>/tmp/facts");
+#  open(my $fh, ">>/tmp/facts");
 	my ($fact, $key, $arg);
 	$key = _clean_subject($subject);
 
@@ -790,9 +791,12 @@ sub basic_get_fact {
 			print $fh Dumper($said, $plugin, $pm);
 
             my $ret = $plugin->command($said, $pm);
-#            use Data::Dumper;
-#            print $fh Dumper({key => $key, arg => $arg, fact => $fact, ret => $ret, wa => wantarray});
+            use Data::Dumper;
+            print $fh Dumper({key => $key, arg => $arg, fact => $fact, ret => $ret});
 
+#            $ret = "die 'fuck me silly';";
+
+#            $ret = unpack("H*", decode('utf8',$ret));
             $ret = "\x00$ret" if ($key eq "tell");
 
 			return $ret;

@@ -21,6 +21,28 @@ sub make_pastebin {
 
   my $res = $ua->post("https://perl.bot/api/v1/paste", {
     paste => $input,
+    description => 'Eval output for '.$who,
+    username => $who,
+    language => 'text'
+  });
+
+  if ($res->is_success()) {
+      my $content = $res->decoded_content;
+      my $data = decode_json $content;
+
+      return "Output at: ".$data->{url};
+  } else {
+    return "Couldn't pastebin output";
+  }
+}
+
+sub make_pastebin_all {
+  my ($who, $input) = @_;
+
+  my $ua = LWP::UserAgent->new();
+
+  my $res = $ua->post("https://perl.bot/api/v1/paste", {
+    paste => $input,
     description => 'Evalall output for '.$who,
     username => $who,
     language => 'evalall'
@@ -49,7 +71,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_", "meval$_")} @versions;
 
-  $self->{aliases} = [ qw/jseval rkeval jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
+  $self->{aliases} = [ map {$_, "${_}nl", "${_}pb"} qw/jseval rkeval r jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -62,7 +84,10 @@ sub command {
 
   my $command = $said->{command_match};
 	my $type = $said->{command_match};
-	$type =~ s/^\s*(\w+?)?eval(.*)?/$1$2/;
+  my ($postflags) = ($type =~ /((?:nl|pb)+)$/i);
+  my $nlflag = ($postflags =~ /nl/i);
+  my $pbflag = ($postflags =~ /pb/i);
+	$type =~ s/^\s*(\w+?)?eval(.*?)?\Q$postflags/$1$2/i;
 	warn "Initial type: $type\n";
 
   my %translations = ( 
@@ -94,6 +119,7 @@ sub command {
     'wcp' => 'cperl',
     'scp' => 'cperl',
     'rk' => 'perl6',
+    'r' => 'perl6',
     'bl' => 'perl',
     'cb' => 'cobol',
     'cobol' => 'cobol',
@@ -136,10 +162,13 @@ sub command {
   
   my $resultstr='';
   
-  unless ($type =~ /perlall/) {
-    $resultstr = $self->do_singleeval($type, $code);
+  if ($type =~ /perlall/) {
+    $resultstr = make_pastebin_all($said->{channel}, $code);
+  } elsif ($pbflag) {
+    my $output = $self->do_singleeval($type, $code);
+    $resultstr = make_pastebin($said->{channel}, $output);
   } else {
-    $resultstr = make_pastebin($said->{channel}, $code);
+    $resultstr = $self->do_singleeval($type, $code);
   }
 
   # clean up the output of @INC and friends.
@@ -153,6 +182,12 @@ sub command {
     $resultstr = IRC::FromANSI::Tiny::convert($resultstr);
   }
 
+  my $usenl = ($nlflag && !($type eq 'perl6' || $type eq 'bash')) ||
+              (!$nlflag && ($type eq 'perl6' || $type eq 'bash'));
+  
+  if ($usenl) {
+    $resultstr =~ s/\n/\x{2424}/g;
+  }
 
   $resultstr =~ s/^(\x00)+//g;
 

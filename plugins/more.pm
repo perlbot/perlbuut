@@ -54,8 +54,11 @@ sub post_process {
 
     my $ua = LWP::UserAgent->new();
 
+    my $text = $$output_ref;
+    $text =~ s/\x{2424}/\n/g;
+
     my $res = $ua->post("https://perl.bot/api/v1/paste", {
-      paste => $$output_ref,
+      paste => $text,
       description => 'More text for '.$said->{body},
       username => $said->{nick},
       language => 'text'

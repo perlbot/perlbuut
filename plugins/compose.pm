@@ -27,7 +27,7 @@ sub command {
 
 sub compose {
 	my($said, $pm) = @_;
-	my $str = decode 'utf8', $said->{body};
+	my $str = eval {decode 'utf8', $said->{body}} // $said->{body};
 	$said->{recursion} = 50 unless defined $said->{recursion};
 
 	$str =~ /\A\s*((\S).*(\S))\s*\z/s or
@@ -94,7 +94,7 @@ sub runplugin {
 	my $plugin = $pm->get_plugin( $cmd, $said )
 		or return( 0, "Compose failed to find a plugin named: $cmd" );
 
-	local $said->{body} = encode 'utf8', $body;
+	local $said->{body} = $body;
 	local $said->{recommended_args} = [ split /\s+/, $body ];
 	local $said->{command_match} = $cmd;
 
