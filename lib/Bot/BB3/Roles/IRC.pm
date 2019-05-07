@@ -558,9 +558,9 @@ sub plugin_output {
            $copy->{name} = $said->{forwarding};
            my $newtext = $said->{name} . " wanted you to know: ". $text;
            $_[KERNEL]->yield(plugin_output => $copy, $newtext);
-	   $said->{channel} = "*irc_msg";
+      	   $said->{channel} = "*irc_msg";
            delete $said->{forwarding};
-	   $_[KERNEL]->yield(plugin_output => $said, "Told ".$copy->{name}." about ".$text);
+	         $_[KERNEL]->yield(plugin_output => $said, "Told ".$copy->{name}." about ".$text);
            return;
         }
 
@@ -577,13 +577,13 @@ sub plugin_output {
 			# that receive multiple lines and those that don't..
       $text = Encode::encode( "utf8", $text ); # set it up for raw bytes now
 			while( length $text ) {
-				my $substr = substr( $text, 0, 400, '' );
+				my $substr = substr( $text, 0, 200, '' );
 				$pci->yield( privmsg => $said->{name} => $substr );
 
 				# Try to avoid sending too many lines, since it may be annoying
 				# and it tends to prevent the bot from sending other messages.
 
-				last MESSAGES if $messages_sent++ > 60;
+				last MESSAGES if $messages_sent++ > 5;
 			}
 		}
 	}
