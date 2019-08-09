@@ -37,7 +37,7 @@ sub make_pastebin {
 }
 
 sub make_pastebin_all {
-  my ($who, $input) = @_;
+  my ($who, $input, $type) = @_;
 
   my $ua = LWP::UserAgent->new();
 
@@ -45,7 +45,7 @@ sub make_pastebin_all {
     paste => $input,
     description => 'Evalall output for '.$who,
     username => $who,
-    language => 'evalall'
+    language => "eval${type}all",
   });
 
   if ($res->is_success()) {
@@ -58,7 +58,7 @@ sub make_pastebin_all {
   }
 }
 
-my @versions = ('', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 5.6 5.6t 5.8 5.8.8 5.10 5.10.0 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.28 5.8t 5.10t 5.12t 5.14t 5.16t 5.18t 5.20t 5.22t 5.24t 5.26t 5.28 tall all));
+my @versions = ('', 't', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 tall all rall), map {$_, $_."t"} qw/5.6 5.8 5.8.4 5.8.8 5.10 5.10.0 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.28 5.30/);
 
 sub new {
 	my( $class ) = @_;
@@ -71,7 +71,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_", "meval$_")} @versions;
 
-  $self->{aliases} = [ map {$_, "${_}nl", "${_}pb"} qw/jseval rkeval r jeval phpeval pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse k20eval rbeval pyeval luaeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
+  $self->{aliases} = [ map {$_, "${_}nl", "${_}pb"} qw/jseval rkeval r pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse rbeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -141,12 +141,20 @@ sub command {
     $type = "perl6"
   }
 
+  if ($command eq 'r' && (!$said->{addressed} && !$said->{nested} && $said->{channel} ne "#perl6")) {
+    return ("handled", "");
+  }
+
+  if ($code !~ /\S/) {
+    return ("handled", "");
+  }
+
 	if( not $type ) { $type = 'perl'; }
 	warn "Found $type: $code";
 
   $code = eval {Encode::decode("utf8", $code)} // $code;
 
-  if ($command =~ /^([wsm]+)?(?:eval|deparse)(?:5\.(\d+))?(all)?/i) {
+  if ($command =~ /^([wsm]+)?(?:eval|deparse)(?:5\.(\d+))?t?(all)?/i) {
     my $c=$1;
     my $v=$2;
     my $all = $3;
@@ -164,6 +172,10 @@ sub command {
   
   if ($type =~ /perlall/) {
     $resultstr = make_pastebin_all($said->{channel}, $code);
+  } elsif ($type =~ /perltall/) {
+    $resultstr = make_pastebin_all($said->{channel}, $code, "t");
+  } elsif ($type =~ /perlrall/) {
+    $resultstr = make_pastebin_all($said->{channel}, $code, "r");
   } elsif ($pbflag) {
     my $output = $self->do_singleeval($type, $code);
     $resultstr = make_pastebin($said->{channel}, $output);
@@ -330,6 +342,13 @@ sub read_message {
   die "Couldn't decode packet" unless $res;
 
   return $message;
+}
+
+sub make_help {
+  my $self = shift;
+
+  my $help = q{The eval plugin. Syntax, «eval: code». Prefixes: w=>warnings, s=>strict, m=>use Ojo. Suffixes: t=>threaded, pb=>pastebin it, nl=>turn \n to ␤. languages: }. join(', ', map {s/eval//r || 'bleed'} grep {!/^[wsm]|(t|nl|pb)$/} @{$self->{aliases}});
+  return $help
 }
 
 "Bot::BB3::Plugin::Supereval";

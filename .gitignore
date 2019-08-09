@@ -1,5 +1,6 @@
 etc/bing_secret.txt
 etc/twitterkeys
+etc/crypt.key
 inc/
 META.yml
 MYMETA.json

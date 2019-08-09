@@ -11,7 +11,11 @@ sub {
 		my $plugin = $pm->get_plugin( $plugin_name, $said );
 
 		if( $plugin ) {
-			print $plugin->{help_text};
+      if ($plugin->can("make_help")) {
+        print $plugin->make_help();
+      } else {
+  			print $plugin->{help_text};
+      }
 		}
 		else {
 			print "Sorry, no plugin named $plugin_name found." unless $said->{backdressed};

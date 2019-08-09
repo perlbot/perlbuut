@@ -1,0 +1,11 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use lib './lib';
+use Bot::BB3::DebugCrypt;
+
+
+my $data = join ' ', @ARGV;
+print "Decrypted: ", decrypt($data), "\n"; 
+

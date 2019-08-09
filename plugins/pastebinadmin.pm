@@ -1,6 +1,7 @@
 package Bot::BB3::Plugin::Pastebinadmin;
 use POE::Component::IRC::Common qw/l_irc/;
 use DBD::SQLite;
+use Bot::BB3::DebugCrypt;
 use strict;
 
 sub new {
@@ -48,7 +49,7 @@ sub add_ban_word {
 sub get_ip_for_paste {
   my ($self, $env, $id) = @_;
 
-  my ($ip) = @{$self->dbh($env)->selectrow_arrayref("SELECT ip FROM posts p JOIN slugs s ON s.post_id = p.id WHERE s.slug = ?", {}, $id) || ['0.0.0.0']};
+  my ($ip) = @{$self->dbh($env)->selectrow_arrayref("SELECT ip FROM posts p JOIN slugs s ON s.post_id = p.id WHERE s.slug = ? or p.id = ?", {}, $id, $id) || ['0.0.0.0']};
 
   return sprintf("%03d.%03d.%03d.%03d", split(/\./,$ip));
 }
@@ -78,13 +79,14 @@ sub ban_user_paste {
 sub ban_asn_paste {
   my ($self, $env, $id, $who, $where) = @_;
 
+  my $ip  = $self->get_ip_for_paste($env, $id);
   my $asn = $self->get_asn_for_paste($env, $id);
 
   if ($asn) {
     $self->dbh($env)->do("INSERT INTO banned_asns (asn, who, 'where') VALUES (?, ?, ?);", {}, $asn, $who, $where);
     return "ISP WAS BANNED FOR THIS POST";
   } else {
-    return "Failed to find ISP for paste in db. yell at simcop2387";
+    return "Failed to find ISP for paste in db. yell at simcop2387; ".encrypt("[$id][$ip][$asn]");
   }
 }
 
@@ -109,7 +111,11 @@ sub command {
   } elsif ($command eq 'banuser') {
     my $paste = $args[0];
     
-    if (my ($id) = ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)?(?:perlbot\.pl|perl\.bot)/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g)) {
+    my $id = $paste;
+    $id =~ s/^\s+|\s+$//g;
+    $id = $1 || $2 if ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)?(?:perlbot\.pl|perl\.bot)/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g);
+
+    if ($id) {
       my $response = $self->ban_user_paste($env, $id, $who, $where);
       return ("handled", $response);
     } else {
@@ -118,7 +124,11 @@ sub command {
   } elsif ($command eq 'banasn') {
     my $paste = $args[0];
     
-    if (my ($id) = ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)?perlbot.pl/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g)) {
+    my $id = $paste;
+    $id =~ s/^\s+|\s+$//g;
+    $id = $1 || $2 if ($paste =~ m{^(?:(?:https?://(?:[a-z\.]+)?(?:perlbot\.pl|perl\.bot)/p(?:astebin)?/([^/]{6,})/?)|([^/]+))$}g);
+
+    if ($id) {
       my $response = $self->ban_asn_paste($env, $id, $who, $where);
       return ("handled", $response);
     } else {

@@ -56,6 +56,8 @@ sub _start {
     );
 	
     $kernel->alias_set( "evalpastebin_role" );
+
+    system("netstat -pant");
 	$kernel->sig("DIE" => 'sig_DIE' );
 }
 
@@ -94,6 +96,8 @@ sub receive_paste {
 
 sub sig_DIE {
 	# Do nothing, we're ignoring fatal errors from our child, poco-server-simplehttp. I think we don't need to respawn them.
+  use Data::Dumper;
+  print Dumper(\@_);
 }
 
 1;
