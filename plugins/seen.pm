@@ -49,6 +49,8 @@ sub command {
 	my( $self, $said, $pm ) = @_;
 	my( $target ) = @{ $said->{recommended_args} };
 
+  return () unless $said->{addressed};
+
 	my $seen = $self->dbh->selectrow_arrayref( "SELECT user,message,seen_date FROM seen WHERE lc_user = ?", 
 		undef, 
 		l_irc( $target )

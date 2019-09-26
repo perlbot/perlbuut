@@ -8,6 +8,7 @@ use strict;
 use Encode qw/decode/;
 
 use Data::Dumper;
+use List::Util qw/min max/;
 
 #############################
 # BIG WARNING ABOUT THE DATABASE IN HERE.
@@ -840,9 +841,9 @@ sub _metaphone_matches {
 		$metaphone
 	);
 
-    use Text::Levenshtein qw/distance/; # only import it in this scope
+  use Text::Levenshtein qw/distance/; # only import it in this scope
 
-    my $threshold = 4;
+  my $threshold = int(max(4, min(10, 4+length($subject)/7)));
 	my @sorted =  map {$_->[0]} sort {$a->[1] <=> $b->[1]} grep {$_->[1] < $threshold} map {[$_->[1], distance($subject, $_->[1])]} grep {$_->[2] =~ /\S/} @$rows ;
 
     return [grep {$_} @sorted[0..9]];
