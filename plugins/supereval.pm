@@ -7,6 +7,7 @@ use Data::Dumper;
 use App::EvalServerAdvanced::Protocol;
 use Encode;
 use DateTime::Event::Holiday::US;
+use DateTime::Event::Cron;
 use LWP::UserAgent;
 use JSON::MaybeXS;
 use strict;
@@ -58,7 +59,7 @@ sub make_pastebin_all {
   }
 }
 
-my @versions = ('', 't', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 tall all rall yall), map {$_, $_."t"} qw/5.6 5.8 5.8.4 5.8.8 5.10 5.10.0 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.28 5.30 5.30.0 5.28.2 5.28.1 5.28.0 5.26.3 5.26.2 5.26.1 5.26.0 5.24.4 5.24.3 5.24.2 5.24.1 5.24.0 5.22.4 5.22.3 5.22.2 5.22.1 5.22.0 5.20.3 5.20.2 5.20.1 5.20.0 5.18.4 5.18.3 5.18.2 5.18.1 5.18.0 5.16.3 5.16.2 5.16.1 5.16.0 5.14.4 5.14.3 5.14.2 5.14.1 5.14.0 5.12.5 5.12.4 5.12.3 5.12.2 5.12.1 5.12.0 5.10.1 5.10.0 5.8.9 5.8.8 5.8.7 5.8.6 5.8.5 5.8.4 5.8.3 5.8.2 5.8.1 5.8.0 5.6.2 5.6.1 5.6.0/);
+my @versions = ('', 't', qw(1 2 3 4 5.0 5.1 5.2 5.3 5.4 5.5 tall all rall yall), map {$_, $_."t"} qw/5.6 5.8 5.8.4 5.8.8 5.10 5.10.0 5.12 5.14 5.16 5.18 5.20 5.22 5.24 5.26 5.28 5.30 5.30.1 5.30.0 5.28.2 5.28.1 5.28.0 5.26.3 5.26.2 5.26.1 5.26.0 5.24.4 5.24.3 5.24.2 5.24.1 5.24.0 5.22.4 5.22.3 5.22.2 5.22.1 5.22.0 5.20.3 5.20.2 5.20.1 5.20.0 5.18.4 5.18.3 5.18.2 5.18.1 5.18.0 5.16.3 5.16.2 5.16.1 5.16.0 5.14.4 5.14.3 5.14.2 5.14.1 5.14.0 5.12.5 5.12.4 5.12.3 5.12.2 5.12.1 5.12.0 5.10.1 5.10.0 5.8.9 5.8.8 5.8.7 5.8.6 5.8.5 5.8.4 5.8.3 5.8.2 5.8.1 5.8.0 5.6.2 5.6.1 5.6.0/);
 
 sub new {
 	my( $class ) = @_;
@@ -71,7 +72,7 @@ sub new {
 
   my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_", "meval$_")} @versions;
 
-  $self->{aliases} = [ map {$_, "${_}nl", "${_}pb"} qw/jseval rkeval r pleval perleval deparse swdeparse wsdeparse wdeparse sdeparse rbeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
+  $self->{aliases} = [ map {$_, "${_}nl", "${_}pb", "${_}pbnl", "${_}nlpb"} qw/jseval rkeval r pleval perleval concise deparse2 swdeparse2 wsdeparse2 wdeparse2 sdeparse2 deparse swdeparse wsdeparse wdeparse sdeparse rbeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
@@ -87,15 +88,22 @@ sub command {
   my ($postflags) = ($type =~ /((?:nl|pb)+)$/i);
   my $nlflag = ($postflags =~ /nl/i);
   my $pbflag = ($postflags =~ /pb/i);
-	$type =~ s/^\s*(\w+?)?eval(.*?)?\Q$postflags/$1$2/i;
+  $type =~ s/\Q$postflags\E$//;
+	$type =~ s/^\s*(\w+?)?eval(.*?)?/$1$2/i;
 	warn "Initial type: $type\n";
 
-  my %translations = ( 
+  my %translations = (
+    concise => 'concise',
 		js => 'javascript', 
 		perl => 'perl',
 		pl => 'perl',
 		php => 'php',
-		deparse => 'deparse',
+		deparse2 => 'deparse2',
+		swdeparse2 => 'deparse2',
+		wsdeparse2 => 'deparse2',
+		wdeparse2 => 'deparse2',
+		sdeparse2 => 'deparse2',
+		deparse2 => 'deparse2',
 		swdeparse => 'deparse',
 		wsdeparse => 'deparse',
 		wdeparse => 'deparse',
@@ -132,21 +140,25 @@ sub command {
 #  $type = "perl6" if ($orig_type =~ /^[ws]*$/i && $said->{channel} eq '#perl6');
 
   # We're in #perl6 and we weren't nested or addressed
-  if ($said->{channel} eq "#perl6" && (!$said->{addressed} && !$said->{nested}) && $orig_type =~ /^[ws]*$/) {
+  if (($said->{channel} eq "#perl6" || $said->{channel} eq "#raku") && (!$said->{addressed} && !$said->{nested}) && $orig_type =~ /^[ws]*$/) {
     return ("handled", "");
   }
 
   # we were addressed, but not nested, in #perl6.  Switch to perl6, otherwise use perl5
-  if ($said->{channel} eq '#perl6' && $said->{addressed} && !$said->{nested} && $orig_type =~ /^[ws]*$/) {
+  if (($said->{channel} eq "#perl6" || $said->{channel} eq "#raku") && $said->{addressed} && !$said->{nested} && $orig_type =~ /^[ws]*$/) {
     $type = "perl6"
   }
 
-  if ($command eq 'r' && (!$said->{addressed} && !$said->{nested} && $said->{channel} ne "#perl6")) {
+  if ($command eq 'r' && (!$said->{addressed} && !$said->{nested} && ($said->{channel} ne "#perl6" && $said->{channel} eq '#raku'))) {
     return ("handled", "");
   }
 
   if ($code !~ /\S/) {
     return ("handled", "");
+  }
+
+  if ($type eq 'concise' || $type eq 'deparse2') {
+    $pbflag = !$pbflag; # $pbflag;
   }
 
 	if( not $type ) { $type = 'perl'; }
@@ -158,7 +170,8 @@ sub command {
     my $c=$1;
     my $v=$2;
     my $all = $3;
-    $code = "use warnings; no warnings 'experimental';".$code if ($c =~ /w/ && ($v>=6 || !defined $v || $all));
+    $code = "use warnings; no warnings 'experimental';".$code if ($c =~ /w/ && ($v>=18 || !defined $v || $all));
+    $code = "use warnings;".$code if ($c =~ /w/ && (($v>=6 && $v < 18) || !defined $v || $all));
     $code = '$^W=1;'.$code if ($c =~ /w/ && (defined $v && $v < 6 && !$all));
     $code = "use strict; ".$code if ($c =~ /s/);
     $code = "use ojo; ".$code if ($c =~ /m/);
@@ -180,24 +193,22 @@ sub command {
     $resultstr = make_pastebin_all($said->{channel}, $code, "y");
   } elsif ($pbflag) {
     my $output = $self->do_singleeval($type, $code);
-    $resultstr = make_pastebin($said->{channel}, $output);
+    $resultstr = make_pastebin($said->{channel}, $code. "\n\n". $output);
   } else {
     $resultstr = $self->do_singleeval($type, $code);
   }
 
   # clean up the output of @INC and friends.
-  $resultstr =~ s|/home/ryan/perl5/perlbrew/perls/perlbot-blead-[^/]+|\$BLEAD|g;
-  $resultstr =~ s|/perl5/perlbrew/perls/perlbot-blead-[^/]+|\$BLEAD|g;
-  $resultstr =~ s|/home/ryan/perl5/perlbrew/perls|\$PERLS|g;
-  $resultstr =~ s|/perl5/perlbrew/perls|\$PERLS|g;
+  $resultstr =~ s|(/home/perlbot)/perl5/custom/blead(-[^/]*)?|\$BLEAD|g;
+  $resultstr =~ s|(/home/perlbot)?/perl5/custom|\$PERLS|g;
 
   if ($type eq 'perl6' || $type eq 'bash') {
     use IRC::FromANSI::Tiny;
     $resultstr = IRC::FromANSI::Tiny::convert($resultstr);
   }
 
-  my $usenl = ($nlflag && !($type eq 'perl6' || $type eq 'bash')) ||
-              (!$nlflag && ($type eq 'perl6' || $type eq 'bash'));
+  my $usenl = ($nlflag && !($type eq 'perl6' || $type eq 'bash' || $type eq 'concise' || $type eq 'deparse2')) ||
+              (!$nlflag && ($type eq 'perl6' || $type eq 'bash' || $type eq 'concise' || $type eq 'deparse2'));
   
   if ($usenl) {
     $resultstr =~ s/\n/\x{2424}/g;
@@ -262,6 +273,7 @@ sub command {
     "Washingtons Birthday (observed)" => {prob => 0.00, chars => []},
          "Winter Solstice" => {prob => 0.00, chars => []},
      "Womens Equality Day" => {prob => 0.00, chars => []},
+          "Guy Fawkes Day" => {prob => 0.33, chars => ["\N{BOMB}", "\N{CROWN}"]},
   );
 
   if ($special{$holiday}) {
@@ -286,15 +298,28 @@ sub get_holiday {
   if ($mass_set->contains($dt)) {
     # We're a holiday. do shit
 
-    my $name = "";
     for my $key (@known) {
       if ($holidays->{$key}->contains($dt)) {
-        $name = $key;
-        last; # don't iterate more.
+        return $key;
       }
     }
+  }
 
-    return $name;
+  my sub newcron {
+    return DateTime::Event::Cron->new($_[0]);
+  }
+
+  my %crons = (
+    "Guy Fawkes Day" => [newcron("* * 5 11 *")],
+  );
+
+  for my $key (keys %crons) {
+    my $crons = $crons{$key};
+    for my $test (@$crons) {
+      if ($test->match()) {
+        return $key;
+      }
+    }
   }
 
   return "";
