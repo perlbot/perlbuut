@@ -40,13 +40,13 @@ sub {
 	}
     
   my @text;
-  my $document = HTML::TreeBuilder::XPath->new_from_content( $resp->content );
+  my $document = HTML::TreeBuilder::XPath->new_from_content( $resp->decoded_content );
   if (!$document) { 
       print "Could not parsinate that page!";
   }
   # just the xpath left
   if ($said->{body} =~ /^\s*\.\*\s*$/) {
-      print $resp->content;
+      print $resp->decoded_content;
   } elsif ($said->{body}) {
       @text = eval{
           $document->findvalues( $said->{body} );

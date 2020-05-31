@@ -177,7 +177,7 @@ sub command {
     $code = "use ojo; ".$code if ($c =~ /m/);
   }
 
-  $code = "use utf8; ". $code if ($type =~ /^perl(5.(8|10|12|14|16|18|20|22|24|26))?$/);
+  $code = "use utf8; ". $code if ($type =~ /^perl(5.(8|10|12|14|16|18|20|22|24|26|28|30))?$/);
 
   $code =~ s/␤/\n/g;
   
