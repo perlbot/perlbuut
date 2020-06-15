@@ -1,0 +1,164 @@
+--- cpanfile_scanned	2017-06-21 17:40:10.000000000 -0400
++++ cpanfile_sorted	2017-06-21 17:41:53.000000000 -0400
+@@ -1,80 +1,91 @@
+
+requires 'autodie';
+requires 'Cache::FastMmap';
+requires 'Cache::File';
+requires 'Cache::Mmap';
+requires 'Config::General';
+requires 'Cpanel::JSON::XS';
+requires 'Data::Dumper';
+requires 'DBD::SQLite';
+requires 'DBI';
+requires 'Encode';
+requires 'HTTP::Status';
+requires 'IO::String';
+requires 'JSON::MaybeXS';
+requires 'perl', '5.24';
+requires 'POE';
+requires 'POE::Component::IRC';
+requires 'POE::Component::IRC::Common';
+requires 'POE::Component::IRC::Plugin::AutoJoin';
+requires 'POE::Component::IRC::Plugin::Connector';
+requires 'POE::Component::IRC::Plugin::NickReclaim';
+requires 'POE::Component::IRC::State';
+requires 'POE::Component::Server::SimpleHTTP';
+requires 'POE::Component::Server::TCP';
+requires 'POE::Filter::Line';
+requires 'POE::Filter::Reference';
+requires 'POE::Filter::Stream';
+requires 'POE::Session';
+requires 'POE::Wheel::ReadWrite';
+requires 'POE::Wheel::Run';
+requires 'POE::Wheel::SocketFactory';
+requires 'Scalar::Util';
+requires 'Socket';
+requires 'Sys::Linux::Mount';
+requires 'Sys::Linux::Namespace';
+requires 'Template';
+requires 'Term::ANSIColor';
+requires 'Text::ParseWords';
+requires 'Tie::Hash::NamedCapture';
+requires 'Data::Dumper';
+ requires 'BSD::Resource';
+ requires 'Cache::FastMmap';
+ requires 'Parse::RecDescent';
+
+ requires 'Text::Glob';
+
+-requires 'Memoize';
+
+feature 'perlbot_plugins' => sub {
+	requires 'App::EvalServerAdvanced::Protocol';
+ requires 'Text::Metaphone';
+ 	requires 'Geo::IP';
+ requires 'WWW::Mechanize';
+ requires 'WWW::Shorten';
+-requires 'WWW::Shorten::TinyURL';
+ requires 'DBD::SQLite::BundledExtensions';
+};
+
+feature 'eval_needed' => {
+-requires 'Linux::Clone';
+ requires 'Moo';
+ requires 'Linux::Seccomp';
++requires 'Mojo::Collection';
++requires 'Mojo::DOM';
++requires 'Mojo::DOM::CSS';
+ requires 'Moo';
++requires 'Marpa::R2';
+ requires 'JSON';
++requires 'JSON::PP';
++requires 'JSON::Tiny';
++requires 'JSON::XS';
++requires 'arybase';
++requires 'autovivification';
++requires 'bigint';
++requires 'Capture::Tiny';
++requires 'Class::Tiny';
+ requires 'BSD::Resource';
++requires 'Syntax::Keyword::Try';
++requires 'Capture::Tiny';
++requires 'Class::Tiny';
++requires 'Cpanel::JSON::XS';
++requires 'Cwd';
++requires 'Data::Munge';
++requires 'Date::Parse';
++requires 'DateTime';
++requires 'DateTimeX::Easy';
++requires 'Digest::MD5';
++requires 'Digest::SHA';
++requires 'Errno';
++requires 'File::Glob';
++requires 'File::Open';
+ requires 'File::Slurper';
+ requires 'File::Temp';
+}
+
+feature 'eval_optional' => {
+}
+
+--- cpanfile_scanned	2017-06-21 18:24:13.000000000 -0400
++++ cpanfile_sorted	2017-06-21 17:41:53.000000000 -0400
+@@ -1,50 +1,91 @@
+ requires 'Encode';
++requires 'Function::Parameters';
++requires 'Future';
++requires 'Geo::IP';
++requires 'HTML::TreeBuilder';
++requires 'HTML::TreeBuilder::XPath';
++requires 'indirect';
++requires 'IO::Async'; 
++requires 'IPC::Run';
++requires 'JSON';
+ requires 'JSON::MaybeXS';
++requires 'JSON::PP';
++requires 'JSON::Tiny';
++requires 'JSON::XS';
+-requires 'Linux::Clone';
+ requires 'Linux::Seccomp';
++requires 'List::MoreUtils';
++requires 'List::SomeUtils';
+ requires 'List::Util';
++requires 'List::UtilsBy';
++requires 'LWP::Protocol::https';
++requires 'Marpa::R2';
++requires 'Math::BigFloat';
++requires 'Math::BigInt';
++requires 'Math::BigRat';
++requires 'Math::Round';
++requires 'Mojo::Collection';
++requires 'Mojo::DOM';
++requires 'Mojo::DOM::CSS';
++requires 'Moose';
++requires 'MooseX::Declare';
++requires 'Net::Dict';
++requires 'Net::DNS';
++requires 'Net::INET6Glue::INET_is_INET6';
++requires 'Path::Tiny';
+ requires 'Perl::Tidy';
+ requires 'Permute::Named::Iter';
++requires 'POE';
++requires 'POE::Component::IRC';
++requires 'POE::Component::IRC::Common';
++requires 'POSIX';
++requires 'Quote::Code';
++requires 'Rand::MersenneTwister';
++requires 'Regexp::Common';
++requires 'Return::MultiLevel';
++requires 'Scalar::MoreUtils';
++requires 'Scalar::Util'; #Required by Data::Dumper
++requires 'Switch::Plain';
++requires 'Syntax::Keyword::Try';
++requires 'Sys::Linux::Namespace'.013;
++requires 'Text::Levenshtein';
++requires 'Text::Metaphone';
++requires 'Time::Moment';
++requires 'Try::Tiny::ByClass';
++requires 'Types::Standard';
++requires 'URI::Encode';
++requires 'WWW::Mechanize';
++requires 'WWW::Shorten';
++requires 'XML::RSS::Parser';
++requires 'YAPE::Regex::Explain';
