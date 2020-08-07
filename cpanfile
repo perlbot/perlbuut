@@ -160,3 +160,4 @@ requires 'V';
 requires 'Path::Tiny';
 requires 'CryptX';
 requires 'MIME::Base64';
+requires 'DateTime::Event::Cron';
