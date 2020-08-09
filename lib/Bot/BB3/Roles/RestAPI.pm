@@ -1,4 +1,4 @@
-package Bot::BB3::Roles::Web;
+package Bot::BB3::Roles::RestAPI;
 
 use Bot::BB3::Logger;
 use POE;
@@ -66,7 +66,7 @@ sub display_page {
 	}
 
 	$resp->code(RC_OK);
-	$resp->content_type("text/html");
+	$resp->content_type("text/plain");
 	$resp->content( $html );
 	
 	$_[KERNEL]->post(  web_httpd_alias => 'DONE' => $resp );
@@ -82,24 +82,34 @@ sub handle_request {
 
 	my $query = CGI->new( $req->content );
 	my $input = $query->param("body");
+  my $channel = $query->param("channel");
+  my $name = $query->param("who");
 
 	my @args = "2+2";
 	warn "Attempting to handle request: $req $resp $input\n";
+
+  my $addressed = 0;
+
+  if ($body =~ /^\@perlbot/i) {
+    $addressed = 1;
+    $body =~ s/^\@perlbot/perlbot:/i;
+  }
 
 	# This is obviously silly but I'm unable to figure out
 	# the correct way to solve this =[
 	my $said = {
 		body => $input,
 		raw_body => $input,
-		my_name => 'WI',
-		addressed => 1,
+		my_name => 'perlbot',
+		addressed => $addressed,
 		recommended_args => \@args,
-		channel => '*web',
-		name => 'CC',
-		ircname => 'CC', 
+		channel => $channel // "#error",
+		name => $name // "ERROR",
+		ircname => $name // "ERROR", 
 		host => '*special', #TODO fix this to be an actual hostname!
 		                    # Make sure it isn't messed up by the alias feature..
 		server => '*special',
+    nolearn => 1,
 	};
 	
 	# Avoid passing around the full reference
@@ -112,7 +122,9 @@ sub handle_request {
 sub plugin_output {
 	my( $self, $kernel, $said, $output ) = @_[OBJECT,KERNEL,ARG0,ARG1];
 
-	$output =~ s/^\s*CC://; # Clear the response name
+  my $name = $said->{name};
+
+	$output =~ s/^\s*$name:/\@$name/; # Clear the response name
 
 	my $resp = delete $RESP_MAP{ $said->{pci_id} };
 
@@ -127,15 +139,4 @@ sub sig_DIE {
 1;
 
 __DATA__
-<html>
-	<head>
-	</head>
-
-	<body onload="document.getElementById('body_field').focus()">
-		Welcome to the BB3 web interface. You can interact with the bot by typing bot commands in to the text box below. It acts exactly as if you have typed the command in a private message to the bot. Try the command 'help' or 'plugins' (no quotes).
-		<form method="post" action="/request">
-		Input: <input type="text" name="body" id="body_field"> <input type="submit" value="go"> <br>
-		</form>
-		Output: %%OUTPUT%%
-	</body>
-</html>
+%%OUTPUT%%
