@@ -84,7 +84,9 @@ sub get_plugin {
 			return $_;
 		}
 
-		if( $_->{aliases} ) {
+    if ( $_->{alias_re} ) {
+      return $_ if $name =~ $_->{alias_re};
+    } elsif( $_->{aliases} ) {
 			for my $alias ( @{ $_->{aliases} } ) {
 				return $_ if $name eq $alias;
 			}
@@ -221,8 +223,10 @@ sub _pre_build_plugin_chain {
 
 		if( $opts->{command} ) {
 			$commands->{ $plugin->{name} } = $plugin;
-			
-			if( $plugin->{aliases} ) {
+		
+      if ($plugin->{alias_re}) {
+        $commands->{$plugin->{alias_re}} = $plugin;
+      } elsif( $plugin->{aliases} ) {
 				$commands->{ "\Q$_" } = $plugin
 					for @{ $plugin->{aliases} };
 			}
@@ -357,9 +361,12 @@ sub _create_plugin_chain {
 sub _parse_for_commands {
 	my( $self, $said, $commands ) = @_;
 
-	my $command_re = join '|', map "$_", keys %$commands;
+	#my $command_re = join '|', map "$_", keys %$commands;
+  my $command_ra = Regexp::Assemble->new();
+  $command_ra->add(keys %$commands);
+  my $command_re = $command_ra->re;
         warn "$command_re";
-	$command_re = qr/$command_re/; #TODO move to _pre_build_chains and switch to Trie
+#	$command_re = qr/$command_re/; #TODO move to _pre_build_chains and switch to Trie
 
   #my $command_ra = Regexp::Assemble->new();
   #$command_ra->add(map {quotemeta $_} keys %$commands);

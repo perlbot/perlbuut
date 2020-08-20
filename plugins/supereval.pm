@@ -10,6 +10,8 @@ use DateTime::Event::Holiday::US;
 use DateTime::Event::Cron;
 use LWP::UserAgent;
 use JSON::MaybeXS;
+use Regexp::Optimizer;
+use Regexp::Assemble;
 use strict;
 use utf8;
 
@@ -70,10 +72,28 @@ sub new {
 		command => 1,
 	};
 
-  my @perl_aliases = map {("eval$_", "weval$_", "seval$_", "wseval$_", "sweval$_", "meval$_")} @versions;
+  my $version_ra = Regexp::Assemble->new();
+  $version_ra->add(map {"\Q$_"} @versions);
+  my $version_re = $version_ra->re;
 
-  $self->{aliases} = [ map {$_, "${_}nl", "${_}pb", "${_}pbnl", "${_}nlpb"} qw/jseval rkeval r pleval perleval concise deparse2 swdeparse2 wsdeparse2 wdeparse2 sdeparse2 deparse swdeparse wsdeparse wdeparse sdeparse rbeval cpeval wscpeval swcpeval wcpeval scpeval bleval coboleval cbeval basheval/, @perl_aliases ];
-    $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
+  my $strict_re = qr/(?:(?:ws?|sw?)|m)?/;
+  my $suffix_re = qr/(nl(pb)?|pb(nl)?)?/;
+
+  my $perlcommand_ra = Regexp::Assemble->new();
+  $perlcommand_ra->add(qw/eval pleval perleval cpeval bleval deparse deparse2/);
+  my $perlcommand_re = $perlcommand_ra->re;
+
+  my $othercommand_ra = Regexp::Assemble->new();
+  $othercommand_ra->add(qw/jseval rkeval coboleval cbeval basheval r concise/);
+  my $othercommand_re = $othercommand_ra->re;
+
+  my $newversion_re = Regexp::Optimizer->new->optimize($version_re);
+
+  my $complete_re = qr/${strict_re}${perlcommand_re}${newversion_re}${suffix_re}|${othercommand_re}/;
+
+  $self->{aliases_re} = $complete_re;
+
+  $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
 	return $self;
 }
