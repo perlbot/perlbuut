@@ -162,3 +162,4 @@ requires 'CryptX';
 requires 'MIME::Base64';
 requires 'DateTime::Event::Cron';
 requires 'Regexp::Assemble';
+requires 'Regexp::Optimizer';
