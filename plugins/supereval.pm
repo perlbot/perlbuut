@@ -91,7 +91,7 @@ sub new {
 
   my $complete_re = qr/${strict_re}${perlcommand_re}${newversion_re}${suffix_re}|${othercommand_re}/;
 
-  $self->{aliases_re} = $complete_re;
+  $self->{alias_re} = $complete_re;
 
   $self->{dbh} = DBI->connect("dbi:SQLite:dbname=var/evallogs.db");
 
