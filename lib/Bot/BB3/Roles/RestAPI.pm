@@ -4,11 +4,8 @@ use Bot::BB3::Logger;
 use POE;
 use POE::Component::Server::SimpleHTTP;
 use HTTP::Status;
-use CGI; #Heh.
 use strict;
-
-	local $/;
-	my $HTML_TEMPLATE = <DATA>;
+use JSON::MaybeXS qw/decode_json encode_json/;
 
 sub new {
 	my( $class, $conf, $plugin_manager ) = @_;
@@ -55,19 +52,17 @@ sub _start {
 }
 
 sub display_page {
-	my( $self, $req, $resp, $name, $output ) = @_[OBJECT,ARG0,ARG1,ARG2,ARG3];
-	my $html = $HTML_TEMPLATE;
+	my( $self, $req, $resp, $name, $output, $said ) = @_[OBJECT,ARG0,ARG1,ARG2,ARG3,ARG4];
 	
 	warn "Display Page Activating: $req - $resp - $output\n";
 
-	
-	if( $output ) {
-		$html =~ s/\%\%OUTPUT\%\%/$output/;
-	}
+  if ($said->{addressed} || $output !~ /^\s*$/) {
+  $output = sprintf '@%s %s', $said->{name}, $output;
+  }
 
 	$resp->code(RC_OK);
-	$resp->content_type("text/plain");
-	$resp->content( $html );
+	$resp->content_type("application/json");
+	$resp->content( encode_json({"body" => $output, saidobj => $said}) );
 	
 	$_[KERNEL]->post(  web_httpd_alias => 'DONE' => $resp );
 }
@@ -80,26 +75,26 @@ sub handle_request {
 
 	warn "Request: ", $req->content;
 
-	my $query = CGI->new( $req->content );
-	my $input = $query->param("body");
-  my $channel = $query->param("channel");
-  my $name = $query->param("who");
+  my $data = decode_json($req->content);
+  my $input = $data->{body} // "";
+  my $channel = $data->{channel} // "#ERROR";
+  my $name = $data->{who} // "ERROR";
 
 	my @args = "2+2";
 	warn "Attempting to handle request: $req $resp $input\n";
 
   my $addressed = 0;
 
-  if ($body =~ /^\@perlbot/i) {
+  if ($input =~ /^\@?perlbot/i) {
     $addressed = 1;
-    $body =~ s/^\@perlbot/perlbot:/i;
+    $input =~ s/^\@?perlbot\b//i;
   }
 
 	# This is obviously silly but I'm unable to figure out
 	# the correct way to solve this =[
 	my $said = {
 		body => $input,
-		raw_body => $input,
+		raw_body => $data->{body},
 		my_name => 'perlbot',
 		addressed => $addressed,
 		recommended_args => \@args,
@@ -129,7 +124,7 @@ sub plugin_output {
 	my $resp = delete $RESP_MAP{ $said->{pci_id} };
 
 
-	$kernel->yield( display_page => undef, $resp, undef, $output ); 
+	$kernel->yield( display_page => undef, $resp, undef, $output, $said ); 
 }
 
 sub sig_DIE {
@@ -137,6 +132,3 @@ sub sig_DIE {
 }
 
 1;
-
-__DATA__
-%%OUTPUT%%
