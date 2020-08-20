@@ -6,6 +6,7 @@ use POE;
 use Data::Dumper;
 use Text::Glob qw/match_glob/;
 use Memoize;
+use Regexp::Assemble;
 use strict;
 
 sub new {
@@ -222,7 +223,7 @@ sub _pre_build_plugin_chain {
 			$commands->{ $plugin->{name} } = $plugin;
 			
 			if( $plugin->{aliases} ) {
-				$commands->{ $_ } = $plugin
+				$commands->{ "\Q$_" } = $plugin
 					for @{ $plugin->{aliases} };
 			}
 		}
@@ -356,9 +357,14 @@ sub _create_plugin_chain {
 sub _parse_for_commands {
 	my( $self, $said, $commands ) = @_;
 
-	my $command_re = join '|', map "\Q$_", keys %$commands;
+	my $command_re = join '|', map "$_", keys %$commands;
         warn "$command_re";
 	$command_re = qr/$command_re/; #TODO move to _pre_build_chains and switch to Trie
+
+  #my $command_ra = Regexp::Assemble->new();
+  #$command_ra->add(map {quotemeta $_} keys %$commands);
+  #my $command_re = $command_ra->re;
+  #warn "$command_re";
 
 	if( (!$said->{addressed} && $said->{body} =~ s/^\s*($command_re)[:,;]\s*(.+)/$2/)
           or ($said->{addressed} && $said->{body} =~ s/^\s*($command_re)[ :,;-]\s*(.+)/$2/)
