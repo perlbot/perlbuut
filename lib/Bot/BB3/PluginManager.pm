@@ -7,6 +7,7 @@ use Data::Dumper;
 use Text::Glob qw/match_glob/;
 use Memoize;
 use Regexp::Assemble;
+use JSON::MaybeXS qw//;
 use strict;
 
 sub new {
@@ -79,16 +80,16 @@ sub get_plugin {
         my $filtered =  $self->{plugins}; 
 	$filtered = $self->_filter_plugin_list($said, $filtered) if ($said);
 
-	for( @{$filtered} ) {
-		if( $name eq $_->{name} ) { 
-			return $_;
+	for my $plugin ( @{$filtered} ) {
+		if( $name eq $plugin->{name} ) { 
+			return $plugin;
 		}
 
-    if ( $_->{alias_re} ) {
-      return $_ if $name =~ $_->{alias_re};
-    } elsif( $_->{aliases} ) {
-			for my $alias ( @{ $_->{aliases} } ) {
-				return $_ if $name eq $alias;
+    if ( $plugin->{alias_re} ) {
+      return $plugin if $name =~ $plugin->{alias_re};
+    } elsif( $plugin->{aliases} ) {
+			for my $alias ( @{ $plugin->{aliases} } ) {
+				return $plugin if $name eq $alias;
 			}
 		}
 	}
@@ -305,8 +306,8 @@ sub _start_plugin_child {
 			# Execute chain
 			#-----
 			my $chain = $self->_create_plugin_chain( $said );
-
-			# Only add the default if we're being addressed
+			
+      # Only add the default if we're being addressed
 			if( $said->{addressed} ) {
 				push @{ $chain->[4] }, @{ $self->{default_plugin_chain} }; # Append default plugins to the command section
 			}
@@ -346,13 +347,16 @@ sub _create_plugin_chain {
 	my $pre_built_chains = $self->{plugin_chain};
 
 	my( $pre, $post ) = @{$pre_built_chains}{ qw/pre_process post_process/ };
+  warn "in chain create handlers: $said->{body}\n";
 	my $handlers = $self->_filter_plugin_list( $said, $pre_built_chains->{ handlers } );
 	;		
 	#---
 	# Parse said/commands
 	#---
 	my $commands = $pre_built_chains->{commands};
+  warn "in chain create parse: $said->{body}\n";
 	my $command_list = $self->_parse_for_commands( $said, $commands );
+  warn "in chain create post-parse: $said->{body}\n";
 
 	return [ $pre, $command_list, $handlers, $post ];
 	
@@ -373,18 +377,18 @@ sub _parse_for_commands {
   #my $command_re = $command_ra->re;
   #warn "$command_re";
 
-	if( (!$said->{addressed} && $said->{body} =~ s/^\s*($command_re)[:,;]\s*(.+)/$2/)
-          or ($said->{addressed} && $said->{body} =~ s/^\s*($command_re)[ :,;-]\s*(.+)/$2/)
-		or $said->{body} =~ s/^\s*($command_re)\s*$// ) {
+	if( (!$said->{addressed} && $said->{body} =~ s/^\s*(?<command>$command_re)[:,;]\s*(?<args>.+)/$+{args}/)
+          or ($said->{addressed} && $said->{body} =~ s/^\s*(?<command>$command_re)[ :,;-]\s*(?<args>.+)/$+{args}/)
+		or $said->{body} =~ s/^\s*(?<command>$command_re)\s*$// ) {
 
-			my $found_command = $1;
-			my $args = $2;
-			my $command = $commands->{ $found_command };
+			my $found_command = $+{command};
+			my $args = $+{args};
+			my $command = $self->get_plugin($found_command, $said); #$commands->{ $found_command };
 
 			warn "found $found_command - $args\n";
 
 			# takes and returns array ref
-			my $filter_check = $self->_filter_plugin_list( $said, [$command] );
+			my $filter_check = $self->_filter_plugin_list( $said, [$command], $found_command );
 			if( @$filter_check ) { # So check if the one argument passed
 				# Return an array ref..
 				$said->{recommended_args} = [ split /\s+/, $args ];
@@ -421,7 +425,8 @@ sub _execute_plugin_chain {
 	my( $self, $said, $chain ) = @_;
 	my( $pre, $commands, $handlers, $post, $default ) = @$chain;
 
-	for( @$pre ) { 
+	for( @$pre ) {
+    warn "PREPROCESS => ".ref($_)."\n";
 		$_->pre_process( $said, $self );
 	}
 
@@ -443,13 +448,14 @@ sub _execute_plugin_chain {
         push @$commands, @$default if (ref $default eq 'ARRAY');
     }
 
-	for( @$commands ) {
+	for my $command ( @$commands ) {
 		local $@;
-		my( $return, $output ) = eval { $_->command( $said, $self ) };
+		my( $return, $output ) = eval { $command->command( $said, $self ) };
 
-		if( $@ ) { push @$total_output, "Error: $@"; next; }
+    use Data::Dumper;
+		if( $@ ) { warn "FOO::::".Dumper($commands); push @$total_output, "Error: ".Dumper($command)." $@"; next; }
 
-		warn "$_->{name} - $return - $output\n";
+		warn $command->{name}." - $return - $output\n";
 
 		push @$total_output, $output;
 		
