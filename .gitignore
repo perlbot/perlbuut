@@ -1,6 +1,7 @@
 etc/bing_secret.txt
 etc/twitterkeys
 etc/crypt.key
+etc/factoid_db_keys
 inc/
 META.yml
 MYMETA.json

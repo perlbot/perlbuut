@@ -10,6 +10,14 @@ use Encode qw/decode/;
 use Data::Dumper;
 use List::Util qw/min max/;
 
+open(my $fh, "<", "etc/factoid_db_keys") or die $!;
+my ($dbname, $dbuser, $dbpass) = <$fh>;
+close($fh);
+
+chomp $dbname;
+chomp $dbuser;
+chomp $dbpass;
+
 #############################
 # BIG WARNING ABOUT THE DATABASE IN HERE.
 #############################
@@ -68,13 +76,13 @@ sub dbh {
 	}
 
 	my $dbh = $self->{dbh} = DBI->connect(
-		"dbi:SQLite:dbname=var/factoids.db",
-		"",
-		"",
+		"dbi:Pg:dbname=$dbname",
+		$dbuser,
+		$dbpass,
 		{ RaiseError => 1, PrintError => 0 }
 	);
 
-    DBD::SQLite::BundledExtensions->load_spellfix($dbh);
+#    DBD::SQLite::BundledExtensions->load_spellfix($dbh);
 
 	return $dbh;
 }
@@ -118,11 +126,7 @@ sub get_namespaced_factoid {
 
     print $fh Dumper($realserver, $realchannel);
 
-	my $sepbody = ($command." "//'').$fsep.join($fsep, ($realserver, $realchannel, $body));
-   
-    print $fh $sepbody, "\n";
-
-    return $sepbody;
+    return ($realserver, $realchannel, $body);
 }
 
 sub namespace_filter {
@@ -136,25 +140,25 @@ sub postload {
 	my( $self, $pm ) = @_;
 
 
-	my $sql = "CREATE TABLE factoid (
-		factoid_id INTEGER PRIMARY KEY AUTOINCREMENT,
-		original_subject VARCHAR(100),
-		subject VARCHAR(100),
-		copula VARCHAR(25),
-		predicate TEXT,
-		author VARCHAR(100),
-		modified_time INTEGER,
-		metaphone TEXT,
-		compose_macro CHAR(1) DEFAULT '0',
-		protected BOOLEAN DEFAULT '0'
-	);
-    CREATE INDEX factoid_subject_idx ON factoid(subject);
-    CREATE INDEX factoid_original_subject_idx ON factoid(original_subject_idx);
-    "; # Stupid lack of timestamp fields
-
-	$pm->create_table( $self->dbh, "factoid", $sql );
-
-	delete $self->{dbh}; # UGLY HAX GO.
+# 	my $sql = "CREATE TABLE factoid (
+# 		factoid_id INTEGER PRIMARY KEY AUTOINCREMENT,
+# 		original_subject VARCHAR(100),
+# 		subject VARCHAR(100),
+# 		copula VARCHAR(25),
+# 		predicate TEXT,
+# 		author VARCHAR(100),
+# 		modified_time INTEGER,
+# 		metaphone TEXT,
+# 		compose_macro CHAR(1) DEFAULT '0',
+# 		protected BOOLEAN DEFAULT '0'
+# 	);
+#     CREATE INDEX factoid_subject_idx ON factoid(subject);
+#     CREATE INDEX factoid_original_subject_idx ON factoid(original_subject_idx);
+#     "; # Stupid lack of timestamp fields
+# 
+# 	$pm->create_table( $self->dbh, "factoid", $sql );
+# 
+# 	delete $self->{dbh}; # UGLY HAX GO.
 	                     # Basically we delete the dbh we cached so we don't fork
 											 # with one active
 }
@@ -177,6 +181,7 @@ sub command {
 	print $fh Dumper($said);
 
 	my $response; #namespaced factoids have no fallback
+  my ($realchannel, $realserver);
 
 	if ($conf->{namespaced} || $said->{channel} eq '*irc_msg') {
 		# Parse body here
@@ -195,7 +200,7 @@ sub command {
 			}
 
 			if ($said->{channel} ne '##NULL') { # fuck ##NULL, they don't get factoids
-				$body = $command . " " . $self->get_namespaced_factoid($pm, $fact, $said);
+				($realserver, $realchannel) = $self->get_namespaced_factoid($pm, $fact, $said);
 				print $fh "New body is $body\n";
 			} else {
 				$body = $command . " " . $body;
@@ -208,16 +213,14 @@ sub command {
 			}
 
 			if ($said->{channel} ne '##NULL') { # fuck ##NULL, they don't get factoids
-				$body = $self->get_namespaced_factoid($pm, $body, $said);
+				($realserver, $realchannel) = $self->get_namespaced_factoid($pm, $body, $said);
 			}
 		}
-
-		$said->{body} = $body; # rewrite the input
 	}
 
 	print $fh Dumper($said);
 
-	my ($handled, $fact_out) = $self->sub_command($said, $pm);
+	my ($handled, $fact_out) = $self->sub_command($said, $pm, $realchannel, $realserver);
 
 	$fact_out = $self->namespace_filter($fact_out, $conf->{filtersep});
 
@@ -225,7 +228,7 @@ sub command {
 }
 
 sub sub_command {
-	my( $self, $said, $pm ) = @_;
+	my( $self, $said, $pm, $realchannel, $realserver ) = @_;
 	
 	return unless $said->{body} =~ /\S/; #Try to prevent "false positives"
 	
@@ -250,11 +253,11 @@ sub sub_command {
       ($subject =~ m{\w\s*=~\s*s\(.+\)\(.*\)[gi]*\s*$}ix)
     )
   {
-    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said);
+    $fact_string = $self->get_fact_substitute( $subject, $said->{name}, $said, $realchannel, $realserver);
   }
 	elsif( !$call_only and $subject =~ /\s+$COPULA_RE\s+/ ) { 
     return if $said->{nolearn};
-		my @ret = $self->store_factoid( $said ); 
+		my @ret = $self->store_factoid( $said, $realchannel, $realserver ); 
 
 		$fact_string = "Failed to store $said->{body}" unless @ret;
 
@@ -262,7 +265,7 @@ sub sub_command {
 		$fact_string = "Stored @ret";
         }
         else {
-          $fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only );
+          $fact_string = $self->get_fact( $pm, $said, $subject, $said->{name}, $call_only, $realchannel, $realserver )
         }
 
 	if( defined $fact_string ) {
@@ -372,7 +375,7 @@ sub store_factoid {
 }
 
 sub _insert_factoid {
-	my( $self, $author, $subject, $copula, $predicate, $compose_macro, $protected ) = @_;
+	my( $self, $author, $subject, $copula, $predicate, $compose_macro, $protected, $realchannel, $realserver ) = @_;
 	my $dbh = $self->dbh;
 
 	warn "Attempting to insert factoid: type $compose_macro";
@@ -391,8 +394,8 @@ sub _insert_factoid {
 	return unless $key =~ /\S/;
 
 	$dbh->do( "INSERT INTO factoid 
-		(original_subject,subject,copula,predicate,author,modified_time,metaphone,compose_macro,protected)
-		VALUES (?,?,?,?,?,?,?,?,?)",
+		(original_subject,subject,copula,predicate,author,modified_time,metaphone,compose_macro,protected, namespace, server)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?)",
 		undef,
 		$key,
 		$subject,
@@ -403,6 +406,8 @@ sub _insert_factoid {
 		Metaphone($key),
 		$compose_macro || 0,
 		$protected || 0,
+    $realchannel,
+    $realserver
 	);
 
 	return 1;
@@ -543,7 +548,7 @@ sub _fact_substitute
 }
 
 sub get_fact_substitute {
-	my( $self, $subject, $name, $said ) = @_;
+	my( $self, $subject, $name, $said, $realchannel, $realserver ) = @_;
 
 	if (
         ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s /([^/]+ )   /([^/]*  )/([gi]*)\s*$}ix) ||
@@ -554,8 +559,9 @@ sub get_fact_substitute {
        )
 	{
 		my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
-		
-		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
+	 
+    # TODO does this need to be done via the ->get_fact() instead now?
+		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name, $realchannel, $realserver );
 		
 		if ($fact && $fact->{predicate} =~ /\S/)
 		{ #we've got a fact to operate on
@@ -572,7 +578,7 @@ sub get_fact_substitute {
 #	$body =~ s/^\s*learn\s+//;
 #	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
 
-				my $ret = $self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result);
+				my $ret = $self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result, $realchannel, $realserver);
 				
 				return $ret;
 			}
@@ -618,7 +624,7 @@ sub get_fact_revert {
 }
 
 sub get_fact_learn {
-	my( $self, $body, $name, $said, $subject, $predicate ) = @_;
+	my( $self, $body, $name, $said, $subject, $predicate, $realchannel, $realserver ) = @_;
 
         return if ($said->{nolearn});
 	
@@ -629,7 +635,7 @@ sub get_fact_learn {
 	return "Insufficient permissions for changing protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
 
 	#my @ret = $self->store_factoid( $name, $said->{body} ); 
-	$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 , $self->_db_get_protect($subject));
+	$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 , $self->_db_get_protect($subject), $realchannel, $realserver);
 
 	return "Stored $subject as $predicate";
 }
@@ -735,8 +741,10 @@ sub _db_get_protect {
 
 
 sub _db_get_fact {
-	my( $self, $subj, $name, $func ) = @_;
-	
+	my( $self, $subj, $name, $func, $realchannel, $realserver ) = @_;
+
+  # TODO write the recursive CTE for this
+
 	my $dbh = $self->dbh;
 	my $fact = $dbh->selectrow_hashref( "
 			SELECT factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject
