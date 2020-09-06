@@ -12,3 +12,4 @@ modules.lst
 jail.ext4
 var/asn.db
 langs/
+*.swp
