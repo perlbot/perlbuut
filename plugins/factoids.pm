@@ -1,4 +1,9 @@
 package Bot::BB3::Plugin::Factoids;
+
+use v5.30;
+use experimental 'signatures';
+use feature 'postderef', 'fc';
+
 use DBI;
 use DBD::SQLite;
 use DBD::SQLite::BundledExtensions;
@@ -54,9 +59,7 @@ my %commandhash = (
 		$commands_re = qr/$commands_re/;
 
 
-sub new {
-	my( $class ) = @_;
-
+sub new($class) {
 	my $self = bless {}, $class;
 	$self->{name} = 'factoids'; # Shouldn't matter since we aren't a command
 	$self->{opts} = {
@@ -68,9 +71,7 @@ sub new {
 	return $self;
 }
 
-sub dbh { 
-	my( $self ) = @_;
-	
+sub dbh($self) { 
 	if( $self->{dbh} and $self->{dbh}->ping ) {
 		return $self->{dbh};
 	}
@@ -87,8 +88,8 @@ sub dbh {
 	return $dbh;
 }
 
-sub get_conf_for_channel {
-    my ($self, $pm, $server, $channel) = @_;
+sub get_conf_for_channel($self, $pm, $server, $channel) {
+# TODO this needs to use the tables now
 	my $gc = sub {$pm->plugin_conf($_[0], $server, $channel)};
 	
 	# Load factoids if it exists, otherwise grab the old nfacts setup
@@ -96,7 +97,9 @@ sub get_conf_for_channel {
 	return $conf;
 }
 
-sub get_namespaced_factoid {
+# This must go away instead
+# TODO
+sub __get_namespaced_factoid {
     my ($self, $pm, $body, $said, $forcechan, $forceserver) = @_;
     my $command;
 
@@ -129,16 +132,17 @@ sub get_namespaced_factoid {
     return ($realserver, $realchannel, $body);
 }
 
-sub namespace_filter {
+# TODO remove this
+sub __namespace_filter {
     my ($self, $body, $enabled) = @_;
 
     return $body =~ s|$fsep[^$fsep]*?$fsep[^$fsep]*?$fsep(\S+)|$1|rg if $enabled;
     $body;
 }
 
+# TODO update this to use the new table layout once it's ready
 sub postload {
 	my( $self, $pm ) = @_;
-
 
 # 	my $sql = "CREATE TABLE factoid (
 # 		factoid_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,8 +173,7 @@ sub postload {
 # if it's a retrieve command such as "foo" or if it's a retrieve sub-
 # command such as "forget foo"
 # Need to add "what is foo?" support...
-sub command {
-	my( $self, $_said, $pm ) = @_;
+sub command($self, $_said, $pm) {
 	my $said = +{$_said->%*};
 
 	my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
@@ -182,6 +185,8 @@ sub command {
 
 	my $response; #namespaced factoids have no fallback
   my ($realchannel, $realserver);
+
+  # I want to rework this TODO
 
 	if ($conf->{namespaced} || $said->{channel} eq '*irc_msg') {
 		# Parse body here
@@ -227,9 +232,7 @@ sub command {
 	return ($handled, $fact_out);
 }
 
-sub sub_command {
-	my( $self, $said, $pm, $realchannel, $realserver ) = @_;
-	
+sub sub_command ($self, $said, $pm, $realchannel, $realserver) {
 	return unless $said->{body} =~ /\S/; #Try to prevent "false positives"
 	
 	my $call_only = $said->{command_match} eq "call";
@@ -277,10 +280,8 @@ sub sub_command {
 }
 
 # Handler code stolen from the old nfacts plugin
-sub handle {
-    my ($self, $said, $pm) = @_;
+sub handle($self, $said, $pm) {
     my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
-
 
     $said->{body} =~ s/^\s*(what|who|where|how|when|why)\s+($COPULA_RE)\s+(?<fact>.*?)\??\s*$/$+{fact}/i;
 
@@ -319,20 +320,18 @@ sub handle {
 }
 
 
-sub _clean_subject {
-	my( $subject ) = @_;
-
+sub _clean_subject($subject) {
 	$subject =~ s/^\s+//;
 	$subject =~ s/\s+$//;
 	$subject =~ s/\s+/ /g;
 #	$subject =~ s/[^\w\s]//g; #comment out to fix punct in factoids
-	$subject = lc $subject;
+	$subject = lc fc $subject;
 
 	return $subject;
 }
 
-sub _clean_subject_func { # for parametrized macros
-	my($subject, $variant) = @_;
+# TODO document this better
+sub _clean_subject_func($subject, $variant) { # for parametrized macros
 	my( $key, $arg );
 
 	if ($variant) {
@@ -345,13 +344,18 @@ sub _clean_subject_func { # for parametrized macros
 
 		( $key, $arg ) = ( $1, $2 );
 	}
-	#$key =~ s/[^\w\s]//g;
 
 	return $key, $arg;
 }
 
-sub store_factoid {
+sub store_factoid($self, $said) {
 	my( $self, $said) =@_;
+  
+  # alias namespace is the current alias we assign factoids to
+  # server and namespace is the server and channel we're looking up for
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
+
 	my ($author, $body ) = ($said->{name}, $said->{body});
 
 	return unless $body =~ /^(?:no[, ])?\s*(.+?)\s+($COPULA_RE)\s+(.+)$/s;
@@ -363,19 +367,19 @@ sub store_factoid {
 	if( $subject =~ s/^\s*\@?macro\b\s*// ) { $compose_macro = 1; }
 	elsif( $subject =~ s/^\s*\@?func\b\s*// ) { $compose_macro = 2; }
 	elsif( $predicate =~ s/^\s*also\s+// ) {
-		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $author );
+		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $author, $server, $namespace );
 		
 		$predicate = $fact->{predicate} . " | " .  $predicate;
 	}
 	
 	return unless
-		$self->_insert_factoid( $author, $subject, $copula, $predicate, $compose_macro, $self->_db_get_protect($subject) );
+		$self->_insert_factoid( $author, $subject, $copula, $predicate, $compose_macro, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace );
 
 	return( $subject, $copula, $predicate );
 }
 
-sub _insert_factoid {
-	my( $self, $author, $subject, $copula, $predicate, $compose_macro, $protected, $realchannel, $realserver ) = @_;
+sub _insert_factoid ($self, $author, $subject, $copula, $predicate, $compose_macro, $protected, $server, $namespace) {
+	my= @_;
 	my $dbh = $self->dbh;
 
 	warn "Attempting to insert factoid: type $compose_macro";
@@ -406,26 +410,27 @@ sub _insert_factoid {
 		Metaphone($key),
 		$compose_macro || 0,
 		$protected || 0,
-    $realchannel,
-    $realserver
+    $namespace,
+    $server
 	);
 
 	return 1;
 }
 
-sub get_fact_protect {
-	my( $self, $subject, $name, $said ) = @_;
-
-	warn "===TRYING TO PROTECT [$subject] [$name]\n";
+sub get_fact_protect($self, $subject, $name, $said) {
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
+	
+  warn "===TRYING TO PROTECT [$subject] [$name]\n";
 
 	#XXX check permissions here
 	return "Insufficient permissions for protecting factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
 
-	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
+	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name, $server, $namespace );
 
 	if (defined($fact->{predicate}))
 	{
-		$self->_insert_factoid( $name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 1 );
+		$self->_insert_factoid( $name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 1, $aliasserver, $aliasnamespace );
 
 		return "Protected [$subject]";
 	}
@@ -435,19 +440,20 @@ sub get_fact_protect {
 	}
 }
 
-sub get_fact_unprotect {
-	my( $self, $subject, $name, $said ) = @_;
-
-	warn "===TRYING TO PROTECT [$subject] [$name]\n";
+sub get_fact_unprotect($self, $subject, $name, $said) {
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
+	
+  warn "===TRYING TO PROTECT [$subject] [$name]\n";
 
 	#XXX check permissions here
 	return "Insufficient permissions for unprotecting factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
 
-	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
+	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name, $server, $namespace );
 	
 	if (defined($fact->{predicate}))
         {
-                $self->_insert_factoid( $name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 0 );
+                $self->_insert_factoid( $name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 0, $aliasserver, $aliasnamespace );
         
                 return "Unprotected [$subject]";
         }
@@ -457,30 +463,34 @@ sub get_fact_unprotect {
         }
 }
 
-sub get_fact_forget {
-	my( $self, $subject, $name, $said ) = @_;
-
-	warn "===TRYING TO FORGET [$subject] [$name]\n";
+sub get_fact_forget($self, $subject, $name, $said) {
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
+	
+  warn "===TRYING TO FORGET [$subject] [$name]\n";
 
 	#XXX check permissions here
 	return "Insufficient permissions for forgetting protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
 
-	$self->_insert_factoid( $name, $subject, "is", " ", 0, $self->_db_get_protect($subject) );
+	$self->_insert_factoid( $name, $subject, "is", " ", 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace );
 
 	return "Forgot $subject";
 }
 
-sub _fact_literal_format {
-	my($r) = @_;
-	($r->{protected}?"P:" : "" ).
+sub _fact_literal_format($r) {
+# TODO make this express the parent namespace if present
+# <server:namespace>
+  ($r->{protected}?"P:" : "" ).
                 ("","macro ","func ")[$r->{compose_macro}] . 
 		"$r->{subject} $r->{copula} $r->{predicate}";
 }
 
-sub get_fact_revisions {
-	my( $self, $subject, $name ) = @_;
+sub get_fact_revisions($self, $subject, $name) {
 	my $dbh = $self->dbh;
 
+  my ($server, $namespace) = $self->get_namespace($said);
+  
+  # TODO this query needs to be rewritten
 	my $revisions = $dbh->selectall_arrayref(
 		"SELECT factoid_id, subject, copula, predicate, author, compose_macro, protected 
 			FROM factoid
@@ -498,24 +508,19 @@ sub get_fact_revisions {
 	return $ret_string;
 }
 
-sub get_fact_literal {
-	my( $self, $subject, $name ) = @_;
-
-	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name );
+sub get_fact_literal($self, $subject, $name) {
+  
+  my ($server, $namespace) = $self->get_namespace($said);
+	my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name, $server, $namespace );
 
 	return _fact_literal_format($fact);
 }
 
-sub _fact_substitute
-{
-	my ($self, $pred, $match, $subst, $flags) = @_;
-	
-	if ($flags =~ /g/)
-	{
+sub _fact_substitute($self, $pred, $match, $subst, $flags) {
+  if ($flags =~ /g/) {
 		my $regex = $flags=~/i/ ? qr/(?i:$match)/i : qr/$match/;
 		
-		while ($pred =~ /$regex/g)
-		{
+		while ($pred =~ /$regex/g) {
 			my $matchedstring = substr($pred, $-[0], $+[0] - $-[0]);
 			my ($matchstart, $matchend) = ($-[0], $+[0]);
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
@@ -528,13 +533,10 @@ sub _fact_substitute
 		}
 		
 		return $pred;
-	}
-	else
-	{
+	} else {
 		my $regex = $flags=~/i/ ? qr/(?i:$match)/i : qr/$match/;
 		
-		if ($pred =~ /$regex/)
-		{
+		if ($pred =~ /$regex/) {
 			my @caps = map {substr($pred, $-[$_], $+[$_] - $-[$_])} 1..$#+;
 			my $realsubst = $subst;
 			$realsubst =~ s/(?<!\\)\$(?:\{(\d+)\}|(\d+))/$caps[$1-1]/eg;
@@ -547,8 +549,10 @@ sub _fact_substitute
 	}
 }
 
-sub get_fact_substitute {
-	my( $self, $subject, $name, $said, $realchannel, $realserver ) = @_;
+sub get_fact_substitute($self, $subject, $name, $said) {
+	
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
 
 	if (
         ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s /([^/]+ )   /([^/]*  )/([gi]*)\s*$}ix) ||
@@ -561,7 +565,7 @@ sub get_fact_substitute {
 		my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
 	 
     # TODO does this need to be done via the ->get_fact() instead now?
-		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name, $realchannel, $realserver );
+		my $fact = $self->_db_get_fact( _clean_subject( $subject ), $name, $server, $namespace );
 		
 		if ($fact && $fact->{predicate} =~ /\S/)
 		{ #we've got a fact to operate on
@@ -578,7 +582,9 @@ sub get_fact_substitute {
 #	$body =~ s/^\s*learn\s+//;
 #	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
 
-				my $ret = $self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result, $realchannel, $realserver);
+        # TODO why is this calling there?
+        # let this fail for now
+				my $ret = $self->get_fact_learn("learn $subject as $result", $name, $said, $subject, $result);
 				
 				return $ret;
 			}
@@ -594,9 +600,11 @@ sub get_fact_substitute {
 	}
 }
 
-sub get_fact_revert {
-	my( $self, $subject, $name, $said ) = @_;
+sub get_fact_revert($self, $subject, $name, $said) {
 	my $dbh = $self->dbh;
+  
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
 
 	#XXX check permissions here
 	return "Insufficient permissions for reverting protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
@@ -613,20 +621,22 @@ sub get_fact_revert {
 		$rev_id
 	);
 
-	my $protect = $self->_db_get_protect($fact_rev->{subject});
+	my $protect = $self->_db_get_protect($fact_rev->{subject}, $server, $namespace);
 
 	return "Bad revision id" unless $fact_rev and $fact_rev->{subject}; # Make sure it's valid..
 
 	#                        subject, copula, predicate
-	$self->_insert_factoid( $name, @$fact_rev{qw"subject copula predicate compose_macro"}, $protect);
+	$self->_insert_factoid( $name, @$fact_rev{qw"subject copula predicate compose_macro"}, $protect, $aliasserver, $aliasnamespace);
 
 	return "Reverted $fact_rev->{subject} to revision $rev_id";
 }
 
-sub get_fact_learn {
-	my( $self, $body, $name, $said, $subject, $predicate, $realchannel, $realserver ) = @_;
+sub get_fact_learn($self, $body, $name, $said, $subject, $predicate) {
+  
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
 
-        return if ($said->{nolearn});
+  return if ($said->{nolearn});
 	
 	$body =~ s/^\s*learn\s+//;
 	($subject, $predicate ) = split /\s+as\s+/, $body, 2 unless ($subject && $predicate);
@@ -635,17 +645,20 @@ sub get_fact_learn {
 	return "Insufficient permissions for changing protected factoid [$subject]" if (!$self->_db_check_perm($subject,$said));
 
 	#my @ret = $self->store_factoid( $name, $said->{body} ); 
-	$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 , $self->_db_get_protect($subject), $realchannel, $realserver);
+	$self->_insert_factoid( $name, $subject, 'is', $predicate, 0 , $self->_db_get_protect($subject), $aliasserver, $aliasnamespace);
 
 	return "Stored $subject as $predicate";
 }
 
-sub get_fact_search {
-	my( $self, $body, $name ) = @_;
+sub get_fact_search($self, $body, $name) {
+  # TODO replace this with FTS
 
-  #my $namespace = $self
+  my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+  my ($server, $namespace) = $self->get_namespace($said);
+	
+  $body =~ s/^\s*for\s*//; #remove the for from searches
 
-	$body =~ s/^\s*for\s*//; #remove the for from searches
+  # TODO queries need the CTE
 
     my $results;
 
@@ -691,15 +704,14 @@ sub get_fact_search {
     
 }
 
-sub get_fact {
-	my( $self, $pm, $said, $subject, $name, $call_only ) = @_;
-
+sub get_fact($self, $pm, $said, $subject, $name, $call_only) { 
 	return $self->basic_get_fact( $pm, $said, $subject, $name, $call_only );
 }	
 
-sub _db_check_perm {
-        my ($self, $subj, $said) = @_;
-	my $isprot = $self->_db_get_protect($subj);
+sub _db_check_perm($self, $subj, $said) {
+  my ($server, $namespace) = $self->get_namespace($said);
+	
+  my $isprot = $self->_db_get_protect($subj, $server, $namespace);
 
 	warn "Checking permissions of [$subj] for [$said->{name}]";
 	warn Dumper($said);
@@ -720,8 +732,8 @@ sub _db_check_perm {
 }
 
 #get the status of the protection bit
-sub _db_get_protect {
-        my( $self, $subj ) = @_;
+sub _db_get_protect($self, $subj, $server, $namespace) {
+        # TODO switch to new CTE query
 
 	$subj = _clean_subject($subj,1);
 
@@ -740,8 +752,7 @@ sub _db_get_protect {
 }
 
 
-sub _db_get_fact {
-	my( $self, $subj, $name, $func, $realchannel, $realserver ) = @_;
+sub _db_get_fact($self, $subj, $func, $namespace, $server)  {
 
   # TODO write the recursive CTE for this
 
