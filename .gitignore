@@ -13,3 +13,5 @@ jail.ext4
 var/asn.db
 langs/
 *.swp
+*.LOG
+*.bak
