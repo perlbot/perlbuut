@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 BEGIN;
 DROP TABLE IF EXISTS public.factoid;
 CREATE TABLE public.factoid AS (SELECT * FROM sqlite.factoid);
@@ -41,5 +43,9 @@ INSERT INTO public.factoid_config (server, namespace, alias_server, alias_namesp
             ('',             '',         '',             '',         false, NULL), -- the parent of all
             ('freenode.net', '#regex',   'freenode.net', '#regex',   false, '!'),
             ('freenode.net', '#regexen', 'freenode.net', '#regex',   false, '!');
+
+CREATE INDEX IF NOT EXISTS factoid_original_subject_lookup_idx ON public.factoid (original_subject);
+CREATE INDEX IF NOT EXISTS factoid_original_subject_trigram_idx ON public.factoid USING GIN(original_subject gin_trgm_ops);
+
 
 COMMIT;

@@ -5,8 +5,6 @@ use experimental 'signatures';
 use feature 'postderef', 'fc';
 
 use DBI;
-use DBD::SQLite;
-use DBD::SQLite::BundledExtensions;
 use IRC::Utils qw/lc_irc strip_color strip_formatting/;
 use Text::Metaphone;
 use strict;
@@ -82,59 +80,33 @@ sub dbh($self) {
     return $dbh;
 }
 
-sub get_conf_for_channel ($self, $pm, $server, $channel) {
+sub get_namespace($self, $said) {
+    my ($server, $channel) = $said->@{qw/server channel/};
 
-    # TODO this needs to use the tables now
-    my $gc = sub {$pm->plugin_conf($_[0], $server, $channel)};
+    $server = s/^.*?([^\.]\.[^\.]+)$/$1/;
 
-    # Load factoids if it exists, otherwise grab the old nfacts setup
-    my $conf = $gc->("factoids");
+    return ($server, $channel);
+}
+
+sub get_alias_namespace($self, $said) {
+    my $conf = $self->get_conf_for_channel($said);
+
+    my $server    = $conf->{alias_server} // $conf->{server}; 
+    my $namespace = $conf->{alias_namespace} // $conf->{namespace}; 
+
+    return ($server, $namespace);
+}
+
+sub get_conf_for_channel ($self, $said) {
+    my ($server, $namespace) = $self->get_namespace($said);
+
+    my $dbh = $self->{dbh};
+
+    my $result = $dbh->selectrow_hashref(qq{
+      SELECT * FROM factoid_config WHERE server = ? AND namespace = ? LIMIT 1
+    }, {}, $server, $name);
+
     return $conf;
-}
-
-# This must go away instead
-# TODO
-sub __get_namespaced_factoid {
-    my ($self, $pm, $body, $said, $forcechan, $forceserver) = @_;
-    my $command;
-
-    my ($channel, $server) = @{$said}{qw/channel server/};
-    $server =~ s/^.*?([^.]+\.(?:com|net|co.uk|org|bot|info))$/$1/;    # grab just the domain and tld, will expand to more domains later
-
-    $channel = $forcechan   // $channel;
-    $server  = $forceserver // $server;
-
-    return $body if $channel eq '*irc_msg' or $channel eq '##NULL';
-
-    if ($body =~ /^(?:\s*(?<command>$commands_re|macro)\s+)?(?<body>.*)$/) {
-
-        #my ($command, $body);
-        ($command, $body) = @+{qw/command body/};
-    }
-
-    open(my $fh, ">/tmp/notwut");
-
-    print $fh "NAMESPACE: [ $channel , $server ]";
-
-    my $conf = $self->get_conf_for_channel($pm, $said->{server}, $channel);
-
-    print $fh Dumper($conf);
-
-    my $realserver  = $conf->{serverspace} // $server;
-    my $realchannel = $conf->{chanspace}   // $channel;
-
-    print $fh Dumper($realserver, $realchannel);
-
-    return ($realserver, $realchannel, $body);
-}
-
-# TODO remove this
-sub __namespace_filter {
-    my ($self, $body, $enabled) = @_;
-
-    return $body =~ s|$fsep[^$fsep]*?$fsep[^$fsep]*?$fsep(\S+)|$1|rg
-      if $enabled;
-    $body;
 }
 
 # TODO update this to use the new table layout once it's ready
@@ -173,60 +145,20 @@ sub postload {
 sub command ($self, $_said, $pm) {
     my $said = +{ $_said->%* };
 
-    my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
-
-    open(my $fh, ">/tmp/wut");
-    print $fh "COMMAND INCOMING\n";
-    print $fh Dumper($conf);
-    print $fh Dumper($said);
-
-    my $response;    #namespaced factoids have no fallback
-    my ($realchannel, $realserver);
-
-    # I want to rework this TODO
-
-    if ($conf->{namespaced} || $said->{channel} eq '*irc_msg') {
-
+    if ($said->{channel} eq '*irc_msg') {
         # Parse body here
         my $body = $said->{body};
         $said->{channel} = "##NULL" if $said->{channel} eq '*irc_msg';
-
-        if ($body =~ /^(?<command>$commands_re)\s+(?<fact>.*)$/) {
-            my ($command, $fact) = @+{qw/command fact/};
-
-            print $fh "Got command $command :: $fact\n";
-
-            # handle a channel prefix on everything
-            if ($fact =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
-                $said->{channel} = $+{channel};
-                $body = $+{fact};
-            }
-
-            if ($said->{channel} ne '##NULL') {    # fuck ##NULL, they don't get factoids
-                ($realserver, $realchannel) = $self->get_namespaced_factoid($pm, $fact, $said);
-                print $fh "New body is $body\n";
-            } else {
-                $body = $command . " " . $body;
-            }
-        } else {
-
-            # handle a channel prefix on everything
-            if ($body =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
-                $said->{channel} = $+{channel};
-                $body = $+{fact};
-            }
-
-            if ($said->{channel} ne '##NULL') {    # fuck ##NULL, they don't get factoids
-                ($realserver, $realchannel) = $self->get_namespaced_factoid($pm, $body, $said);
-            }
-        }
+    }
+    
+    if ($body =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
+        $said->{channel} = $+{channel};
+        $said->{body} = $+{fact};
     }
 
-    print $fh Dumper($said);
+    # TODO does this need to support parsing the command out again?
 
-    my ($handled, $fact_out) = $self->sub_command($said, $pm, $realchannel, $realserver);
-
-    $fact_out = $self->namespace_filter($fact_out, $conf->{filtersep});
+    my ($handled, $fact_out) = $self->sub_command($said, $pm);
 
     return ($handled, $fact_out);
 }
