@@ -173,8 +173,7 @@ sub postload {
 sub command ($self, $_said, $pm) {
     my $said = +{ $_said->%* };
 
-    my $conf =
-      $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
+    my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
 
     open(my $fh, ">/tmp/wut");
     print $fh "COMMAND INCOMING\n";
@@ -763,18 +762,17 @@ sub _db_get_fact ($self, $subj, $func, $namespace, $server) {
     } else {
         return $fact;
     }
-
 }
 
-sub basic_get_fact {
-    my ($self, $pm, $said, $subject, $name, $call_only) = @_;
-
+sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
+    my ($server,      $namespace)      = $self->get_namespace($said);
+    
     #  open(my $fh, ">>/tmp/facts");
     my ($fact, $key, $arg);
     $key = _clean_subject($subject);
 
     if (!$call_only) {
-        $fact = $self->_db_get_fact($key, $name);
+        $fact = $self->_db_get_fact($key, $name, $server, $namespace);
     }
 
     # Attempt to determine if our subject matches a previously defined
@@ -784,7 +782,7 @@ sub basic_get_fact {
     for my $variant (0, 1) {
         if (!$fact) {
             ($key, $arg) = _clean_subject_func($subject, $variant);
-            $fact = $self->_db_get_fact($key, $name, 1);
+            $fact = $self->_db_get_fact($key, $name, 1, $server, $namespace);
         }
     }
 
@@ -803,9 +801,6 @@ sub basic_get_fact {
             use Data::Dumper;
             print $fh Dumper({ key => $key, arg => $arg, fact => $fact, ret => $ret });
 
-            #            $ret = "die 'fuck me silly';";
-
-            #            $ret = unpack("H*", decode('utf8',$ret));
             $ret = "\x00$ret" if ($key eq "tell");
 
             return $ret;
@@ -813,8 +808,8 @@ sub basic_get_fact {
             return "$fact->{predicate}";
         }
     } else {
-        if ($subject =~ /[\?\.\!]$/
-          )    #check if some asshole decided to add a ? at the end of the factoid, if so remove it and recurse, this should only be able to recurse N times so it should be fine
+        if ($subject =~ /[\?\.\!]$/)
+        #check if some asshole decided to add a ? at the end of the factoid, if so remove it and recurse, this should only be able to recurse N times so it should be fine
         {
             my $newsubject = $subject;
             $newsubject =~ s/[\?\.\!]$//;
@@ -823,7 +818,7 @@ sub basic_get_fact {
 
         my $metaphone = Metaphone(_clean_subject($subject, 1));
 
-        my $matches = $self->_metaphone_matches($metaphone, $subject);
+        my $matches = $self->_metaphone_matches($metaphone, $subject, $server, $namespace);
 
         push @{ $said->{metaphone_matches} }, @$matches;
 
@@ -835,12 +830,10 @@ sub basic_get_fact {
     }
 }
 
-sub _metaphone_matches {
-    my ($self, $metaphone, $subject) = @_;
+sub _metaphone_matches($self, $metaphone, $subject, $server, $namespace) {
     my $dbh = $self->dbh;
 
-# TODO this needs to be rewritten to do an edit distance based on the metaphone columns, rather than a direct comparison
-#XXX HACK WARNING: not really a hack, but something to document, the inner query here seems to work fine on sqlite, but i suspect on other databases it might need an ORDER BY factoid_id clause to enforce that it picks the last entry in the database
+        # TODO this should be using the trigram stuff once it's ready
     my $rows = $dbh->selectall_arrayref(
 "SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ' OR f.predicate = '') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 AND score < 200 ORDER BY score ASC;",
         undef, $metaphone
