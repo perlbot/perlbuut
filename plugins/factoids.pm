@@ -104,7 +104,20 @@ sub get_conf_for_channel ($self, $said) {
 
     my $result = $dbh->selectrow_hashref(qq{
       SELECT * FROM factoid_config WHERE server = ? AND namespace = ? LIMIT 1
-    }, {}, $server, $name);
+    }, {}, $server, $namespace);
+
+    my $conf = {
+      server => '',
+      namespace => '',
+      alias_server => '',
+      alias_namespace => '',
+      parent_server => undef,
+      parent_namespace => undef,
+      recursive => 0,
+      command_prefix => undef,
+
+      %{$result//{}},
+    };
 
     return $conf;
 }
@@ -151,7 +164,7 @@ sub command ($self, $_said, $pm) {
         $said->{channel} = "##NULL" if $said->{channel} eq '*irc_msg';
     }
     
-    if ($body =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
+    if ($said->{body} =~ /^\s*(?<channel>#\S+)\s+(?<fact>.*)$/) {
         $said->{channel} = $+{channel};
         $said->{body} = $+{fact};
     }
@@ -308,7 +321,6 @@ sub store_factoid ($self, $said) {
 }
 
 sub _insert_factoid ($self, $author, $subject, $copula, $predicate, $compose_macro, $protected, $server, $namespace) {
-    my = @_;
     my $dbh = $self->dbh;
 
     warn "Attempting to insert factoid: type $compose_macro";
@@ -410,7 +422,7 @@ sub _fact_literal_format($r) {
     ($r->{protected} ? "P:" : "") . ("", "macro ", "func ")[$r->{compose_macro}] . "$r->{subject} $r->{copula} $r->{predicate}";
 }
 
-sub get_fact_revisions ($self, $subject, $name) {
+sub get_fact_revisions ($self, $subject, $name, $said) {
     my $dbh = $self->dbh;
 
     my ($server, $namespace) = $self->get_namespace($said);
@@ -431,8 +443,7 @@ sub get_fact_revisions ($self, $subject, $name) {
     return $ret_string;
 }
 
-sub get_fact_literal ($self, $subject, $name) {
-
+sub get_fact_literal ($self, $subject, $name, $said) {
     my ($server, $namespace) = $self->get_namespace($said);
     my $fact = $self->_db_get_fact(_clean_subject($subject), $name, $server, $namespace);
 
@@ -571,7 +582,7 @@ sub get_fact_learn ($self, $body, $name, $said, $subject, $predicate) {
     return "Stored $subject as $predicate";
 }
 
-sub get_fact_search ($self, $body, $name) {
+sub get_fact_search ($self, $body, $name, $said) {
 
     # TODO replace this with FTS
 
