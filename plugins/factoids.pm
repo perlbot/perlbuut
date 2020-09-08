@@ -188,9 +188,10 @@ sub sub_command ($self, $said, $pm) {
 
     my $fact_string;                        # used to capture return values
 
-    if (!$call_only && $subject =~ s/^\s*($commands_re)\s+//) {
+    warn "Checking: $subject\n";
 
-        #i lost the object oriented calling here, but i don't care too much, BECAUSE this avoids using strings for the calling, i might change that.
+    if (!$call_only && $subject =~ s/^\s*($commands_re)\s+//) {
+      warn "COMMAND RE $1: $subject, $said->{name}\n";
         $fact_string =
           $commandhash{$1}->($self, $subject, $said->{name}, $said);
     } elsif (($subject =~ m{\w\s*=~\s*s /.+ /  .* /[gi]*\s*$}ix)
@@ -209,8 +210,11 @@ sub sub_command ($self, $said, $pm) {
         $fact_string = "@ret" if ($ret[0] =~ /^insuff/i);
         $fact_string = "Stored @ret";
     } else {
+      warn "INSIDE FACT HANDLE: $subject, $said->{name}, $call_only\n";
         $fact_string = $self->get_fact($pm, $said, $subject, $said->{name}, $call_only);
     }
+
+    warn "got fact: $fact_string\n";
 
     if (defined $fact_string) {
         return ('handled', $fact_string);
@@ -561,10 +565,12 @@ sub get_fact_revert ($self, $subject, $name, $said) {
     return "Reverted $fact_rev->{subject} to revision $rev_id";
 }
 
-sub get_fact_learn ($self, $body, $name, $said, $subject, $predicate) {
+sub get_fact_learn ($self, $body, $name, $said, $subject=undef, $predicate=undef) {
 
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
     my ($server,      $namespace)      = $self->get_namespace($said);
+
+   print STDERR Dumper($said, $body, $name, $subject, $predicate);
 
     return if ($said->{nolearn});
 
@@ -572,12 +578,14 @@ sub get_fact_learn ($self, $body, $name, $said, $subject, $predicate) {
     ($subject, $predicate) = split /\s+as\s+/, $body, 2
       unless ($subject && $predicate);
 
+      print STDERR "trying to check perms\n";
     #XXX check permissions here
     return "Insufficient permissions for changing protected factoid [$subject]"
       if (!$self->_db_check_perm($subject, $said));
 
+    print STDERR "Trying to set\n";
     #my @ret = $self->store_factoid( $name, $said->{body} );
-    $self->_insert_factoid($name, $subject, 'is', $predicate, 0, $self->_db_get_protect($subject), $aliasserver, $aliasnamespace);
+    $self->_insert_factoid($name, $subject, 'is', $predicate, 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace);
 
     return "Stored $subject as $predicate";
 }
@@ -643,6 +651,7 @@ sub get_fact ($self, $pm, $said, $subject, $name, $call_only) {
 sub _db_check_perm ($self, $subj, $said) {
     my ($server, $namespace) = $self->get_namespace($said);
 
+    print STDERR "inside check perm\n";
     my $isprot = $self->_db_get_protect($subj, $server, $namespace);
 
     warn "Checking permissions of [$subj] for [$said->{name}]";
@@ -664,10 +673,7 @@ sub _db_check_perm ($self, $subj, $said) {
 
 #get the status of the protection bit
 sub _db_get_protect ($self, $subj, $server, $namespace) {
-
-    # TODO switch to new CTE query
-
-    $subj = _clean_subject($subj, 1);
+    $subj = _clean_subject($subj);
 
     my $dbh  = $self->dbh;
     my $prot = (
@@ -744,6 +750,8 @@ SELECT * FROM get_latest_factoid WHERE NOT deleted ORDER BY depth ASC, factoid_i
         $subj,
     );
 
+    warn Dumper("fact is:", $fact);
+
     if ($func && (!$fact->{compose_macro})) {
         return undef;
     } else {
@@ -759,8 +767,10 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
     $key = _clean_subject($subject);
 
     if (!$call_only) {
-        $fact = $self->_db_get_fact($key, $name, $server, $namespace);
+        $fact = $self->_db_get_fact($key, 0, $server, $namespace);
     }
+
+    warn "fact is: $fact\n";
 
     # Attempt to determine if our subject matches a previously defined
     # 'macro' or 'func' type factoid.
