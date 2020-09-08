@@ -73,7 +73,7 @@ sub dbh($self) {
     }
 
     my $dbh = $self->{dbh} =
-      DBI->connect("dbi:Pg:dbname=$dbname", $dbuser, $dbpass, { RaiseError => 1, PrintError => 0 });
+      DBI->connect("dbi:Pg:dbname=$dbname;host=192.168.32.1", $dbuser, $dbpass, { RaiseError => 1, PrintError => 0 });
 
     #    DBD::SQLite::BundledExtensions->load_spellfix($dbh);
 
@@ -83,7 +83,7 @@ sub dbh($self) {
 sub get_namespace($self, $said) {
     my ($server, $channel) = $said->@{qw/server channel/};
 
-    $server = s/^.*?([^\.]\.[^\.]+)$/$1/;
+    $server =~ s/^.*?([^\.]+\.[^\.]+)$/$1/;
 
     return ($server, $channel);
 }
@@ -100,10 +100,10 @@ sub get_alias_namespace($self, $said) {
 sub get_conf_for_channel ($self, $said) {
     my ($server, $namespace) = $self->get_namespace($said);
 
-    my $dbh = $self->{dbh};
+    my $dbh = $self->dbh;
 
     my $result = $dbh->selectrow_hashref(qq{
-      SELECT * FROM factoid_config WHERE server = ? AND namespace = ? LIMIT 1
+      SELECT * FROM public.factoid_config WHERE server = ? AND namespace = ? LIMIT 1
     }, {}, $server, $namespace);
 
     my $conf = {
@@ -176,7 +176,7 @@ sub command ($self, $_said, $pm) {
     return ($handled, $fact_out);
 }
 
-sub sub_command ($self, $said, $pm, $realchannel, $realserver) {
+sub sub_command ($self, $said, $pm) {
     return unless $said->{body} =~ /\S/;    #Try to prevent "false positives"
 
     my $call_only = $said->{command_match} eq "call";
@@ -199,17 +199,17 @@ sub sub_command ($self, $said, $pm, $realchannel, $realserver) {
         || ($subject =~ m{\w\s*=~\s*s <.+ > <.* >[gi]*\s*$}ix)
         || ($subject =~ m{\w\s*=~\s*s\(.+\)\(.*\)[gi]*\s*$}ix))
     {
-        $fact_string = $self->get_fact_substitute($subject, $said->{name}, $said, $realchannel, $realserver);
+        $fact_string = $self->get_fact_substitute($subject, $said->{name}, $said);
     } elsif (!$call_only and $subject =~ /\s+$COPULA_RE\s+/) {
         return if $said->{nolearn};
-        my @ret = $self->store_factoid($said, $realchannel, $realserver);
+        my @ret = $self->store_factoid($said);
 
         $fact_string = "Failed to store $said->{body}" unless @ret;
 
         $fact_string = "@ret" if ($ret[0] =~ /^insuff/i);
         $fact_string = "Stored @ret";
     } else {
-        $fact_string = $self->get_fact($pm, $said, $subject, $said->{name}, $call_only, $realchannel, $realserver);
+        $fact_string = $self->get_fact($pm, $said, $subject, $said->{name}, $call_only);
     }
 
     if (defined $fact_string) {
@@ -221,7 +221,7 @@ sub sub_command ($self, $said, $pm, $realchannel, $realserver) {
 
 # Handler code stolen from the old nfacts plugin
 sub handle ($self, $said, $pm) {
-    my $conf = $self->get_conf_for_channel($pm, $said->{server}, $said->{channel});
+    my $conf = $self->get_conf_for_channel($said);
 
     $said->{body} =~ s/^\s*(what|who|where|how|when|why)\s+($COPULA_RE)\s+(?<fact>.*?)\??\s*$/$+{fact}/i;
 
@@ -769,7 +769,7 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
     for my $variant (0, 1) {
         if (!$fact) {
             ($key, $arg) = _clean_subject_func($subject, $variant);
-            $fact = $self->_db_get_fact($key, $name, 1, $server, $namespace);
+            $fact = $self->_db_get_fact($key, 1, $server, $namespace);
         }
     }
 
@@ -803,7 +803,7 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
             return $self->basic_get_fact($pm, $said, $newsubject, $name, $call_only);
         }
 
-        my $metaphone = Metaphone(_clean_subject($subject, 1));
+        my $metaphone = Metaphone(_clean_subject($subject));
 
         my $matches = $self->_metaphone_matches($metaphone, $subject, $server, $namespace);
 
@@ -819,6 +819,8 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
 
 sub _metaphone_matches($self, $metaphone, $subject, $server, $namespace) {
     my $dbh = $self->dbh;
+
+    return [];
 
         # TODO this should be using the trigram stuff once it's ready
     my $rows = $dbh->selectall_arrayref(

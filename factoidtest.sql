@@ -19,7 +19,7 @@ get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modif
       INNER JOIN factoid_lookup_order lo 
         ON f.generated_server = lo.gen_server
         AND f.generated_namespace = lo.gen_namespace
-      WHERE original_subject = 'hi' -- PLACEHOLDER TARGET
+      WHERE original_subject = 'hello' -- PLACEHOLDER TARGET
       ORDER BY depth ASC, factoid_id DESC
 )
 SELECT * FROM get_latest_factoid WHERE NOT deleted ORDER BY depth ASC, factoid_id DESC LIMIT 1;
