@@ -12,6 +12,9 @@ ALTER TABLE public.factoid ADD COLUMN deleted boolean DEFAULT false;
 ALTER TABLE public.factoid ADD COLUMN namespace text;
 ALTER TABLE public.factoid ADD COLUMN server text;
 ALTER TABLE public.factoid ADD COLUMN last_rendered text;
+-- this actually lets me use a multi-column index that cuts the cost in half.
+ALTER TABLE public.factoid ADD COLUMN generated_server text GENERATED ALWAYS AS (COALESCE(server, '')) STORED;
+ALTER TABLE public.factoid ADD COLUMN generated_namespace text GENERATED ALWAYS AS (COALESCE(namespace, '')) STORED;
 
 UPDATE public.factoid SET namespace=split_part(original_subject, E'\034', 3), server=split_part(original_subject, E'\034', 2);
 UPDATE public.factoid SET namespace=NULL WHERE namespace = '';
@@ -34,8 +37,10 @@ CREATE TABLE public.factoid_config (
 -- Should we do the recursive lookup into the parent_*, this is needed because NULL is a valid value for parent_*
    recursive boolean DEFAULT false,
    command_prefix text,
+   generated_server text GENERATED ALWAYS AS (COALESCE(alias_server, server)) STORED,
+   generated_namespace text GENERATED ALWAYS AS (COALESCE(alias_namespace, namespace)) STORED,
 
-   CONSTRAINT unique_config UNIQUE (server, namespace)
+   PRIMARY KEY (server, namespace)
 );
 
 INSERT INTO public.factoid_config (server, namespace, alias_server, alias_namespace, recursive, command_prefix) 
@@ -46,6 +51,7 @@ INSERT INTO public.factoid_config (server, namespace, alias_server, alias_namesp
 
 CREATE INDEX IF NOT EXISTS factoid_original_subject_lookup_idx ON public.factoid (original_subject);
 CREATE INDEX IF NOT EXISTS factoid_original_subject_trigram_idx ON public.factoid USING GIN(original_subject gin_trgm_ops);
-
+CREATE INDEX IF NOT EXISTS factoid_generated_server_lookup_idx ON public.factoid (generated_server, generated_namespace);
+CREATE INDEX IF NOT EXISTS factoid_config_generated_idx ON public.factoid_config (generated_server, generated_namespace);
 
 COMMIT;
