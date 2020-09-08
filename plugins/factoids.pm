@@ -575,8 +575,11 @@ sub get_fact_learn ($self, $body, $name, $said, $subject=undef, $predicate=undef
     return if ($said->{nolearn});
 
     $body =~ s/^\s*learn\s+//;
-    ($subject, $predicate) = split /\s+as\s+/, $body, 2
-      unless ($subject && $predicate);
+
+    my $copula = "is";
+    unless ($subject && $predicate) {
+      ($subject, $copula, $predicate) = $body =~ /^\s*(.*?)\s+(as|$COPULA_RE)\s+(.*)\s*$/ig;
+    }
 
       print STDERR "trying to check perms\n";
     #XXX check permissions here
@@ -585,7 +588,7 @@ sub get_fact_learn ($self, $body, $name, $said, $subject=undef, $predicate=undef
 
     print STDERR "Trying to set\n";
     #my @ret = $self->store_factoid( $name, $said->{body} );
-    $self->_insert_factoid($name, $subject, 'is', $predicate, 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace);
+    $self->_insert_factoid($name, $subject, $copula, $predicate, 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace);
 
     return "Stored $subject as $predicate";
 }
