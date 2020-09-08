@@ -4,10 +4,20 @@ BEGIN;
 DROP TABLE IF EXISTS public.factoid;
 CREATE TABLE public.factoid AS (SELECT * FROM sqlite.factoid);
 
+CREATE SEQUENCE IF NOT EXISTS factoid_factoid_id_seq AS bigint OWNED BY public.factoid.factoid_id;
+SELECT setval('factoid_factoid_id_seq', (select max(factoid_id)+1 from public.factoid));
+ALTER TABLE public.factoid ALTER COLUMN factoid_id SET DEFAULT nextval('factoid_factoid_id_seq');
+ALTER TABLE public.factoid ALTER COLUMN factoid_id SET NOT NULL;
+ALTER TABLE public.factoid ADD PRIMARY KEY (factoid_id);
+
 ALTER TABLE public.factoid ALTER COLUMN original_subject TYPE text;
+ALTER TABLE public.factoid ALTER COLUMN original_subject SET NOT NULL;
 ALTER TABLE public.factoid ALTER COLUMN subject TYPE text;
+ALTER TABLE public.factoid ALTER COLUMN subject SET NOT NULL;
 ALTER TABLE public.factoid ALTER COLUMN copula TYPE text;
+ALTER TABLE public.factoid ALTER COLUMN copula SET NOT NULL;
 ALTER TABLE public.factoid ALTER COLUMN author TYPE text;
+ALTER TABLE public.factoid ALTER COLUMN author SET NOT NULL;
 ALTER TABLE public.factoid ADD COLUMN deleted boolean DEFAULT false;
 ALTER TABLE public.factoid ADD COLUMN namespace text;
 ALTER TABLE public.factoid ADD COLUMN server text;
