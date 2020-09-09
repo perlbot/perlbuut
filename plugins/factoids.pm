@@ -623,7 +623,7 @@ sub get_fact_learn ($self, $body, $name, $said, $subject=undef, $predicate=undef
 }
 
 sub get_fact_search ($self, $body, $name, $said) {
-
+    print STDERR "Inside search\n";
     # TODO replace this with FTS
 
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
@@ -634,38 +634,86 @@ sub get_fact_search ($self, $body, $name, $said) {
     # TODO queries need the CTE
 
     my $results;
+    print STDERR "Checking body for regex\n";
 
     if ($body =~ m|^\s*m?/(.*)/\s*$|) {
         my $search = $1;
+        print STDERR "Got regex, $search\n";
 
         #XXX: need to also search contents of factoids TODO
-        $results = $self->dbh->selectall_arrayref(
-            "SELECT subject,copula,predicate 
-            FROM factoid 
-            JOIN (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) AS subquery ON subquery.factoid_id = factoid.factoid_id 
-            WHERE subject regexp ? OR predicate regexp ?",
+        $results = $self->dbh->selectall_arrayref(" 
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+),
+factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT * FROM factoid_lookup_order_inner
+  UNION ALL
+  SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
+),
+get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace) AS (
+      SELECT DISTINCT ON(lo.depth) lo.depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, f.deleted, f.server, f.namespace
+      FROM factoid f
+      INNER JOIN factoid_lookup_order lo 
+        ON f.generated_server = lo.gen_server
+        AND f.generated_namespace = lo.gen_namespace
+      WHERE original_subject ~* ? OR predicate ~* ?
+      ORDER BY depth ASC, factoid_id DESC
+)
+SELECT DISTINCT ON(original_subject) * FROM get_latest_factoid WHERE NOT deleted ORDER BY original_subject ASC, depth ASC, factoid_id DESC",
             { Slice => {} },
+            $namespace, $server,
             $search, $search,
         );
     } else {
-
+        print STDERR "No regex found, searching $body\n";
         #XXX: need to also search contents of factoids TODO
-        $results = $self->dbh->selectall_arrayref(
-            "SELECT subject,copula,predicate 
-            FROM factoid 
-            JOIN (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) AS subquery ON subquery.factoid_id = factoid.factoid_id 
-            WHERE subject like ? OR predicate like ?",
+        $results = $self->dbh->selectall_arrayref("
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+),
+factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT * FROM factoid_lookup_order_inner
+  UNION ALL
+  SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
+),
+get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace) AS (
+      SELECT DISTINCT ON(lo.depth) lo.depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, f.deleted, f.server, f.namespace
+      FROM factoid f
+      INNER JOIN factoid_lookup_order lo 
+        ON f.generated_server = lo.gen_server
+        AND f.generated_namespace = lo.gen_namespace
+      WHERE original_subject ILIKE ? OR predicate ILIKE ?
+      ORDER BY depth ASC, factoid_id DESC
+)
+SELECT DISTINCT ON(original_subject) * FROM get_latest_factoid WHERE NOT deleted ORDER BY original_subject ASC, depth ASC, factoid_id DESC",
             { Slice => {} },
+            $namespace, $server,
             "%$body%", "%$body%",
         );
     }
+
+    print STDERR "Got results: ".Dumper($results);
 
     if ($results and @$results) {
         my $ret_string;
         for (@$results) {
 
             #i want a better string here, i'll probably go with just the subject, XXX TODO
-            $ret_string .= "[" . _fact_literal_format($_) . "]\n"
+            $ret_string .= "[" . _fact_literal_format($_, $aliasserver, $aliasnamespace) . "]\n"
               if ($_->{predicate} !~ /^\s*$/);
         }
 
