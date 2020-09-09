@@ -56,9 +56,9 @@ sub display_page {
 	
 	warn "Display Page Activating: $req - $resp - $output\n";
 
-  if ($said->{addressed} || $output !~ /^\s*$/) {
-  $output = sprintf '@%s %s', $said->{name}, $output;
-  }
+#  if ($said->{addressed} || $output !~ /^\s*$/) {
+#  $output = sprintf '@%s %s', $said->{name}, $output;
+#  }
 
 	$resp->code(RC_OK);
 	$resp->content_type("application/json");
@@ -87,7 +87,11 @@ sub handle_request {
 
   if ($input =~ /^\@?perlbot/i) {
     $addressed = 1;
-    $input =~ s/^\@?perlbot\b//i;
+    $input =~ s/^\@?perlbot\b[:,;]?\s*//i;
+  }
+
+  if ($data->{addressed}) {
+    $addressed = 1;
   }
 
 	# This is obviously silly but I'm unable to figure out
@@ -103,7 +107,7 @@ sub handle_request {
 		ircname => $name // "ERROR", 
 		host => '*special', #TODO fix this to be an actual hostname!
 		                    # Make sure it isn't messed up by the alias feature..
-		server => '*special',
+		server => $data->{server} // '*special',
     nolearn => 1,
 	};
 	
@@ -119,7 +123,8 @@ sub plugin_output {
 
   my $name = $said->{name};
 
-	$output =~ s/^\s*$name:/\@$name/; # Clear the response name
+  $said->{should_mention} = $output =~ s/^\s*$name://; # Clear the response name
+  $said->{should_mention} += 0+$said->{addressed};
 
 	my $resp = delete $RESP_MAP{ $said->{pci_id} };
 

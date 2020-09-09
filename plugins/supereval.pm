@@ -84,12 +84,12 @@ sub new {
   my $perlcommand_re = $perlcommand_ra->re;
 
   my $othercommand_ra = Regexp::Assemble->new();
-  $othercommand_ra->add(qw/jseval rkeval coboleval cbeval basheval r concise/);
+  $othercommand_ra->add(qw/jseval rkeval coboleval cbeval basheval r concise eval/);
   my $othercommand_re = $othercommand_ra->re;
 
   my $newversion_re = Regexp::Optimizer->new->optimize($version_re);
 
-  my $complete_re = qr/${strict_re}${perlcommand_re}${newversion_re}${suffix_re}|${othercommand_re}/;
+  my $complete_re = qr/^(?:${strict_re}${perlcommand_re}${newversion_re}|${othercommand_re})${suffix_re}/;
 
   $self->{alias_re} = $complete_re;
 
@@ -110,7 +110,8 @@ sub command {
   my $pbflag = ($postflags =~ /pb/i);
   $type =~ s/\Q$postflags\E$//;
 	$type =~ s/^\s*(\w+?)?eval(.*?)?/$1$2/i;
-	warn "Initial type: $type\n";
+  use JSON::MaybeXS qw/encode_json/;
+	warn "Initial type: $type $command ".encode_json($said)."\n";
 
   my %translations = (
     concise => 'concise',
@@ -172,6 +173,8 @@ sub command {
   if ($command eq 'r' && (!$said->{addressed} && !$said->{nested} && ($said->{channel} ne "#perl6" && $said->{channel} eq '#raku'))) {
     return ("handled", "");
   }
+
+  warn "CODE CHECK $code\n";
 
   if ($code !~ /\S/) {
     return ("handled", "");
@@ -305,6 +308,7 @@ sub command {
       }
     }
   }
+
 
 	return( 'handled', $resultstr);
 }

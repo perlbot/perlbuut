@@ -81,18 +81,21 @@ sub get_plugin {
 	$filtered = $self->_filter_plugin_list($said, $filtered) if ($said);
 
 	for my $plugin ( @{$filtered} ) {
+    warn "Checking plugin: $plugin->{name}\n";
 		if( $name eq $plugin->{name} ) { 
 			return $plugin;
 		}
 
-    if ( $plugin->{alias_re} ) {
-      return $plugin if $name =~ $plugin->{alias_re};
-    } elsif( $plugin->{aliases} ) {
+    if( $plugin->{aliases} ) {
 			for my $alias ( @{ $plugin->{aliases} } ) {
 				return $plugin if $name eq $alias;
 			}
 		}
-	}
+    if ( $plugin->{alias_re} ) {
+      warn "re: $plugin->{alias_re}\n";
+      return $plugin if $name =~ /^\s*$plugin->{alias_re}/;
+    }
+  }
 
 	return;
 }
@@ -383,7 +386,8 @@ sub _parse_for_commands {
 
 			my $found_command = $+{command};
 			my $args = $+{args};
-			my $command = $self->get_plugin($found_command, $said); #$commands->{ $found_command };
+			my $command = #$self->get_plugin($found_command, $said); 
+      $commands->{ $found_command } // $self->get_plugin($found_command, $said);
 
 			warn "found $found_command - $args\n";
 
