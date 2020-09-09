@@ -13,19 +13,18 @@ factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, p
   UNION ALL
   SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
 ),
-get_factoid_trigram (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace, similarity) AS (
-      SELECT DISTINCT ON (lo.depth, original_subject) lo.depth, factoid_id, subject, 
+get_factoid_search (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace, full_document_tsvector, last_rendered) AS (
+      SELECT DISTINCT ON (original_subject) lo.depth, factoid_id, subject, 
         copula, predicate, author, modified_time, compose_macro, protected, 
-        original_subject, f.deleted, f.server, f.namespace, 
-        (difference(original_subject, 'hillss') ::float + similarity('hillss', original_subject)) / greatest(length('hillss'), length(original_subject))-- PLACEHOLDER TARGET
+        original_subject, f.deleted, f.server, f.namespace, f.full_document_tsvector, f.last_rendered
       FROM factoid f
       INNER JOIN factoid_lookup_order lo 
         ON f.generated_server = lo.gen_server
         AND f.generated_namespace = lo.gen_namespace
-      WHERE difference(original_subject, 'hillss') ::float + similarity('hillss', original_subject) > 0.01 -- PLACEHOLDER TARGET
-      ORDER BY depth ASC, original_subject ASC, factoid_id DESC
+      WHERE NOT deleted
+      ORDER BY original_subject ASC, depth ASC, factoid_id DESC
 )
-SELECT DISTINCT ON (similarity, original_subject) similarity, factoid_id, original_subject FROM get_factoid_trigram WHERE NOT deleted ORDER BY similarity DESC, original_subject, depth, factoid_id DESC LIMIT 10;
+SELECT ts_rank(full_document_tsvector, websearch_to_tsquery('"hello there"')) AS rank, factoid_id, original_subject, copula, last_rendered, compose_macro FROM get_factoid_search ORDER BY 1 DESC LIMIT 10;
 
 
 
