@@ -11,6 +11,8 @@ modules.lst
 *.log
 jail.ext4
 var/asn.db
+var/*.db
+var/cache-fastmmap
 langs/
 *.swp
 *.LOG
