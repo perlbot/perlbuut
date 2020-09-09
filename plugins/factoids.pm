@@ -41,6 +41,7 @@ my %commandhash = (
 
     #	""          => \&get_fact, #don't ever add the default like this, it'll cause issues! i plan on changing that!
     "forget"     => \&get_fact_forget,
+    "delete"     => \&get_fact_delete,
     "learn"      => \&get_fact_learn,
     "relearn"    => \&get_fact_learn,
     "literal"    => \&get_fact_literal,
@@ -221,7 +222,7 @@ sub handle ($self, $said, $pm) {
 
     $said->{body} =~ s/^\s*(what|who|where|how|when|why)\s+($COPULA_RE)\s+(?<fact>.*?)\??\s*$/$+{fact}/i;
 
-    my $prefix = $conf->{prefix_command};
+    my $prefix = $conf->{command_prefix};
     return unless $prefix;
 
     # TODO make this channel configurable and make it work properly to learn shit with colors later.
@@ -316,7 +317,7 @@ sub store_factoid ($self, $said) {
     return ($subject, $copula, $predicate);
 }
 
-sub _insert_factoid ($self, $author, $subject, $copula, $predicate, $compose_macro, $protected, $server, $namespace) {
+sub _insert_factoid ($self, $author, $subject, $copula, $predicate, $compose_macro, $protected, $server, $namespace, $deleted=0) {
     my $dbh = $self->dbh;
 
     warn "Attempting to insert factoid: type $compose_macro";
@@ -335,8 +336,8 @@ sub _insert_factoid ($self, $author, $subject, $copula, $predicate, $compose_mac
 
     $dbh->do(
         "INSERT INTO factoid 
-		(original_subject,subject,copula,predicate,author,modified_time,metaphone,compose_macro,protected, namespace, server)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+		(original_subject,subject,copula,predicate,author,modified_time,metaphone,compose_macro,protected, namespace, server, deleted)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         undef,
         $key,
         $subject,
@@ -348,7 +349,8 @@ sub _insert_factoid ($self, $author, $subject, $copula, $predicate, $compose_mac
         $compose_macro || 0,
         $protected     || 0,
         $namespace,
-        $server
+        $server,
+        $deleted
     );
 
     return 1;
@@ -409,6 +411,21 @@ sub get_fact_forget ($self, $subject, $name, $said) {
     $self->_insert_factoid($name, $subject, "is", " ", 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace);
 
     return "Forgot $subject";
+}
+
+sub get_fact_delete ($self, $subject, $name, $said) {
+    my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+    my ($server,      $namespace)      = $self->get_namespace($said);
+
+    warn "===TRYING TO DELETE [$subject] [$name]\n";
+
+    #XXX check permissions here
+    return "Insufficient permissions for deleting protected factoid [$subject]"
+      if (!$self->_db_check_perm($subject, $said));
+
+    $self->_insert_factoid($name, $subject, "is", " ", 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace, 1);
+
+    return "Deleted $subject from $server:$namespace";
 }
 
 sub _fact_literal_format($r, $aliasserver, $aliasnamespace) {
