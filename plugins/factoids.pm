@@ -936,8 +936,9 @@ get_factoid_trigram (depth, factoid_id, subject, copula, predicate, author, modi
         AND f.generated_namespace = lo.gen_namespace
       WHERE (difference(original_subject, ?) ::float + similarity(?, original_subject)) / greatest(length(?), length(original_subject)) > ?
       ORDER BY depth ASC, original_subject ASC, factoid_id DESC
-)
-SELECT DISTINCT ON (similarity, original_subject) similarity, factoid_id, original_subject FROM get_factoid_trigram WHERE NOT deleted ORDER BY similarity DESC, original_subject, depth, factoid_id DESC LIMIT 10
+),
+folddown AS (SELECT DISTINCT ON (similarity, original_subject) similarity, factoid_id, original_subject, predicate FROM get_factoid_trigram WHERE NOT deleted ORDER BY similarity DESC, original_subject, depth, factoid_id DESC)
+SELECT * FROM folddown WHERE predicate ~ '\\S' AND predicate IS NOT NULL LIMIT 10
       ", undef, 
 $namespace, $server,
 $subject, $subject, $subject, $subject, $subject, $subject, $threshold
