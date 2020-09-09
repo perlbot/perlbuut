@@ -13,17 +13,19 @@ factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, p
   UNION ALL
   SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
 ),
-get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace) AS (
-      SELECT DISTINCT ON(lo.depth) lo.depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, f.deleted, f.server, f.namespace
+get_factoid_trigram (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace, similarity) AS (
+      SELECT DISTINCT ON (lo.depth, original_subject) lo.depth, factoid_id, subject, 
+        copula, predicate, author, modified_time, compose_macro, protected, 
+        original_subject, f.deleted, f.server, f.namespace, 
+        (difference(original_subject, 'hillss') ::float + similarity('hillss', original_subject)) / greatest(length('hillss'), length(original_subject))-- PLACEHOLDER TARGET
       FROM factoid f
       INNER JOIN factoid_lookup_order lo 
         ON f.generated_server = lo.gen_server
         AND f.generated_namespace = lo.gen_namespace
-      WHERE original_subject = 'hello' -- PLACEHOLDER TARGET
-      ORDER BY depth ASC, factoid_id DESC
+      WHERE difference(original_subject, 'hillss') ::float + similarity('hillss', original_subject) > 0.01 -- PLACEHOLDER TARGET
+      ORDER BY depth ASC, original_subject ASC, factoid_id DESC
 )
-SELECT * FROM get_latest_factoid WHERE NOT deleted ORDER BY depth ASC, factoid_id DESC LIMIT 1;
---SELECT * FROM factoid_lookup_order;
+SELECT DISTINCT ON (similarity, original_subject) similarity, factoid_id, original_subject FROM get_factoid_trigram WHERE NOT deleted ORDER BY similarity DESC, original_subject, depth, factoid_id DESC LIMIT 10;
 
 
 

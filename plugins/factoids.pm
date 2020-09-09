@@ -75,8 +75,6 @@ sub dbh($self) {
     my $dbh = $self->{dbh} =
       DBI->connect("dbi:Pg:dbname=$dbname;host=192.168.32.1", $dbuser, $dbpass, { RaiseError => 1, PrintError => 0 });
 
-    #    DBD::SQLite::BundledExtensions->load_spellfix($dbh);
-
     return $dbh;
 }
 
@@ -91,8 +89,8 @@ sub get_namespace($self, $said) {
 sub get_alias_namespace($self, $said) {
     my $conf = $self->get_conf_for_channel($said);
 
-    my $server    = $conf->{alias_server} // $conf->{server}; 
-    my $namespace = $conf->{alias_namespace} // $conf->{namespace}; 
+    my $server    = $conf->{alias_server}; 
+    my $namespace = $conf->{alias_namespace}; 
 
     return ($server, $namespace);
 }
@@ -188,10 +186,7 @@ sub sub_command ($self, $said, $pm) {
 
     my $fact_string;                        # used to capture return values
 
-    warn "Checking: $subject\n";
-
     if (!$call_only && $subject =~ s/^\s*($commands_re)\s+//) {
-      warn "COMMAND RE $1: $subject, $said->{name}\n";
         $fact_string =
           $commandhash{$1}->($self, $subject, $said->{name}, $said);
     } elsif (($subject =~ m{\w\s*=~\s*s /.+ /  .* /[gi]*\s*$}ix)
@@ -210,11 +205,8 @@ sub sub_command ($self, $said, $pm) {
         $fact_string = "@ret" if ($ret[0] =~ /^insuff/i);
         $fact_string = "Stored @ret";
     } else {
-      warn "INSIDE FACT HANDLE: $subject, $said->{name}, $call_only\n";
         $fact_string = $self->get_fact($pm, $said, $subject, $said->{name}, $call_only);
     }
-
-    warn "got fact: $fact_string\n";
 
     if (defined $fact_string) {
         return ('handled', $fact_string);
@@ -313,7 +305,7 @@ sub store_factoid ($self, $said) {
     if    ($subject =~ s/^\s*\@?macro\b\s*//) {$compose_macro = 1;}
     elsif ($subject =~ s/^\s*\@?func\b\s*//)  {$compose_macro = 2;}
     elsif ($predicate =~ s/^\s*also\s+//) {
-        my $fact = $self->_db_get_fact(_clean_subject($subject), $author, $server, $namespace);
+        my $fact = $self->_db_get_fact(_clean_subject($subject), 0, $server, $namespace);
 
         $predicate = $fact->{predicate} . " | " . $predicate;
     }
@@ -372,7 +364,7 @@ sub get_fact_protect ($self, $subject, $name, $said) {
     return "Insufficient permissions for protecting factoid [$subject]"
       if (!$self->_db_check_perm($subject, $said));
 
-    my $fact = $self->_db_get_fact(_clean_subject($subject), $name, $server, $namespace);
+    my $fact = $self->_db_get_fact(_clean_subject($subject), 0, $server, $namespace);
 
     if (defined($fact->{predicate})) {
         $self->_insert_factoid($name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 1, $aliasserver, $aliasnamespace);
@@ -393,7 +385,7 @@ sub get_fact_unprotect ($self, $subject, $name, $said) {
     return "Insufficient permissions for unprotecting factoid [$subject]"
       if (!$self->_db_check_perm($subject, $said));
 
-    my $fact = $self->_db_get_fact(_clean_subject($subject), $name, $server, $namespace);
+    my $fact = $self->_db_get_fact(_clean_subject($subject), 0, $server, $namespace);
 
     if (defined($fact->{predicate})) {
         $self->_insert_factoid($name, $subject, $fact->{copula}, $fact->{predicate}, $fact->{compose_macro}, 0, $aliasserver, $aliasnamespace);
@@ -419,39 +411,80 @@ sub get_fact_forget ($self, $subject, $name, $said) {
     return "Forgot $subject";
 }
 
-sub _fact_literal_format($r) {
-
+sub _fact_literal_format($r, $aliasserver, $aliasnamespace) {
+    $aliasserver ||= "*";
+    $aliasnamespace ||= "##NULL";
     # TODO make this express the parent namespace if present
     # <server:namespace>
-    ($r->{protected} ? "P:" : "") . ("", "macro ", "func ")[$r->{compose_macro}] . "$r->{subject} $r->{copula} $r->{predicate}";
+    #
+    
+    (($aliasserver eq $r->{server} && $aliasnamespace eq $r->{namespace}) ? "" : sprintf("<%s:%s> ", $r->{generated_server}||"*", $r->{generated_namespace}||"##NULL")) 
+    . ($r->{deleted} ? "[REDACTED]" :
+      (
+        ($r->{protected} ? "P:" : "") 
+      . ("", "macro ", "func ")[$r->{compose_macro}] 
+      . "$r->{subject} $r->{copula} $r->{predicate}"
+    ));
 }
 
 sub get_fact_revisions ($self, $subject, $name, $said) {
     my $dbh = $self->dbh;
 
     my ($server, $namespace) = $self->get_namespace($said);
+    my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
 
-    # TODO this query needs to be rewritten
-    my $revisions = $dbh->selectall_arrayref(
-        "SELECT factoid_id, subject, copula, predicate, author, compose_macro, protected, server, namespace 
-			FROM factoid
-			WHERE original_subject = ?
-			ORDER BY modified_time DESC
+    # TODO this query should use the deleted flag to figure out
+    # which depth lookup should be valid at any given time
+    # but that's a much more complicated query i don't want to make
+    # maybe just do it in perl later
+    my $revisions = $dbh->selectall_arrayref("
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+),
+factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT * FROM factoid_lookup_order_inner
+  UNION ALL
+  SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
+),
+get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace) AS (
+      SELECT lo.depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, f.deleted, f.server, f.namespace
+      FROM factoid f
+      INNER JOIN factoid_lookup_order lo 
+        ON f.generated_server = lo.gen_server
+        AND f.generated_namespace = lo.gen_namespace
+      WHERE original_subject = ?
+      ORDER BY depth ASC, factoid_id DESC
+)
+SELECT * FROM get_latest_factoid ORDER BY factoid_id DESC;
 		",    # newest revision first
         { Slice => {} },
+        $namespace, $server,
         _clean_subject($subject),
     );
 
-    my $ret_string = join " ", map {"[$_->{factoid_id} by $_->{author}: " . _fact_literal_format($_) . "]";} @$revisions;
+    my $ret_string = join " \n", map {"[$_->{factoid_id} by $_->{author}: " . _fact_literal_format($_, $aliasserver, $aliasnamespace) . "]";} @$revisions;
 
     return $ret_string;
 }
 
 sub get_fact_literal ($self, $subject, $name, $said) {
     my ($server, $namespace) = $self->get_namespace($said);
-    my $fact = $self->_db_get_fact(_clean_subject($subject), $name, $server, $namespace);
+    my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
 
-    return _fact_literal_format($fact);
+    print STDERR "literal parse: $subject, $name, $server, $namespace\n";
+    my $fact = $self->_db_get_fact(_clean_subject($subject), 0, $server, $namespace);
+    print STDERR "literal fact: ".Dumper($fact)."\n";
+
+    my $formatted = _fact_literal_format($fact, $aliasserver, $aliasnamespace);
+    print STDERR "formatted: $formatted\n";
+    return $formatted;
 }
 
 sub _fact_substitute ($self, $pred, $match, $subst, $flags) {
@@ -503,7 +536,7 @@ sub get_fact_substitute ($self, $subject, $name, $said) {
         my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
 
         # TODO does this need to be done via the ->get_fact() instead now?
-        my $fact = $self->_db_get_fact(_clean_subject($subject), $name, $server, $namespace);
+        my $fact = $self->_db_get_fact(_clean_subject($subject), 0, $server, $namespace);
 
         if ($fact && $fact->{predicate} =~ /\S/) {    #we've got a fact to operate on
             if ($match !~ /(?:\(\?\??\{)/) {          #ok, match has checked out to be "safe", this will likely be extended later
@@ -570,8 +603,6 @@ sub get_fact_learn ($self, $body, $name, $said, $subject=undef, $predicate=undef
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
     my ($server,      $namespace)      = $self->get_namespace($said);
 
-   print STDERR Dumper($said, $body, $name, $subject, $predicate);
-
     return if ($said->{nolearn});
 
     $body =~ s/^\s*learn\s+//;
@@ -581,12 +612,10 @@ sub get_fact_learn ($self, $body, $name, $said, $subject=undef, $predicate=undef
       ($subject, $copula, $predicate) = $body =~ /^\s*(.*?)\s+(as|$COPULA_RE)\s+(.*)\s*$/ig;
     }
 
-      print STDERR "trying to check perms\n";
     #XXX check permissions here
     return "Insufficient permissions for changing protected factoid [$subject]"
       if (!$self->_db_check_perm($subject, $said));
 
-    print STDERR "Trying to set\n";
     #my @ret = $self->store_factoid( $name, $said->{body} );
     $self->_insert_factoid($name, $subject, $copula, $predicate, 0, $self->_db_get_protect($subject, $server, $namespace), $aliasserver, $aliasnamespace);
 
@@ -753,8 +782,6 @@ SELECT * FROM get_latest_factoid WHERE NOT deleted ORDER BY depth ASC, factoid_i
         $subj,
     );
 
-    warn Dumper("fact is:", $fact);
-
     if ($func && (!$fact->{compose_macro})) {
         return undef;
     } else {
@@ -772,8 +799,6 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
     if (!$call_only) {
         $fact = $self->_db_get_fact($key, 0, $server, $namespace);
     }
-
-    warn "fact is: $fact\n";
 
     # Attempt to determine if our subject matches a previously defined
     # 'macro' or 'func' type factoid.
@@ -816,11 +841,10 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
             return $self->basic_get_fact($pm, $said, $newsubject, $name, $call_only);
         }
 
-        my $metaphone = Metaphone(_clean_subject($subject));
+        print STDERR "Got to here\n";
+        my $matches = $self->get_suggestions($key, $server, $namespace);
 
-        my $matches = $self->_metaphone_matches($metaphone, $subject, $server, $namespace);
-
-        push @{ $said->{metaphone_matches} }, @$matches;
+        push @{ $said->{suggestion_matches} }, @$matches;
 
         if (($matches and @$matches) && (!$said->{backdressed})) {
             return "No factoid found. Did you mean one of these: " . join " ", map "[$_]", @$matches;
@@ -830,28 +854,50 @@ sub basic_get_fact ($self, $pm, $said, $subject, $name, $call_only) {
     }
 }
 
-sub _metaphone_matches($self, $metaphone, $subject, $server, $namespace) {
+sub get_suggestions($self, $subject, $server, $namespace) {
     my $dbh = $self->dbh;
 
-    return [];
+    print STDERR "Running search for $subject\n";
+    my $threshold = 0.2;
 
-        # TODO this should be using the trigram stuff once it's ready
-    my $rows = $dbh->selectall_arrayref(
-"SELECT f.factoid_id, f.subject, f.predicate, f.metaphone, spellfix1_editdist(f.metaphone, ?) AS score FROM (SELECT max(factoid_id) AS factoid_id FROM factoid GROUP BY original_subject) as subquery JOIN factoid AS f USING (factoid_id) WHERE NOT (f.predicate = ' ' OR f.predicate = '') AND f.predicate IS NOT NULL AND length(f.metaphone) > 1 AND score < 200 ORDER BY score ASC;",
-        undef, $metaphone
+    # TODO this should be using the trigram stuff once it's ready
+    my $rows = $dbh->selectall_arrayref("
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+),
+factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT * FROM factoid_lookup_order_inner
+  UNION ALL
+  SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
+),
+get_factoid_trigram (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace, similarity) AS (
+      SELECT DISTINCT ON (lo.depth, original_subject) lo.depth, factoid_id, subject, 
+        copula, predicate, author, modified_time, compose_macro, protected, 
+        original_subject, f.deleted, f.server, f.namespace, 
+        (difference(original_subject, ?) ::float + similarity(?, original_subject)) / greatest(length(?), length(original_subject))
+      FROM factoid f
+      INNER JOIN factoid_lookup_order lo 
+        ON f.generated_server = lo.gen_server
+        AND f.generated_namespace = lo.gen_namespace
+      WHERE (difference(original_subject, ?) ::float + similarity(?, original_subject)) / greatest(length(?), length(original_subject)) > ?
+      ORDER BY depth ASC, original_subject ASC, factoid_id DESC
+)
+SELECT DISTINCT ON (similarity, original_subject) similarity, factoid_id, original_subject FROM get_factoid_trigram WHERE NOT deleted ORDER BY similarity DESC, original_subject, depth, factoid_id DESC LIMIT 10
+      ", undef, 
+$namespace, $server,
+$subject, $subject, $subject, $subject, $subject, $subject, $threshold
     );
+   
+    print STDERR Dumper($rows);
 
-    use Text::Levenshtein qw/distance/;    # only import it in this scope
-
-    my $threshold = int(max(4, min(10, 4 + length($subject) / 7)));
-    my @sorted =
-      map  {$_->[0]}
-      sort {$a->[1] <=> $b->[1]}
-      grep {$_->[1] < $threshold}
-      map  {[$_->[1], distance($subject, $_->[1])]}
-      grep {$_->[2] =~ /\S/} @$rows;
-
-    return [grep {$_} @sorted[0 .. 9]];
+    return [grep {$_} map {$_->[2]} @$rows ];
 }
 
 no warnings 'void';
