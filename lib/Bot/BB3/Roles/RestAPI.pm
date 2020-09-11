@@ -108,6 +108,7 @@ sub handle_request {
 		host => '*special', #TODO fix this to be an actual hostname!
 		                    # Make sure it isn't messed up by the alias feature..
 		server => $data->{server} // '*special',
+    in_my_chan => 1, # pretend users are always in my channels
     #    nolearn => 1,
 	};
 	
