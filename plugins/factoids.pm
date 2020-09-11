@@ -679,11 +679,11 @@ get_factoid_search (depth, factoid_id, subject, copula, predicate, author, modif
       WHERE NOT deleted
       ORDER BY original_subject ASC, depth ASC, factoid_id DESC
 )
-SELECT ts_rank(full_document_tsvector, websearch_to_tsquery(?)) AS rank, * FROM get_factoid_search ORDER BY 1 DESC LIMIT 10
+SELECT ts_rank(full_document_tsvector, websearch_to_tsquery('factoid', ?)) AS rank, * FROM get_factoid_search WHERE ts_rank(full_document_tsvector, websearch_to_tsquery('factoid', ?)) > 0.01 ORDER BY 1 DESC, factoid_id DESC LIMIT 10
       ",
             { Slice => {} },
             $namespace, $server,
-            $body,
+            $body, $body
         );
 
     if ($results and @$results) {

@@ -108,7 +108,7 @@ sub handle_request {
 		host => '*special', #TODO fix this to be an actual hostname!
 		                    # Make sure it isn't messed up by the alias feature..
 		server => $data->{server} // '*special',
-    nolearn => 1,
+    #    nolearn => 1,
 	};
 	
 	# Avoid passing around the full reference
