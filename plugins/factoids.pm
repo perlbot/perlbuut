@@ -9,6 +9,7 @@ use IRC::Utils qw/lc_irc strip_color strip_formatting/;
 use Text::Metaphone;
 use strict;
 use Encode qw/decode/;
+use JSON::MaybeXS qw/encode_json/;
 
 use Data::Dumper;
 use List::Util qw/min max/;
@@ -52,6 +53,8 @@ my %commandhash = (
     "protect"    => \&get_fact_protect,
     "unprotect"  => \&get_fact_unprotect,
     "substitute" => \&get_fact_substitute,
+    "nchain"     => \&get_fact_namespace_chain,
+    "factgrep"   => \&get_fact_grep,
 );
 
 my $commands_re = join '|', keys %commandhash;
@@ -188,7 +191,7 @@ sub sub_command ($self, $said, $pm) {
 
     my $fact_string;                        # used to capture return values
 
-    if (!$call_only && $subject =~ s/^\s*($commands_re)\s+//) {
+    if (!$call_only && $subject =~ s/^\s*($commands_re)\s*//) {
         $fact_string =
           $commandhash{$1}->($self, $subject, $said->{name}, $said);
     } elsif (($subject =~ m{\w\s*=~\s*s /.+ /  .* /[gi]*\s*$}ix)
@@ -703,6 +706,91 @@ SELECT ts_rank(full_document_tsvector, websearch_to_tsquery('factoid', ?)) AS ra
 
 }
 
+sub get_fact_namespace_chain ($self, $body, $name, $said) {
+    local $said->{channel} = $said->{channel};
+    if ($body) {
+      $said->{channel} = $body;
+    }
+
+    my ($server,      $namespace)      = $self->get_namespace($said);
+    print STDERR "XXX: $body $said->{channel} $server $namespace\n";
+
+    #XXX: need to also search contents of factoids TODO
+    my $results = $self->dbh->selectall_arrayref(" 
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+)
+SELECT depth, namespace, server FROM factoid_lookup_order_inner
+", { Slice => {} }, $namespace, $server);
+
+  print STDERR "XXX: $body $said->{channel} $server $namespace\n";
+  print STDERR Dumper($results);
+
+   my $return = join ' -> ', map {sprintf "%d. <%s:%s>", $_->{depth}+1, $_->{server}||"*", $_->{namespace}||"##NULL"} $results->@*;
+
+   $return ||= "<$server:$namespace>"; # default namespace display
+   return $return;
+}
+
+sub get_fact_grep ($self, $body, $name, $said) {
+    my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+    my ($server,      $namespace)      = $self->get_namespace($said);
+
+    my $results;
+
+    my $value_only = $body =~ s/\s*--val\s+//;
+
+    #XXX: need to also search contents of factoids TODO
+    $results = $self->dbh->selectall_arrayref(" 
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+),
+factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT * FROM factoid_lookup_order_inner
+  UNION ALL
+  SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
+),
+get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace) AS (
+      SELECT lo.depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, f.deleted, f.server, f.namespace
+      FROM factoid f
+      INNER JOIN factoid_lookup_order lo 
+        ON f.generated_server = lo.gen_server
+        AND f.generated_namespace = lo.gen_namespace
+      WHERE original_subject ~* ?
+      ORDER BY depth ASC, factoid_id DESC
+)
+SELECT DISTINCT ON(original_subject) original_subject, predicate FROM get_latest_factoid WHERE NOT deleted ORDER BY original_subject ASC, depth ASC, factoid_id DESC",
+        { Slice => {} },
+        $namespace, $server,
+        $body,
+    );
+
+    print STDERR "Got results: ".Dumper($results);
+
+    if ($results and @$results) {
+        my $ret_string = encode_json([map {$value_only ? $_->{predicate} : $_->{original_subject}} @$results]); 
+
+        return $ret_string;
+    } else {
+        return "[]";
+    }
+
+}
+
 sub get_fact_oldsearch ($self, $body, $name, $said) {
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
     my ($server,      $namespace)      = $self->get_namespace($said);
@@ -1037,6 +1125,7 @@ sub set_last_rendered($self, $fact, $ret) {
 
   # TODO trigger FTS update?
 }
+
 
 no warnings 'void';
 "Bot::BB3::Plugin::Factoids";
