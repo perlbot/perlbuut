@@ -3,6 +3,9 @@ no warnings 'void';
 sub {
 	my( $said ) = @_;
 	
+  # trim pure whitespace at beginning and end
+  $said->{macro_arg} =~ s/^\s*|\s*$//g;
+
 	my $flags = $said->{body};
 	my($quotemode, $wordnr, $auxfield) = ("z", 0, "macro_arg");
 	$flags =~ s/\&(\w+)// and
