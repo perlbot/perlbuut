@@ -2,6 +2,10 @@
 
 =head1 ABOUT
 
+=for html
+<a href="https://github.com/perlbot/perlbuut/actions?query=workflow%3ACI"><img src="https://github.com/perlbot/perlbuut/workflows/CI/badge.svg"></a>
+=cut
+
 This is the source code for perlbot, the resident infobot on Freenode’s
 #perl channel. See:
 
