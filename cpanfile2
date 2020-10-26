@@ -1,7 +1,0 @@
-Usage:
-        % scan-prereqs-cpanfile
-
-            --diff=META.json      # Generate diff from META.json
-            --diff=cpanfile       # Generate diff from cpanfile
-            --ignore=extlib/
-
