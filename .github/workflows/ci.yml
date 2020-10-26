@@ -1,0 +1,22 @@
+name: CI
+
+on: [push]
+
+jobs:
+  perl-job:
+    runs-on: [self-hosted]
+    container:
+      image: perl:${{ matrix.perl-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version:
+          - '5.32'
+          - 'latest'
+    name: Perl ${{ matrix.perl-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Regular tests
+        run: |
+            cpanm --installdeps --notest .
+            prove
