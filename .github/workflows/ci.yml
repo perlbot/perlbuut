@@ -20,4 +20,4 @@ jobs:
         run: |
             apt update && apt -y install libprotobuf-dev libprotoc-dev
             cpanm --installdeps --notest .
-            #            prove
+            bin/run-tests
