@@ -19,9 +19,13 @@ jobs:
     name: Perl ${{ matrix.perl-version }}:${{ matrix.architecture }}
     steps:
       - uses: actions/checkout@v2
-      - name: Regular tests
+      - name: Install libraries and cpm
         run: |
             apt update && apt -y install libprotobuf-dev libprotoc-dev
             cpanm install App::cpm
+      - name: Install depedencies
+        run: |
             cpm -v --resolver http://cpanproxy/ --configure-timeout 180 --build-timeout 600 --with-cpanfile=./cpanfile
+      - name: Run tests
+        run: |
             bin/run-tests
