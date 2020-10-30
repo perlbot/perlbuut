@@ -31,6 +31,7 @@ requires "JSON::MaybeXS";
 requires "JSON::MaybeXS";
 requires "JSON::MaybeXS";
 requires "lib";
+requires "lib::relative";
 requires "List::Util";
 requires "List::Util";
 requires "LWP::Simple";
