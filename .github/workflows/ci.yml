@@ -16,7 +16,7 @@ jobs:
         perl-version:
           - '5.32'
           - 'latest'
-    name: Perl ${{ matrix.perl-version }}
+    name: Perl ${{ matrix.perl-version }}:${{ matrix.architecture }}
     steps:
       - uses: actions/checkout@v2
       - name: Regular tests
