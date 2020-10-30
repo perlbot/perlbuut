@@ -22,5 +22,5 @@ jobs:
       - name: Regular tests
         run: |
             apt update && apt -y install libprotobuf-dev libprotoc-dev
-            cpanm --installdeps --notest .
+            cpanm --installdeps --notest --build-timeout 180 .
             bin/run-tests
