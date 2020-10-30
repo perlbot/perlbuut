@@ -25,7 +25,7 @@ jobs:
             cpanm install App::cpm
       - name: Install depedencies
         run: |
-            cpm -v --resolver http://cpanproxy/ --configure-timeout 180 --build-timeout 600 --with-cpanfile=./cpanfile
+            cpm install -v --resolver http://cpanproxy/ --configure-timeout 180 --build-timeout 600 --with-cpanfile=./cpanfile
       - name: Run tests
         run: |
             bin/run-tests
