@@ -20,7 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Regular tests
+        env:
         run: |
             apt update && apt -y install libprotobuf-dev libprotoc-dev
-            cpanm --installdeps --notest --configure-timeout 180 --build-timeout 600 .
+        cpanm --installdeps --notest --mirror-only --mirror http://cpanproxy/ --configure-timeout 180 --build-timeout 600 .
             bin/run-tests
