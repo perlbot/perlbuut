@@ -79,3 +79,4 @@ requires "WWW::Mechanize";
 requires "WWW::Shorten";
 requires "WWW::Shorten::TinyURL";
 requires "XML::RSS::Parser";
+requires "Test::Differences";
