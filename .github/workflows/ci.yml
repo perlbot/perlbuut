@@ -28,4 +28,4 @@ jobs:
             cpm install -v --resolver 02packages,http://cpanproxy/ --configure-timeout 180 --build-timeout 600 --cpanfile=./cpanfile
       - name: Run tests
         run: |
-            bin/run-tests
+            prove
