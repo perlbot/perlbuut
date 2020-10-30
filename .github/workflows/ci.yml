@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   perl-job:
-    runs-on: [self-hosted, ${{ matrix.architecture }}]
+    runs-on: [self-hosted, "${{ matrix.architecture }}" ]
     container:
       image: perl:${{ matrix.perl-version }}
     strategy:
