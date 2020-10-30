@@ -22,7 +22,7 @@ jobs:
       - name: Install libraries and cpm
         run: |
             apt update && apt -y install libprotobuf-dev libprotoc-dev
-            cpanm install App::cpm
+            cpanm install --mirror http://cpanproxy/ --mirror-only App::cpm
       - name: Install depedencies
         run: |
             cpm install -v --resolver 02packages,http://cpanproxy/ --configure-timeout 180 --build-timeout 600 --cpanfile=./cpanfile
