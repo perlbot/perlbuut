@@ -28,3 +28,4 @@ check(
   [1],
   "emoji" );
 
+done_testing();
