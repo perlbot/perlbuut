@@ -3,34 +3,28 @@
 use strict;
 use warnings;
 use utf8;
-use Test::More tests => 4;
-use Test::Differences qw/ eq_or_diff /;
-use lib '.';
-use plugins::unicode;
+use Test::More;
+use lib::relative './lib', '../lib', '..';
+use t::simple_plugin;
+use Encode qw/encode/;
 
-sub check
-{
-    local $Test::Builder::Level = $Test::Builder::Level + 1;
-    my ( $body, $want, $blurb ) = @_;
-    my ( $err, $out ) = unip( map speng($_), split " ", $body );
-
-    return eq_or_diff( $err, [], "no errors" )
-        && eq_or_diff( $out, $want, $blurb );
-}
+load_plugin("unicode");
 
 # TEST*2
 check(
     "perl",
-    [
-        "U+0070 (70): LATIN SMALL LETTER P [p]",
-        "U+0065 (65): LATIN SMALL LETTER E [e]",
-        "U+0072 (72): LATIN SMALL LETTER R [r]",
-        "U+006C (6c): LATIN SMALL LETTER L [l]",
-    ],
+    "U+0070 (70): LATIN SMALL LETTER P [p] ".
+    "U+0065 (65): LATIN SMALL LETTER E [e] ".
+    "U+0072 (72): LATIN SMALL LETTER R [r] ".
+    "U+006C (6c): LATIN SMALL LETTER L [l]\n",
+    [1],
     "ascii"
 );
 
 # TEST*2
-check( "💟", [ "U+1F49F (f0 9f 92 9f): HEART DECORATION [💟]", ],
-    "emoji", );
+check( 
+  "💟", 
+  encode("utf8", "U+1F49F (f0 9f 92 9f): HEART DECORATION [💟]\n"), 
+  [1],
+  "emoji" );
 
