@@ -45,8 +45,6 @@ requires "Net::DNS";
 requires "Net::INET6Glue::INET_is_INET6";
 requires "Parse::RecDescent";
 requires "Path::Tiny";
-requires "Paws";
-requires "Paws::Credential::Explicit";
 requires "POE";
 requires "POE::Component::IRC";
 requires "POE::Component::IRC::Common";

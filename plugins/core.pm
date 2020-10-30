@@ -29,10 +29,12 @@ sub {
         if ( Module::CoreList->can('deprecated_in') ) {
             my $dep = Module::CoreList->deprecated_in($module);
             print " and deprecated in $dep" if $dep;
+            return 'handled';
         }
         if ( Module::CoreList->can('removed_from') ) {
             my $rem = Module::CoreList->removed_from($module);
             print " and removed from $rem" if $rem;
+            return 'handled';
         }
     }
     else {
@@ -42,10 +44,12 @@ sub {
             print 'Found', scalar @modules, ':', join ',',
               map { $_ . ' in ' . Module::CoreList->first_release($_) }
               @modules;
+              return 'handled';
 
         }
         else {
             print "Module $module does not appear to be in core. Perhaps capitalization matters or try using the 'cpan' command to search for it.";
+            return 'handled';
         }
     }
   }
