@@ -14,6 +14,7 @@ use Regexp::Optimizer;
 use Regexp::Assemble;
 use strict;
 use utf8;
+use DBI;
 
 no warnings 'void';
 

@@ -7,7 +7,6 @@ use Data::Dumper;
 use Text::Glob qw/match_glob/;
 use Memoize;
 use Regexp::Assemble;
-use JSON::MaybeXS qw//;
 use strict;
 
 sub new {

@@ -60,9 +60,9 @@ sub command {
 	  $query =~ s/%20/+/g;
 
     if ($oper eq 'q') {
-  	  $url = "https://perldoc.pl/search?no_redirect=1&q=".$query."#FAQ";
+  	  $url = "https://perldoc.perl.org/search?no_redirect=1&q=".$query."#FAQ";
     } else {
-  	  $url = "https://perldoc.pl/search?q=".$query;
+  	  $url = "https://perldoc.perl.org/search?q=".$query;
     }
 #	  $url = makeashorterlink($url);
 	}
@@ -76,19 +76,19 @@ sub command {
 		
 		$func = "-X" if ($func eq "-x"); #only case where it isn't lowercase, its easier to test at this point
 		
-		$url = "https://perldoc.pl/functions/".$func
+		$url = "https://perldoc.perl.org/functions/".$func
 	}
 	elsif ($said->{body} =~ /-v\s+(\S+)\s*/i) #functions, only use the first part of a multiword expression
 	{
 		my $var = uri_encode($1, {"encode_reserved" => 1});
 
-		$url = "https://perldoc.pl/variables/".$var
+		$url = "https://perldoc.perl.org/variables/".$var
 	}
 	elsif ($said->{body} =~ /-m\s+(\S+)\s*/i) # got a module!
 	{#http://search.cpan.org/search?query=foo%3ABar&mode=all
 	  my $query = uri_encode($1);
 #	  $query =~ s/%20/+/g;
-	  $url = "https://perldoc.pl/".$query;
+	  $url = "https://perldoc.perl.org/".$query;
 #	  $url = makeashorterlink($url);
 	}
 	elsif ($said->{body} =~ /::/) #module, go to cpan also
@@ -97,14 +97,14 @@ sub command {
 	  $trimmed =~ s/^\s*(\S+)\s*(?:#.*)?$/$1/;
 	  my $query = uri_encode($trimmed);
 	  $query =~ s/%20/+/g;
-	  $url = "https://perldoc.pl/$query";
+	  $url = "https://perldoc.perl.org/$query";
 #	  $url = makeashorterlink($url);
 	}
 	else # we've got just a plain word, use it as a doc title
 	{ #http://perldoc.perl.org/perlrun.html
 	  if ($said->{body} =~ /^\s*(\S+)\s*(?:#.*)?$/)
     {
-	  	$url = "https://perldoc.pl/$1";
+	  	$url = "https://perldoc.perl.org/$1";
 	  }
 	  else
 	  {

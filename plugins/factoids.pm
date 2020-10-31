@@ -747,7 +747,6 @@ sub get_fact_grep ($self, $body, $name, $said) {
 
     my $value_only = $body =~ s/\s*--val\s+//;
 
-    #XXX: need to also search contents of factoids TODO
     $results = $self->dbh->selectall_arrayref(" 
 WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
   SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
