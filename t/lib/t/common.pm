@@ -41,6 +41,8 @@ sub make_said
       by_chan_op => 0,
       captured => "",
     };
+
+    return $said;
 }
 
 1;
