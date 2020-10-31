@@ -196,11 +196,7 @@ sub sub_command ($self, $said, $pm) {
     if (!$call_only && $subject =~ s/^\s*($commands_re)\s*//) {
         $fact_string =
           $commandhash{$1}->($self, $subject, $said->{name}, $said);
-    } elsif (($subject =~ m{\w\s*=~\s*s /.+ /  .* /[gi]*\s*$}ix)
-        || ($subject =~ m{\w\s*=~\s*s\|.+\|  .*\|[gi]*\s*$}ix)
-        || ($subject =~ m{\w\s*=~\s*s\{.+\}\{.*\}[gi]*\s*$}ix)
-        || ($subject =~ m{\w\s*=~\s*s <.+ > <.* >[gi]*\s*$}ix)
-        || ($subject =~ m{\w\s*=~\s*s\(.+\)\(.*\)[gi]*\s*$}ix))
+    } elsif ($subject =~ m{\w\s*=~\s*(s.*)$}ix)
     {
         $fact_string = $self->get_fact_substitute($subject, $said->{name}, $said);
     } elsif (!$call_only and $subject =~ /\s+$COPULA_RE\s+/) {
@@ -555,7 +551,10 @@ sub get_fact_substitute ($self, $subject, $name, $said) {
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
     my ($server,      $namespace)      = $self->get_namespace($said);
 
-    if ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s(.*)$}ix)
+    #    my $m = $said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*(s.*)$}ix;
+    #return $said->{body} . "$m $1 $2";
+
+    if ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*(s.*)$}ix)
     {
         my ($subject, $regex) = ($1, $2);
         my $pdoc = PPI::Document->new(\$regex);
