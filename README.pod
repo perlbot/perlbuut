@@ -2,6 +2,12 @@
 
 =head1 ABOUT
 
+=begin html
+
+<a href="https://github.com/perlbot/perlbuut/actions?query=workflow%3ACI"><img src="https://github.com/perlbot/perlbuut/workflows/CI/badge.svg"></a>
+
+=end html
+
 This is the source code for perlbot, the resident infobot on Freenode’s
 #perl channel. See:
 
@@ -24,6 +30,6 @@ This is a semi-complicated situation as while the code is obstensibly open sourc
 
 buu has agreed to put his code under the GPL version 3 ( L<https://en.wikipedia.org/wiki/GNU_General_Public_License#Version_3> ) or at your option any later version.
 
-Shlomi Fish licences his changes under any and all of the Expat license, the
+Shlomi Fish licenses his changes under any and all of the Expat license, the
 CC0, the same terms as perl 5, and the Artistic 2.0 license.
 =cut

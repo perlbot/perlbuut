@@ -1,0 +1,41 @@
+name: CI
+
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  perl-job:
+    runs-on: [self-hosted, "${{ matrix.architecture }}" ]
+    container:
+      image: perl:${{ matrix.perl-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture:
+          - X64
+          - ARM
+        perl-version:
+          - '5.32'
+          - 'latest'
+    name: Perl ${{ matrix.perl-version }}:${{ matrix.architecture }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install libraries and cpm
+        run: |
+            apt update && apt -y install libprotobuf-dev libprotoc-dev
+            cpanm local::lib
+            eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)"
+            cpanm --mirror http://cpanproxy/ --mirror-only --notest App::cpm
+      - name: Install depedencies
+        run: |
+            eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)"
+            cpm install -g -v --no-test --resolver 02packages,http://cpanproxy/ --configure-timeout 180 --build-timeout 600 --cpanfile=./cpanfile
+      - name: Run tests
+        run: |
+            eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)"
+            prove

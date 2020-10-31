@@ -10,6 +10,8 @@ use Text::Metaphone;
 use strict;
 use Encode qw/decode/;
 use JSON::MaybeXS qw/encode_json/;
+use PPI; 
+use PPI::Dumper; 
 
 use Data::Dumper;
 use List::Util qw/min max/;
@@ -553,13 +555,20 @@ sub get_fact_substitute ($self, $subject, $name, $said) {
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
     my ($server,      $namespace)      = $self->get_namespace($said);
 
-    if (   ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s /([^/]+ )   /([^/]*  )/([gi]*)\s*$}ix)
-        || ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s\|([^|]+ )  \|([^|]*  )\|([gi]*)\s*$}ix)
-        || ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s\{([^\}]+)\}\{([^\}]*?)\}([gi]*)\s*$}ix)
-        || ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s\(([^)]+ )\)\(([^)]*? )\)([gi]*)\s*$}ix)
-        || ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s <([^>]+ ) > <([^>]*? ) >([gi]*)\s*$}ix))
+    if ($said->{body} =~ m{^(?:\s*substitute)?\s*(.*?)\s*=~\s*s(.*)$}ix)
     {
-        my ($subject, $match, $subst, $flags) = ($1, $2, $3, $4);
+        my ($subject, $regex) = ($1, $2);
+        my $pdoc = PPI::Document->new(\$regex);
+        return "Failed to parse $regex" unless $pdoc;
+
+        # TODO handle tr|y///
+        my $token = $pdoc->find(sub {$_[1]->isa('PPI::Token::Regexp::Substitute')})->[0];
+
+        return "Couldn't find s/// in $regex" unless $token;
+
+        my $match = $token->get_match_string;
+        my $subst = $token->get_substitute_string;
+        my $flags = join '', keys +{$token->get_modifiers()}->%*;
 
         # TODO does this need to be done via the ->get_fact() instead now?
         my $fact = $self->_db_get_fact(_clean_subject($subject), 0, $server, $namespace);
@@ -571,11 +580,6 @@ sub get_fact_substitute ($self, $subject, $name, $said) {
 
                 #moving this to its own function for cleanliness
                 $result = $self->_fact_substitute($pred, $match, $subst, $flags);
-
-                #	my( $self, $body, $name, $said ) = @_;
-
-                #	$body =~ s/^\s*learn\s+//;
-                #	my( $subject, $predicate ) = split /\s+as\s+/, $body, 2;
 
                 # TODO why is this calling there?
                 # let this fail for now
