@@ -25,10 +25,21 @@ sub make_said
 
     # TODO make this fill out a lot more of the said object
 
+    $who //= "perlbot";
+
     my @args = split /\s+/, $body; 
     my $said = {
       body => $body,
       recommended_args => \@args,
+      macro_args => $body,
+      name => $who,
+      ircname => $who."irc",
+      host => "irc.client.example.com",
+      sender_raw => "", # this never gets filled out
+      channel => $channel // "##NULL",
+      server => $server // "irc.server.example.com",
+      by_chan_op => 0,
+      captured => "",
     };
 }
 
