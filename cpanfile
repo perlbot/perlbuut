@@ -61,6 +61,7 @@ requires "POE::Session";
 requires "POE::Wheel::ReadWrite";
 requires "POE::Wheel::Run";
 requires "POE::Wheel::SocketFactory";
+requires "PPI";
 requires "Regexp::Assemble";
 requires "Regexp::Optimizer";
 requires "Socket";
