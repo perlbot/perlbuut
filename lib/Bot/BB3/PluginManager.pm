@@ -7,6 +7,7 @@ use Data::Dumper;
 use Text::Glob qw/match_glob/;
 use Memoize;
 use Regexp::Assemble;
+use Scalar::Util qw/blessed/;
 use strict;
 
 sub new {
@@ -453,6 +454,13 @@ sub _execute_plugin_chain {
 
 	for my $command ( @$commands ) {
 		local $@;
+    
+    unless (blessed($command)) {
+      use Data::Dumper;
+      warn "Unblessed command! ".Dumper($command);
+      next;
+    };
+
 		my( $return, $output ) = eval { $command->command( $said, $self ) };
 
     use Data::Dumper;
