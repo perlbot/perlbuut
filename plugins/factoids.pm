@@ -224,7 +224,10 @@ sub handle ($self, $said, $pm) {
 
     $said->{body} =~ s/^\s*(what|who|where|how|when|why)\s+($COPULA_RE)\s+(?<fact>.*?)\??\s*$/$+{fact}/i;
 
+
     my $prefix = $conf->{command_prefix};
+    
+    warn "Checking for prefix: $prefix in ".Dumper($conf); 
     return unless $prefix;
 
     $said->{nosuggest} = 1;

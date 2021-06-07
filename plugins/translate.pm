@@ -1,23 +1,30 @@
 use strict;
 use warnings;
-#use Bing::Translate;
+use LWP::UserAgent;
+use JSON::MaybeXS qw/decode_json encode_json/;
+use Data::Dumper;
 
+my $ua = LWP::UserAgent->new();
 
 
 return sub {
 	my( $said ) = @_;
 
-open(my $fh, "<etc/bing_secret.txt") or die "Couldn't read $!";
-my $cid = "Perlbot";
-my $secret = <$fh>;
-chomp $secret;
-close($fh);
-
-my $tro = Bing::Translate->new($cid, $secret);
 
     if ($said->{body} =~ /^\s*(?<from>\S+)\s+(?<to>\S+)\s+(?<text>.*)$/) {
-#        print $secret;
-        print $tro->translate($+{text}, $+{from}, $+{to});
+      my $json = {
+        source_language => $+{from},
+        target_language => $+{to},
+        text => $+{text}
+      };
+
+      my $resp = $ua->post("http://192.168.1.229:10000/translate_text", Content => encode_json($json));
+
+      my $cont = $resp->decoded_content();
+      my $output = decode_json($cont);
+
+      print Dumper $output;
+
     } else {
         print "help text";
     }

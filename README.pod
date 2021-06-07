@@ -13,8 +13,6 @@ This is the source code for perlbot, the resident infobot on Freenode’s
 
 =over 4
 
-=item * L<http://perl-begin.org/FAQs/freenode-perl/>
-
 =item * L<https://github.com/simcop2387/perlbuut>
 
 =back
