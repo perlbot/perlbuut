@@ -29,13 +29,12 @@ sub {
         if ( Module::CoreList->can('deprecated_in') ) {
             my $dep = Module::CoreList->deprecated_in($module);
             print " and deprecated in $dep" if $dep;
-            return 'handled';
         }
         if ( Module::CoreList->can('removed_from') ) {
             my $rem = Module::CoreList->removed_from($module);
             print " and removed from $rem" if $rem;
-            return 'handled';
         }
+        return 'handled';
     }
     else {
         my @modules = Module::CoreList->find_modules(qr/$module/);
