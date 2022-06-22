@@ -22,11 +22,12 @@ sub dbh {
 		return $self->{$env . "dbh"};
 	}
   
-  if ($env =~ /^www|dev$/) {
-    $self->{$env . "dbh"} = DBI->connect( "dbi:SQLite:dbname=/var/www/domains/perl.bot/".$env."/pastes.db", "", "", { PrintError => 0, RaiseError => 1 } );
-  } elsif ($env eq 'asn') {
-    $self->{$env . "dbh"} = DBI->connect( "dbi:SQLite:dbname=var/asn.db", "", "", { PrintError => 0, RaiseError => 1 } );
-  }
+  my $dbnames = {
+    www => "perlbot_pastes",
+    dev => "perlbot_pastes_dev",
+  };
+
+  $self->{$env . "dbh"} = DBI->connect( "dbi:Pg:dbname=".$dbnames->{$env}, "perlbot_pastebin", "ignored", { PrintError => 2, RaiseError => 1 } );
 
 	return $self->{$env."dbh"};
 }
@@ -35,7 +36,6 @@ sub postload {
 	
 	delete $self->{wwwdbh}; # UGLY HAX GO.
   delete $self->{devdbh};
-  delete $self->{asndbh};
 	                     # Basically we delete the dbh we cached so we don't fork
                          # with one active
 }
@@ -43,13 +43,13 @@ sub postload {
 sub add_ban_word {
   my ($self, $env, $who, $where, $word) = @_;
 
-  $self->dbh($env)->do("INSERT INTO banned_words (word, who, 'where') VALUES (?, ?, ?)", {}, $word, $who, $where);
+  $self->dbh($env)->do(q{INSERT INTO banned_words (word, who, "where") VALUES (?, ?, ?)}, {}, $word, $who, $where);
 }
 
 sub get_ip_for_paste {
   my ($self, $env, $id) = @_;
 
-  my ($ip) = @{$self->dbh($env)->selectrow_arrayref("SELECT ip FROM posts p JOIN slugs s ON s.post_id = p.id WHERE s.slug = ? or p.id = ?", {}, $id, $id) || ['0.0.0.0']};
+  my ($ip) = @{$self->dbh($env)->selectrow_arrayref("SELECT ip FROM posts p JOIN slugs s ON s.post_id = p.id WHERE s.slug = ?", {}, $id) || ['0.0.0.0']};
 
   return sprintf("%03d.%03d.%03d.%03d", split(/\./,$ip));
 }
@@ -59,7 +59,7 @@ sub get_asn_for_paste {
 
   my $ip = $self->get_ip_for_paste($env, $id);
 
-  my ($asn) = @{$self->dbh('asn')->selectrow_arrayref("SELECT asn FROM asn WHERE ? >= start AND ? <= end", {}, $ip, $ip) || []}[0];
+  my ($asn) = @{$self->dbh('www')->selectrow_arrayref('SELECT asn FROM asn WHERE ? >= start AND ? <= "end"', {}, $ip, $ip) || []}[0];
   return $asn;
 }
 
@@ -69,7 +69,7 @@ sub ban_user_paste {
   my $ip = $self->get_ip_for_paste($env, $id);
 
   if ($ip) {
-    $self->dbh($env)->do("INSERT INTO banned_ips (ip, who, 'where') VALUES (?, ?, ?);", {}, $ip, $who, $where);
+    $self->dbh($env)->do(q{INSERT INTO banned_ips (ip, who, "where") VALUES (?, ?, ?);}, {}, $ip, $who, $where);
     return "USER WAS BANNED FOR THIS POST";
   } else {
     return "Failed to find IP for paste in db";
@@ -83,7 +83,7 @@ sub ban_asn_paste {
   my $asn = $self->get_asn_for_paste($env, $id);
 
   if ($asn) {
-    $self->dbh($env)->do("INSERT INTO banned_asns (asn, who, 'where') VALUES (?, ?, ?);", {}, $asn, $who, $where);
+    $self->dbh($env)->do(q{INSERT INTO banned_asns (asn, who, "where") VALUES (?, ?, ?);}, {}, $asn, $who, $where);
     return "ISP WAS BANNED FOR THIS POST";
   } else {
     return "Failed to find ISP for paste in db. yell at simcop2387; ".encrypt("[$id][$ip][$asn]");

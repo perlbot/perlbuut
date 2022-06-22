@@ -170,6 +170,11 @@ sub command {
   if (($said->{channel} eq "#perl6" || $said->{channel} eq "#raku") && $said->{addressed} && !$said->{nested} && $orig_type =~ /^[ws]*$/) {
     $type = "perl6"
   }
+  
+  # we were addressed, but not nested, in #perl6.  Switch to perl6, otherwise use perl5
+  if ($said->{channel} eq "#pdl" && !$said->{nested} && $orig_type =~ /^[ws]*$/) {
+    $type = "perl5.34"
+  }
 
   if ($command eq 'r' && (!$said->{addressed} && !$said->{nested} && ($said->{channel} ne "#perl6" && $said->{channel} eq '#raku'))) {
     return ("handled", "");
@@ -264,7 +269,7 @@ sub command {
             "Columbus Day" => {prob => 0.00, chars => []},
 "Confederate Memorial Day" => {prob => 0.00, chars => []},
                "Earth Day" => {prob => 0.50, chars => ["\x{1F30E}", "\x{1F30D}", "\x{1F30F}"]},
-            "Election Day" => {prob => 1.00, chars => ["\x{1F5F3}"]},
+            "Election Day" => {prob => 1.00, chars => ["\x{1F5F3}\x{FE0F}"]},
         "Emancipation Day" => {prob => 0.00, chars => []},
              "Fathers Day" => {prob => 0.00, chars => []},
                 "Flag Day" => {prob => 0.00, chars => []}, # TODO all country flags
