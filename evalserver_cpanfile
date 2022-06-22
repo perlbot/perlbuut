@@ -24,6 +24,7 @@ requires 'Net::Dict';
 requires 'HTML::TreeBuilder::XPath';
 
 requires 'Data::Dumper';
+requires 'Data::Dump';
 requires 'Scalar::Util'; #Required by Data::Dumper
 requires 'BSD::Resource';
 requires 'File::Glob';
@@ -164,3 +165,12 @@ requires 'DateTime::Event::Cron';
 requires 'Regexp::Assemble';
 requires 'Regexp::Optimizer';
 requires 'CGI::Carp';
+requires 'Feature::Compat::Try';
+requires 'Acme::ConspiracyTheory::Random';
+requires 'PDL';
+requires 'Object::Pad';
+requires 'Net::IP';
+requires 'Future::AsyncAwait';
+requires 'IO::Async';
+requires 'Inline';
+requires 'Inline::C';
