@@ -359,6 +359,7 @@ sub _create_plugin_chain {
 	my $commands = $pre_built_chains->{commands};
   warn "in chain create parse: $said->{body}\n";
 	my $command_list = $self->_parse_for_commands( $said, $commands );
+  warn "got command list: [".join(',', $command_list->@*)."]";
   warn "in chain create post-parse: $said->{body}\n";
 
 	return [ $pre, $command_list, $handlers, $post ];
@@ -406,6 +407,8 @@ sub _parse_for_commands {
 
 sub _filter_plugin_list {
 	my( $self, $said, $plugins ) = @_;
+
+  warn "Checking plugin filter: [".join(", ", map {$_->{name}} $plugins->@*)."]";
 
 	my @chain;
 	for( @$plugins ) {

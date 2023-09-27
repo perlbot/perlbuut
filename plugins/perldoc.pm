@@ -80,7 +80,8 @@ sub command {
 	}
 	elsif ($said->{body} =~ /-v\s+(\S+)\s*/i) #functions, only use the first part of a multiword expression
 	{
-		my $var = uri_encode($1, {"encode_reserved" => 1});
+    my $raw = $1;
+		my $var = uri_encode($raw =~ s/\\([^\\])/$1/gr, {"encode_reserved" => 1});
 
 		$url = "https://perldoc.perl.org/variables/".$var
 	}

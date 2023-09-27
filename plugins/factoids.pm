@@ -57,6 +57,7 @@ my %commandhash = (
     "substitute" => \&get_fact_substitute,
     "nchain"     => \&get_fact_namespace_chain,
     "factgrep"   => \&get_fact_grep,
+    "factseo"    => \&get_fact_seo,
 );
 
 my $commands_re = join '|', keys %commandhash;
@@ -746,6 +747,57 @@ SELECT depth, namespace, server FROM factoid_lookup_order_inner
 }
 
 sub get_fact_grep ($self, $body, $name, $said) {
+    my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
+    my ($server,      $namespace)      = $self->get_namespace($said);
+
+    my $results;
+
+    my $value_only = $body =~ s/\s*--val\s+//;
+
+    $results = $self->dbh->selectall_arrayref(" 
+WITH RECURSIVE factoid_lookup_order_inner (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT 0 AS depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, generated_server, generated_namespace
+    FROM factoid_config 
+    WHERE namespace = ? AND server = ?
+  UNION ALL
+  SELECT p.depth+1 AS depth, m.namespace, m.server, m.alias_namespace, m.alias_server, m.parent_namespace, m.parent_server, m.recursive, m.generated_server, m.generated_namespace 
+    FROM factoid_config m 
+    INNER JOIN factoid_lookup_order_inner p 
+      ON m.namespace = p.parent_namespace AND m.server = p.parent_server AND p.recursive
+),
+factoid_lookup_order (depth, namespace, server, alias_namespace, alias_server, parent_namespace, parent_server, recursive, gen_server, gen_namespace) AS (
+  SELECT * FROM factoid_lookup_order_inner
+  UNION ALL
+  SELECT 0, '', '', NULL, NULL, NULL, NULL, false, '', '' WHERE NOT EXISTS (table factoid_lookup_order_inner)
+),
+get_latest_factoid (depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, deleted, server, namespace) AS (
+      SELECT lo.depth, factoid_id, subject, copula, predicate, author, modified_time, compose_macro, protected, original_subject, f.deleted, f.server, f.namespace
+      FROM factoid f
+      INNER JOIN factoid_lookup_order lo 
+        ON f.generated_server = lo.gen_server
+        AND f.generated_namespace = lo.gen_namespace
+      WHERE original_subject ~* ?
+      ORDER BY depth ASC, factoid_id DESC
+)
+SELECT DISTINCT ON(original_subject) original_subject, predicate FROM get_latest_factoid WHERE NOT deleted ORDER BY original_subject ASC, depth ASC, factoid_id DESC",
+        { Slice => {} },
+        $namespace, $server,
+        $body,
+    );
+
+    print STDERR "Got results: ".Dumper($results);
+
+    if ($results and @$results) {
+        my $ret_string = encode_json([map {$value_only ? $_->{predicate} : $_->{original_subject}} @$results]); 
+
+        return $ret_string;
+    } else {
+        return "[]";
+    }
+
+}
+
+sub get_fact_seo ($self, $body, $name, $said) {
     my ($aliasserver, $aliasnamespace) = $self->get_alias_namespace($said);
     my ($server,      $namespace)      = $self->get_namespace($said);
 

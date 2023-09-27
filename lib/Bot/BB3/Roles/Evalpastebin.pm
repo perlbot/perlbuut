@@ -50,7 +50,7 @@ sub _start {
     # TODO setup TCP server.
     $self->{server} = POE::Component::Server::TCP->new(
         Port => 1784,
-        Address =>'192.168.196.2',
+        Address =>'192.168.64.2',
         ClientFilter => "POE::Filter::Line",
         ClientInput => \&receive_paste,
     );
