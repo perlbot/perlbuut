@@ -168,6 +168,8 @@ requires 'CGI::Carp';
 requires 'Feature::Compat::Try';
 requires 'Acme::ConspiracyTheory::Random';
 requires 'PDL';
+requires 'PDL::LinearAlgebra';
+requires 'PDL::Stats';
 requires 'Object::Pad';
 requires 'Net::IP';
 requires 'Future::AsyncAwait';
